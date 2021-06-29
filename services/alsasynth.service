@@ -1,0 +1,13 @@
+[Unit]
+Description=ZynSubAddFX - Alsa
+After=multi-user.target sound.target dbusexport.service
+
+[Service]
+Type=simple
+ExecStart=zynaddsubfx -U -A=0 -o 512 -r 96000 -b 512 -I alsa -O alsa -P 7777 -L "/usr/local/share/zynaddsubfx/banks/Choir and Voice/0034-Slow Morph_Choir.xiz"
+User=pi
+WorkingDirectory=/home/pi
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

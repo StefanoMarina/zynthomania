@@ -1,0 +1,13 @@
+[Unit]
+Description=Alsa midi lookup and connection
+After=multi-user.target sound.target alsasynth.service
+
+[Service]
+Type=simple
+ExecStart=perl -I /home/pi/zynthomania /home/pi/zynthomania/connect.pl
+User=pi
+WorkingDirectory=/home/pi/zynthomania
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
