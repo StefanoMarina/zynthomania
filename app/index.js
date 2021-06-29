@@ -1,12 +1,12 @@
 const OSC = require('osc-js')
 
-const options = { send: { port: 11245 } }
+const options = { send: { port: 7777 } }
 const osc = new OSC({ plugin: new OSC.DatagramPlugin(options) })
 
 osc.on('open', () => {
   console.log ("Opened");
   // send only this message to `localhost:9002`
-  osc.send(new OSC.Message('/hello'), { port: 9002 })
+  osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: 7777 })
 
   setInterval(() => {
      // send these messages to `localhost:11245`
@@ -14,4 +14,4 @@ osc.on('open', () => {
   }, 1000)
 })
 
-osc.open({ port: 7777 }) // bind socket to localhost:9912
+osc.open({ port: 9912 }) // bind socket to localhost:9912
