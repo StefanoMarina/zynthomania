@@ -1,31 +1,70 @@
-<button id="send">Send Message</button>
-<script type="text/javascript" src="osc-js/lib/osc.min.js"></script>
-<script type="text/javascript">
-  /*const ws = new WebSocket('ws://localhost:9912/');
-  ws.onopen = function() {
-  };*/
-  
-  //const OSC = require('osc-js')
-  /*
-  const osc = new OSC();
-  
-  osc.open({host:'192.168.0.106', port: 9912});
-  */
-  document.getElementById('send').addEventListener('click', function() {
-    const request = new XMLHttpRequest();
-    const url = 'http://192.168.0.106:7000/test';
-    request.open("POST", url);
-    request.send();
+<html>
+  <head>
+    <link href="lnf.css" rel="stylesheet">
+    <!-- <link href="boostrap-4.0/bootstrap.min.css" rel="stylesheet"> -->
+    <script src="jquery/dist/jquery.min.js"></script>
+  </head>
 
-    request.onload = (e) => {
-        alert(request.response);
-    }
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-8">
+          <button class="bar-1 btn" id="btnBanks"><a>Banks</a></button>
+          <button class="bar-1 btn" id=""><a>FX</a></button>
+          <button class="bar-1 btn" id=""><a>OSC</a></button>
+          <button class="bar-1 btn" id=""><a>Presets</a></button>
+        </div>
+      </div>
+    <p style="font-family: VCROSDMono">Test</p>
+    <button id="send">Send Message</button>
+    
+    <script type="text/javascript">
+      /*const ws = new WebSocket('ws://localhost:9912/');
+      ws.onopen = function() {
+      };*/
+      
+      //const OSC = require('osc-js')
+      /*
+      const osc = new OSC();
+      
+      osc.open({host:'192.168.0.106', port: 9912});
+      */
+      document.getElementById('send').addEventListener('click', function() {
+        const request = new XMLHttpRequest();
+        const url = 'http://192.168.0.106:7000/test';
+        request.open("POST", url);
+        request.send();
 
-    //var message = new OSC.Message('/test/random', Math.random());
-    //osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'))
-    //osc.send(message);
-  });
-  
-  
-  
-</script>
+        request.onload = (e) => {
+            alert(request.response);
+        }
+
+        //var message = new OSC.Message('/test/random', Math.random());
+        //osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'))
+        //osc.send(message);
+      });      
+    </script>
+    
+    <script type="text/javascript">
+      /* Bank button load */
+      function onBanksButtonClick() {
+          $.ajax({method:'get', dataType: 'json', url: window.location.href+"getBanks"})
+          .done (function(data){ console.log('hey, it worked!'); console.log(data)})
+          .fail(function(){console.log('...and failed.')});
+      }
+      
+      /* Init */
+      $(document).ready(function() {
+          $('.bar-1').on('click', function() {
+            console.log('test');
+            $('.bar-1').removeClass('btn-selected');
+            $(this).addClass('btn-selected');
+            
+          });
+          
+          $('#btnBanks').on('click', function() { onBanksButtonClick(); });
+      });
+    </script>
+    </div>
+  </body>
+</html>

@@ -1,16 +1,35 @@
 const WebSocketServer = require('websocket').server;
 const OSC = require('osc-js');
 const EXPRESS = require('express');
-
 const app = EXPRESS();
-
+const fs = require('fs');
 
 //express html server (7000)
 
 app.use(EXPRESS.static(__dirname + '/node_modules'));  
-//app.use(EXPRESS.static(__dirname + '/assets'));
+app.use(EXPRESS.static(__dirname + '/assets'));
+
 app.get('/', function(req, res,next) {  
     res.sendFile(__dirname + '/index.html');
+});
+
+//get REST: list all banks
+app.get('/getBanks', function (req, res, next) {
+  console.log('called ::getBanks get');
+    
+  const defaultpath="/usr/local/share/zynaddsubfx/banks/";
+  var result = ['Favorites', 'Custom'];
+  var error = false;
+  
+  var files = fs.readdirSync (defaultpath)
+                .filter(function (file) {
+                    return fs.statSync(defaultpath+'/'+file).isDirectory();
+                });
+    
+  
+   
+  files.forEach(file => { result.push(file); });
+  res.json({status: error, list: result});
 });
 
 app.post('/test', function (req, res, next) {
