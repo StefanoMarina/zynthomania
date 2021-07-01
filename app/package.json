@@ -13,6 +13,7 @@
   "author": "Stefano Marina",
   "license": "MIT",
   "dependencies": {
-    "osc-js": "^2.1.2"
+    "osc-js": "^2.1.2",
+    "express": "^4.17.1"
   }
 }
