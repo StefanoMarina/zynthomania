@@ -13,6 +13,11 @@ app.get('/', function(req, res,next) {
     res.sendFile(__dirname + '/index.html');
 });
 
+app.post('/test', function (req, res, next) {
+  console.log('post request');
+  osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: 7777 }) 
+});
+
 app.on('open', () => {
   console.log ("Opened web application");
 });

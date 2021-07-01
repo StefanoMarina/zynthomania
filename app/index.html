@@ -6,13 +6,26 @@
   };*/
   
   //const OSC = require('osc-js')
+  /*
   const osc = new OSC();
   
   osc.open({host:'192.168.0.106', port: 9912});
+  */
   document.getElementById('send').addEventListener('click', function() {
+    const request = new XMLHttpRequest();
+    const url = 'http://192.168.0.106:7000/test';
+    request.open("POST", url);
+    request.send();
+
+    request.onload = (e) => {
+        alert(request.response);
+    }
+
     //var message = new OSC.Message('/test/random', Math.random());
-    osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'))
+    //osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'))
     //osc.send(message);
   });
+  
+  
   
 </script>
