@@ -5,17 +5,16 @@ const EXPRESS = require('express');
 const fs = require('fs');
 const Util = require ('util');
 
-const DEFAULT_PATH="/usr/local/share/zynaddsubfx/banks/";
 // Preferences >
-var preferences = {};
-console.log("Reading preferences...");
+var Preferences = {};
+console.log("Reading Preferences...");
 try {
   let data = fs.readFileSync('preferences.json', 'utf-8');
-  preferences = JSON.parse(data);
+  Preferences = JSON.parse(data);
   
 } catch (err) {
-  console.log(`Could not read preferences.json : ${err}`);
-  preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom" }
+  console.log(`Could not read Preferences.json : ${err}`);
+  Preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom", "bank_dir": "/usr/local/share/zynaddsubfx/banks/" }
 }
 // < Preferences
 
@@ -33,40 +32,74 @@ app.get('/', function(req, res,next) {
     res.sendFile(__dirname + '/index.html');
 });
 
-//get REST: list all banks
+/**
+ * getBanks
+ * GET request to retrieve all bank folder
+ */
 app.get('/getBanks', function (req, res, next) {
   console.log('called ::getBanks get');
     
   var bankList = ['Favorites', 'Custom'];
-  var error = false;
-  
-  var files = fs.readdirSync (DEFAULT_PATH)
+  var files = fs.readdirSync (Preferences.bank_dir)
                 .filter(function (file) {
-                    return fs.statSync(DEFAULT_PATH+'/'+file).isDirectory();
+                    return fs.statSync(Preferences.bank_dir+'/'+file).isDirectory();
                 });
   
   files.forEach(file => { bankList.push(file); });
-  res.json({status: error, result: bankList});
+  res.json(bankList);
 });
 
-//get REST: list all patches
+/**
+ * getPatches
+ * GET request to retrieve all .xiz file inside a folder
+ */
 app.get('/getPatches', function (req, res, next) {
-  console.log('called get ::getPatches');
-  console.log(Util.inspect(req.query));
+  console.log('called get ::getPatches for ' + req.query.bank);
+  //console.log(req.query);
   
+  let requestedBank = req.query.bank;
   
-  //console.log(JSON.stringify(req.body));
-  //console.log ('url: ' + req.url);
-  
-
-  
-  //for (i in req.body) {console.log(i)}
-  //console.log("bank: " + JSON.stringify(req));
+  if ('Favorites' == requestedBank) {
+  } else if ('Custom' == requestedBank) {
+    
+  } else {
+    var fullpath = Preferences.bank_dir + requestedBank;
+    var result = [];
+    
+    var files = fs.readdirSync (fullpath)
+                .filter(function (file) {
+                    return !fs.statSync(fullpath+'/'+file).isDirectory();
+                });
+        
+    var regex = /\d*\-?([^\.]+)\.xiz/;
+    
+    files.forEach(file => {
+       let match = regex.exec(file);
+       let name = "";
+       
+       if (match !== null)
+         name = match[1];
+       else
+         name = file;
+      result.push ({"name": name, path: fullpath+'/'+file});   
+    });
+    
+    res.json(result);
+  }
 });
 
-app.post('/test', function (req, res, next) {
+/**
+ * setPatch
+ * POST loads xiz
+ */
+app.post('/setPatch', function (req, res) {
   console.log('post request');
-  osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: preferences.synth.port }) 
+  
+  var patch=req.body.patch;
+  console.log(`patch: ${patch}`);
+  
+  osc.send(new OSC.Message('/load_xiz', 0, patch), { port: Preferences.synth.port })
+  res.status(200).send("OK");
 });
 
 app.on('open', () => {
@@ -82,6 +115,7 @@ server.listen(7000);
 
 
 //Websocket
+/*
 const wsocket = new WebSocketServer({httpServer:server});
 wsocket.on('request', function(message) {
   const connection = request.accept(null, request.origin);
@@ -92,10 +126,10 @@ wsocket.on('request', function(message) {
      connection.on('close', function(reasonCode, description) {
         console.log('Client has disconnected.');
     });
-});
+});*/
 
 //OSC bridge 9912 - 7777 (synth))
-const options = { send: { port: preferences.synth.port } }
+const options = { send: { port: Preferences.synth.port } }
 const osc = new OSC({ plugin: new OSC.DatagramPlugin(options) })
 
 osc.on('open', () => {

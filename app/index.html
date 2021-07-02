@@ -9,7 +9,7 @@
     <div class="container">
       <div class="row">
         <div class="col-xs-10">
-          <header class="col">
+          <header class="row">
             <button class="bar-1 btn" id="btnBanks"><a>Banks</a></button>
             <button class="bar-1 btn" id=""><a>FX</a></button>
             <button class="bar-1 btn" id=""><a>OSC</a></button>
@@ -18,8 +18,8 @@
           
           <!--panels-->
           <div id="pnlBanks" class="row controlPanel hidden">
-              <select id="selBanks" class="col-xs-6" size="10"></select>
-              <select id="selPatches" class="col-xs-6 hidden" size="10"></select>
+              <select id="selBanks" class="col-xs-5" size="10"></select>
+              <select id="selPatches" class="col-xs-5 hidden" size="10"></select>
           </div>
           
         </div> <!--col-10 -->
@@ -27,33 +27,7 @@
         </aside>
       </div> <!-- main row -->
     </div> <!--container-->
-    
-    <script type="text/javascript">
-      /*const ws = new WebSocket('ws://localhost:9912/');
-      ws.onopen = function() {
-      };*/
-      
-      //const OSC = require('osc-js')
-      /*
-      const osc = new OSC();
-      
-      osc.open({host:'192.168.0.106', port: 9912});
-      */
-      document.getElementById('send').addEventListener('click', function() {
-        const request = new XMLHttpRequest();
-        const url = 'http://192.168.0.106:7000/test';
-        request.open("POST", url);
-        request.send();
 
-        request.onload = (e) => {
-            alert(request.response);
-        }
-
-        //var message = new OSC.Message('/test/random', Math.random());
-        //osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'))
-        //osc.send(message);
-      });      
-    </script>
     
     <script type="text/javascript">
       
@@ -63,13 +37,15 @@
           .done (function(data){ 
             console.log('hey, it worked!'); console.log(data)
             /*TODO: check result*/
-            banks = data.result;
+            let banks = data;
             let entry = '';
             let selectObject = $('#selBanks');
             selectObject.empty();
             
             banks.forEach( (value, index, array) => {
-               selectObject.append("<option value="+value+">"+value+"</option>");
+               let option = "<option value=\""+value+"\">"+value+'</option>';
+               console.log(option);
+               selectObject.append(option);
              });
              
              $('.controlPanel').addClass('hidden');
@@ -90,19 +66,27 @@
           .done (function(data){ 
             console.log('hey, it worked!'); console.log(data)
             /*TODO: check result*/
-            banks = data.result;
+            let patches = data;
             let entry = '';
-            let selectObject = $('#selBanks');
+            let selectObject = $('#selPatches');
             selectObject.empty();
             
-            banks.forEach( (value, index, array) => {
-               selectObject.append("<option value="+value+">"+value+"</option>");
+            patches.forEach( (value, index, array) => {
+               selectObject.append("<option value=\""+value.path+"\">"+value.name+"</option>");
              });
              
-             $('.controlPanel').addClass('hidden');
-             $('#pnlBanks').removeClass('hidden');
+             selectObject.removeClass('hidden');
+             
            })
           .fail(function(){console.log('...and failed.')});
+      }
+      
+      function onPatchSelection(patch) {
+        $.ajax({method:'post', url: window.location.href+"setPatch",
+                data: JSON.stringify({"patch":patch}), 
+                contentType: 'application/json; charset=utf-8'})
+                .done( function() {})
+                .fail( function() {console.log('...and failed.')});
       }
       
       /* Init */
@@ -116,6 +100,9 @@
           
           $('#btnBanks').on('click', function() { onBanksButtonClick(); });
           $('#selBanks').on('change', function() { onBankSelection(); });
+          $('#selPatches').on('change', function() {
+            onPatchSelection($('#selPatches').val());
+          });
       });
     </script>
   </body>
