@@ -37,7 +37,7 @@ app.get('/', function(req, res,next) {
  * GET request to retrieve all bank folder
  */
 app.get('/getBanks', function (req, res, next) {
-  console.log('called ::getBanks get');
+  console.log(`[GET] getBanks query: ${JSON.stringify(req.query)}`);
     
   var bankList = ['Favorites', 'Custom'];
   var files = fs.readdirSync (Preferences.bank_dir)
@@ -54,8 +54,7 @@ app.get('/getBanks', function (req, res, next) {
  * GET request to retrieve all .xiz file inside a folder
  */
 app.get('/getPatches', function (req, res, next) {
-  console.log('called get ::getPatches for ' + req.query.bank);
-  //console.log(req.query);
+  console.log(`[GET] getPatches query: ${JSON.stringify(req.query)}`);
   
   let requestedBank = req.query.bank;
   
@@ -93,10 +92,9 @@ app.get('/getPatches', function (req, res, next) {
  * POST loads xiz
  */
 app.post('/setPatch', function (req, res) {
-  console.log('post request');
+  console.log(`[POST] /setPatch body: ${JSON.stringify(req.body)}`);
   
   var patch=req.body.patch;
-  console.log(`patch: ${patch}`);
   
   osc.send(new OSC.Message('/load_xiz', 0, patch), { port: Preferences.synth.port })
   res.status(200).send("OK");
