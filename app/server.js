@@ -1,13 +1,33 @@
 const WebSocketServer = require('websocket').server;
+const BodyParser = require('body-parser');
 const OSC = require('osc-js');
 const EXPRESS = require('express');
-const app = EXPRESS();
 const fs = require('fs');
+const Util = require ('util');
+
+const DEFAULT_PATH="/usr/local/share/zynaddsubfx/banks/";
+// Preferences >
+var preferences = {};
+console.log("Reading preferences...");
+try {
+  let data = fs.readFileSync('preferences.json', 'utf-8');
+  preferences = JSON.parse(data);
+  
+} catch (err) {
+  console.log(`Could not read preferences.json : ${err}`);
+  preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom" }
+}
+// < Preferences
+
+
+const app = EXPRESS();
 
 //express html server (7000)
-
 app.use(EXPRESS.static(__dirname + '/node_modules'));  
 app.use(EXPRESS.static(__dirname + '/assets'));
+
+app.use (BodyParser.json());
+app.use (BodyParser.urlencoded({extended:false}));
 
 app.get('/', function(req, res,next) {  
     res.sendFile(__dirname + '/index.html');
@@ -17,24 +37,36 @@ app.get('/', function(req, res,next) {
 app.get('/getBanks', function (req, res, next) {
   console.log('called ::getBanks get');
     
-  const defaultpath="/usr/local/share/zynaddsubfx/banks/";
-  var result = ['Favorites', 'Custom'];
+  var bankList = ['Favorites', 'Custom'];
   var error = false;
   
-  var files = fs.readdirSync (defaultpath)
+  var files = fs.readdirSync (DEFAULT_PATH)
                 .filter(function (file) {
-                    return fs.statSync(defaultpath+'/'+file).isDirectory();
+                    return fs.statSync(DEFAULT_PATH+'/'+file).isDirectory();
                 });
-    
   
-   
-  files.forEach(file => { result.push(file); });
-  res.json({status: error, list: result});
+  files.forEach(file => { bankList.push(file); });
+  res.json({status: error, result: bankList});
+});
+
+//get REST: list all patches
+app.get('/getPatches', function (req, res, next) {
+  console.log('called get ::getPatches');
+  console.log(Util.inspect(req.query));
+  
+  
+  //console.log(JSON.stringify(req.body));
+  //console.log ('url: ' + req.url);
+  
+
+  
+  //for (i in req.body) {console.log(i)}
+  //console.log("bank: " + JSON.stringify(req));
 });
 
 app.post('/test', function (req, res, next) {
   console.log('post request');
-  osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: 7777 }) 
+  osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: preferences.synth.port }) 
 });
 
 app.on('open', () => {
@@ -63,7 +95,7 @@ wsocket.on('request', function(message) {
 });
 
 //OSC bridge 9912 - 7777 (synth))
-const options = { send: { port: 7777 } }
+const options = { send: { port: preferences.synth.port } }
 const osc = new OSC({ plugin: new OSC.DatagramPlugin(options) })
 
 osc.on('open', () => {
@@ -85,13 +117,3 @@ osc.on('*', message => {
 })
 
 osc.open({ port: 9912 }) // bind socket to localhost:9912
-
-var testOSC= new OSC();
-testOSC.on('open', () =>{
-  console.log ("Opened OSC client");
-  testOSC.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: 9912 })
-});
-
-testOSC.open({send: {port: 9912}});
-
-

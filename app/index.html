@@ -1,22 +1,32 @@
 <html>
   <head>
     <link href="lnf.css" rel="stylesheet">
-    <!-- <link href="boostrap-4.0/bootstrap.min.css" rel="stylesheet"> -->
+    <link href="bootstrap-grid.min.css" rel="stylesheet">
     <script src="jquery/dist/jquery.min.js"></script>
   </head>
 
   <body>
     <div class="container">
       <div class="row">
-        <div class="col-8">
-          <button class="bar-1 btn" id="btnBanks"><a>Banks</a></button>
-          <button class="bar-1 btn" id=""><a>FX</a></button>
-          <button class="bar-1 btn" id=""><a>OSC</a></button>
-          <button class="bar-1 btn" id=""><a>Presets</a></button>
-        </div>
-      </div>
-    <p style="font-family: VCROSDMono">Test</p>
-    <button id="send">Send Message</button>
+        <div class="col-xs-10">
+          <header class="col">
+            <button class="bar-1 btn" id="btnBanks"><a>Banks</a></button>
+            <button class="bar-1 btn" id=""><a>FX</a></button>
+            <button class="bar-1 btn" id=""><a>OSC</a></button>
+            <button class="bar-1 btn" id=""><a>Presets</a></button>
+          </header>
+          
+          <!--panels-->
+          <div id="pnlBanks" class="row controlPanel hidden">
+              <select id="selBanks" class="col-xs-6" size="10"></select>
+              <select id="selPatches" class="col-xs-6 hidden" size="10"></select>
+          </div>
+          
+        </div> <!--col-10 -->
+        <aside class="col-xs-2"> <!--aside -->
+        </aside>
+      </div> <!-- main row -->
+    </div> <!--container-->
     
     <script type="text/javascript">
       /*const ws = new WebSocket('ws://localhost:9912/');
@@ -46,10 +56,52 @@
     </script>
     
     <script type="text/javascript">
+      
       /* Bank button load */
       function onBanksButtonClick() {
           $.ajax({method:'get', dataType: 'json', url: window.location.href+"getBanks"})
-          .done (function(data){ console.log('hey, it worked!'); console.log(data)})
+          .done (function(data){ 
+            console.log('hey, it worked!'); console.log(data)
+            /*TODO: check result*/
+            banks = data.result;
+            let entry = '';
+            let selectObject = $('#selBanks');
+            selectObject.empty();
+            
+            banks.forEach( (value, index, array) => {
+               selectObject.append("<option value="+value+">"+value+"</option>");
+             });
+             
+             $('.controlPanel').addClass('hidden');
+             $('#pnlBanks').removeClass('hidden');
+           })
+          .fail(function(){console.log('...and failed.')});
+      }
+      
+      function onBankSelection() {
+        let selectedBank = $('#selBanks').val();
+        console.log('selected ' + selectedBank);
+                
+          $.ajax({method:'get', dataType: 'json', 
+                  url: window.location.href+"getPatches", 
+                  data: {bank: selectedBank},
+                  contentType: 'application/json; charset=utf-8'
+            })
+          .done (function(data){ 
+            console.log('hey, it worked!'); console.log(data)
+            /*TODO: check result*/
+            banks = data.result;
+            let entry = '';
+            let selectObject = $('#selBanks');
+            selectObject.empty();
+            
+            banks.forEach( (value, index, array) => {
+               selectObject.append("<option value="+value+">"+value+"</option>");
+             });
+             
+             $('.controlPanel').addClass('hidden');
+             $('#pnlBanks').removeClass('hidden');
+           })
           .fail(function(){console.log('...and failed.')});
       }
       
@@ -63,8 +115,8 @@
           });
           
           $('#btnBanks').on('click', function() { onBanksButtonClick(); });
+          $('#selBanks').on('change', function() { onBankSelection(); });
       });
     </script>
-    </div>
   </body>
 </html>
