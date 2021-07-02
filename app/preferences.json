@@ -1,0 +1,8 @@
+{
+  "user": "pi",
+  "synth": {
+    "port" : "7777"
+  },
+  "custom_dir": "/home/pi/custom",
+  "bank_dir": "/usr/local/share/zynaddsubfx/banks/"
+}

@@ -1,0 +1,77 @@
+@font-face {
+  font-family: Minecart;
+  src: url('Minecart LCD.ttf');
+}
+
+body {
+  
+  /*Gradient*/
+    background-color: black;
+    background-image: radial-gradient(
+      rgba(204, 204, 0, 0.75), rgb(153,204,0) 120%
+  );
+  height: 100vh;
+}
+
+body, body * {  
+  font-family: Minecart !important;
+  font-size: 24px !important;
+}
+
+.bl {border-left: 2px dotted black;}
+.br {border-right: 2px dotted black;}
+
+/* blurry lines */
+/*
+body::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(black, 0.15),
+    rgba(black, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+   background: -moz-repeating-linear-gradient(
+    0deg,
+    rgba(black, 0.15),
+    rgba(black, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+*/
+.btn { border: 2px dotted black !important;}
+
+.controlPanel { border: 2px dotted black; }
+
+.controlPanel * {
+  font-size: 14px !important;
+}
+
+.hidden {display: none !important}
+
+button, select {
+  background-color: transparent;
+  color: black;
+}
+
+button {
+  border: 2px dotted black;
+  border-bottom: none;
+}
+
+header button { border-right:none !important }
+header button:last-child {border-right: 2px dotted black !important}
+
+button:hover, .btn-selected {
+  background-color: black !important;
+  color: rgba(204, 204, 0) !important;
+}
+
+select {border: none; min-width: 45%}
