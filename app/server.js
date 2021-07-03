@@ -129,14 +129,7 @@ app.get('/getPresets', function (req, res, next) {
        else
          name = file;
          
-      var isFavorite = false;
-      Favorites.forEach( preset => {
-        if (preset.name == name) {
-          isFavorite = true;
-          return;
-        }
-      });
-      result.push ({"name": name, path: fullpath+'/'+file, favorite: isFavorite});
+      result.push ({"name": name, path: fullpath+'/'+file});
     });
   }
   

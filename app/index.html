@@ -45,7 +45,9 @@
     
     <script type="text/javascript">
       window.zsession = {
-        "preset" : {}
+        "preset" : {},
+        "presetList" : {},
+        "bank" : ''
       };
             
       /* create a Preset object */
@@ -56,9 +58,19 @@
         }
         return {
           "path": $(item).attr('data-preset'),
-          "name" : $(item).text(),
-          "favorite" : $(item).attr('data-fav')
+          "name" : $(item).text()
         }
+      }
+      
+      /* Quickie to check if preset if favorite */
+      function isFavorite(preset) {
+        if (window.zsession.presetList.Favorites === undefined ||
+            window.zsession.presetList.Favorites.length == 0)
+        return false;
+        
+        return window.zsession.presetList.Favorites.
+            filter((fav)=> {return fav.path == preset.path})
+            .length > 0;
       }
       
       /* ajax function */
@@ -74,87 +86,96 @@
       
       /* Bank button load */
       function onBanksButtonClick() {
-          $.ajax({method:'get', dataType: 'json', url: window.location.href+"getBanks"})
-          .done (function(data){ 
-            console.log('hey, it worked!'); console.log(data)
-            /*TODO: check result*/
-            let banks = data;
-            let entry = '';
-            let selectObject = $('#selBanks');
-            selectObject.empty();
+        //Banks preloading
+        if (window.zsession.banks === undefined) {
+          doAjax({method:'get', dataType: 'json', url: window.location.href+"getBanks"},
+          function(data) {
+              window.zsession.banks = data;
+              onBanksButtonClick();
+              return;
+          });
+          return;
+        }
+        
+        let banks = window.zsession.banks;
+        let entry = '';
+        let selectObject = $('#selBanks');
+        selectObject.empty();
             
-            banks.forEach( (value, index, array) => {
-               let option = "<li data-bank=\""+value+"\">"+value+'</li>';
-              // console.log(option);
-               selectObject.append(option);
-             });
+        banks.forEach( (value, index, array) => {
+           let option = "<li data-bank=\""+value+"\">"+value+'</li>';
+          // console.log(option);
+           selectObject.append(option);
+         });
              
-             $('.controlPanel').addClass('hidden');
-             $('#pnlBanks').removeClass('hidden');
-           })
-          .fail(function(){console.log('...and failed.')});
+         $('.controlPanel').addClass('hidden');
+         $('#pnlBanks').removeClass('hidden');
       }
       
       function onBankSelection(selectedBank) {
-        //let selectedBank = $('#selBanks').val();
-        console.log('selected ' + selectedBank);
-                
-          $.ajax({method:'get', dataType: 'json', 
+        if (window.zsession.presetList[selectedBank] === undefined) {
+          doAjax({method:'get', dataType: 'json', 
                   url: window.location.href+"getPresets", 
                   data: {bank: selectedBank},
                   contentType: 'application/json; charset=utf-8'
-            })
-          .done (function(data){ 
-            console.log('hey, it worked!'); console.log(data)
-            /*TODO: check result*/
-            let presets = data;
-            let entry = '';
-            let selectObject = $('#selPresets');
-            selectObject.empty();
-            
-            presets.forEach( (value, index, array) => {
-              let entry = `<li data-preset="${value.path}" data-fav="${value.favorite}">${value.name}`;
-              //let entry = "<li data-preset=\""+value.path+"\">"+value.name;
-              
-              if (value.favorite)
-                entry += '<span style="float:right"><i class="fas fa-star"></i></span>';
+            }, function(data){
+              window.zsession.presetList[selectedBank] = data;
+              onBankSelection(selectedBank);
+              return;
+            });
+          return;
+        }
+        
+        window.zsession.bank = selectedBank;
+        
+        let presets = window.zsession.presetList[selectedBank];
+        let entry = '';
+        let selectObject = $('#selPresets');
+        selectObject.empty();
+        
+        presets.forEach( (value, index, array) => {
+          let entry = `<li data-preset="${value.path}">${value.name}`;
                 
-               selectObject.append(entry+"</li>");
-             });
-             
-             selectObject.removeClass('hidden');
-             
-           })
-          .fail(function(){console.log('...and failed.')});
+          if (isFavorite(value))
+            entry += '<span style="float:right"><i class="fas fa-star"></i></span>';
+            
+           selectObject.append(entry+"</li>");
+           selectObject.removeClass('hidden');
+        });
       }
       
       function onPresetSelection(preset) {
-        
-        $.ajax({method:'post', url: window.location.href+"loadPreset",
+        doAjax({method:'post', url: window.location.href+"loadPreset",
                 data: JSON.stringify({"preset":preset}), 
-                contentType: 'application/json; charset=utf-8'})
-                .done( 
-                  function() {
-                    $('#presetName').text(preset.name);
-                    //$('#currentPreset').val(JSON.stringify(preset));
-                    window.zsession.preset = preset;
-                    
-                    $('#btnDoFavorite i').removeClass('far fas');
-                    $('#btnDoFavorite i').addClass((preset.favorite=='true') 
-                                          ? 'fas' : 'far'); 
-                  }
-                )
-                .fail( function() {console.log('...and failed.')});
+                contentType: 'application/json; charset=utf-8'},
+                function(){
+             $('#presetName').text(preset.name);
+                window.zsession.preset = preset;    
+                $('#btnDoFavorite i').removeClass('far fas');
+                $('#btnDoFavorite i').addClass( (isFavorite(preset)) 
+                                          ? 'fas' : 'far');        
+        });
       }
       
       function setFavorite (preset, value) {
         let action = (value) ? 'set' : 'unset';
         
+        //First, we update server
         doAjax({method:'post', url: window.location.href+"setFavorite",
                 data: JSON.stringify({"preset":preset, "action": action}), 
                 contentType: 'application/json; charset=utf-8'},
-        function(data) {
+        function() {
           
+          //Then we update client, without ajax
+          if (!value) {
+            window.zsession.presetList.Favorites = 
+            window.zsession.presetList.Favorites.filter( (entry) => {
+              return (entry.path != preset.path);});
+          } else {
+            window.zsession.presetList.Favorites.push(preset);
+          }
+          
+          //last we update display
           if (preset.name == window.zsession.preset.name) {
             $('#btnDoFavorite i').removeClass('far fas');
             $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
@@ -188,7 +209,6 @@
             //$(eventId).val(item.text());
           });
           
-          
           $('#btnBanks').on('click', function() { onBanksButtonClick(); });
           
           $('#selBanks').on('click', 'li', function(e) {
@@ -200,19 +220,24 @@
                   || 'i' == $(e.target).prop('tagName').toLowerCase()) {
                     
               let preset = listToPreset($(e.target).closest('li'));
-              
-              setFavorite(
-                preset,
-                $(e.target).hasClass('far'));
+              setFavorite(preset, false);
             } else
               onPresetSelection(listToPreset($(e.target)));
           });
           
           $('#btnDoFavorite').on('click', function(){
             let preset = window.zsession.preset;
-            setFavorite(preset, (preset.favorite == 'false'));
+            setFavorite(preset, (!isFavorite(preset)));
           });
          
+         doAjax({method:'get', dataType: 'json', 
+                  url: window.location.href+"getPresets", 
+                  data: {bank: 'Favorites'},
+                  contentType: 'application/json; charset=utf-8'},
+          function(data) {
+              window.zsession.presetList.Favorites = data;
+              $('#presetName').text('Welcome to Zynthomania!');
+          });
       });
     </script>
   </body>
