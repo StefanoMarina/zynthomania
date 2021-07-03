@@ -1,15 +1,20 @@
-const WebSocketServer = require('websocket').server;
 const BodyParser = require('body-parser');
 const OSC = require('osc-js');
 const EXPRESS = require('express');
-const fs = require('fs');
+const Fs = require('fs');
 const Util = require ('util');
+
+async function fileExists(path) {
+  try { await Fs.access(path); return true;}
+  catch {return false;}
+}
 
 // Preferences >
 var Preferences = {};
 console.log("Reading Preferences...");
+
 try {
-  let data = fs.readFileSync('preferences.json', 'utf-8');
+  let data = Fs.readFileSync('preferences.json', 'utf-8');
   Preferences = JSON.parse(data);
   
 } catch (err) {
@@ -18,6 +23,45 @@ try {
 }
 // < Preferences
 
+//Favorites >
+var Favorites = {};
+console.log('Loading favorites...');
+if (fileExists(Preferences.favorites)) {
+  try {
+    let data = Fs.readFileSync(Preferences.favorites);
+    Favorites = JSON.parse(data);
+  } catch (err) {
+    console.log (`Cannot read favorites: ${err}`);
+    Favorites = [];
+  }
+} else {
+  Favorites = [];
+}
+
+function addFavorite(entry) {
+  for ( item in Favorites ) {
+    if (item.path == entry.path)
+      return 200;
+  }
+  Favorites.push(entry);
+  //save changes
+  Fs.writeFileSync(Preferences.favorites, JSON.stringify(Favorites));
+  return 200;
+}
+
+function removeFavorite(entry) {
+  var newFavs = Favorites.filter(item => item.path != entry.path);
+  
+  if (Favorites.length == newFavs.length)
+    return 404;
+  else {
+    Favorites = newFavs;
+    Fs.writeFileSync(Preferences.favorites, JSON.stringify(Favorites));
+    return 200;
+  }
+}
+
+// < Favorites
 
 const app = EXPRESS();
 
@@ -32,6 +76,10 @@ app.get('/', function(req, res,next) {
     res.sendFile(__dirname + '/index.html');
 });
 
+/************************
+ * REST CALLBACKS
+ ************************/
+ 
 /**
  * getBanks
  * GET request to retrieve all bank folder
@@ -40,9 +88,9 @@ app.get('/getBanks', function (req, res, next) {
   console.log(`[GET] getBanks query: ${JSON.stringify(req.query)}`);
     
   var bankList = ['Favorites', 'Custom'];
-  var files = fs.readdirSync (Preferences.bank_dir)
+  var files = Fs.readdirSync (Preferences.bank_dir)
                 .filter(function (file) {
-                    return fs.statSync(Preferences.bank_dir+'/'+file).isDirectory();
+                    return Fs.statSync(Preferences.bank_dir+'/'+file).isDirectory();
                 });
   
   files.forEach(file => { bankList.push(file); });
@@ -50,24 +98,24 @@ app.get('/getBanks', function (req, res, next) {
 });
 
 /**
- * getPatches
+ * getPresets
  * GET request to retrieve all .xiz file inside a folder
  */
-app.get('/getPatches', function (req, res, next) {
-  console.log(`[GET] getPatches query: ${JSON.stringify(req.query)}`);
+app.get('/getPresets', function (req, res, next) {
+  console.log(`[GET] getPresets query: ${JSON.stringify(req.query)}`);
   
   let requestedBank = req.query.bank;
+  var result = [];
   
   if ('Favorites' == requestedBank) {
+    result = Favorites;
   } else if ('Custom' == requestedBank) {
     
   } else {
-    var fullpath = Preferences.bank_dir + requestedBank;
-    var result = [];
-    
-    var files = fs.readdirSync (fullpath)
+    var fullpath = Preferences.bank_dir + requestedBank;  
+    var files = Fs.readdirSync (fullpath)
                 .filter(function (file) {
-                    return !fs.statSync(fullpath+'/'+file).isDirectory();
+                    return !Fs.statSync(fullpath+'/'+file).isDirectory();
                 });
         
     var regex = /\d*\-?([^\.]+)\.xiz/;
@@ -80,24 +128,48 @@ app.get('/getPatches', function (req, res, next) {
          name = match[1];
        else
          name = file;
-      result.push ({"name": name, path: fullpath+'/'+file});   
+         
+      var isFavorite = false;
+      Favorites.forEach( preset => {
+        if (preset.name == name) {
+          isFavorite = true;
+          return;
+        }
+      });
+      result.push ({"name": name, path: fullpath+'/'+file, favorite: isFavorite});
     });
-    
-    res.json(result);
   }
+  
+  res.json(result);
 });
 
 /**
- * setPatch
+ * loadPreset
  * POST loads xiz
+ * BODY {preset: preset}
  */
-app.post('/setPatch', function (req, res) {
-  console.log(`[POST] /setPatch body: ${JSON.stringify(req.body)}`);
+app.post('/loadPreset', function (req, res) {
+  console.log(`[POST] /loadPreset body: ${JSON.stringify(req.body)}`);
   
-  var patch=req.body.patch;
+  var preset=req.body.preset;
   
-  osc.send(new OSC.Message('/load_xiz', 0, patch), { port: Preferences.synth.port })
+  osc.send(new OSC.Message('/load_xiz', 0, preset.path), { port: Preferences.synth.port })
   res.status(200).send("OK");
+});
+
+/**
+ * setFavorite
+ * POST set/unset favorite
+ * Body {action :"set/unset", preset : {Preset} }
+ */
+app.post('/setFavorite', function (req, res) {
+  console.log(`[POST] /setFavorite body: ${JSON.stringify(req.body)}`);
+  
+  if (req.body.action == 'set') {
+    res.status(addFavorite(req.body.preset)).send("Done");
+  } else {
+    res.status(removeFavorite(req.body.preset)).send("Done");
+  }
 });
 
 app.on('open', () => {

@@ -5,12 +5,24 @@
   <head>
     <link href="lnf.css" rel="stylesheet">
     <link href="bootstrap-grid.min.css" rel="stylesheet">
+    <link href="fontawesome-5-css/css/fontawesome-all.css" rel="stylesheet">
     <script src="jquery/dist/jquery.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
 
   <body>
+    <input id="currentPreset" type="hidden">
+    
     <div class="container">
+      <div class="row">
+        <div class="col-10 col-xs-10">
+          <h3 id="presetName">Welcome to Zynthomania!</h3>
+        </div>
+        <div class="col-2 col-xs-2">
+          <h3><span id="btnDoFavorite"><i class="far fa-star"></i></span>
+          </h3>
+        </div>
+      </div>
       <div class="row">
         <div class="col-xs-10">
           <header class="d-flex flex-row">
@@ -21,19 +33,44 @@
           </header>
           
           <!--panels-->
-          <div id="pnlBanks" class="d-flex flex-row controlPanel hidden">
-              <ul id="selBanks" class="select col-xs-6"></ul>
-              <ul id="selPatches" class="select col-xs-6 hidden"></ul>
+          <div id="pnlBanks" class="row controlPanel hidden">
+              <ul id="selBanks" class="select col-6 col-xs-6"></ul>
+              <ul id="selPresets" class="select col-6 col-xs-6 hidden"></ul>
           </div>
           
         </div> <!--col-10 -->
-        <aside class="col-xs-2"> <!--aside -->
-        </aside>
       </div> <!-- main row -->
     </div> <!--container-->
 
     
     <script type="text/javascript">
+      window.zsession = {
+        "preset" : {}
+      };
+            
+      /* create a Preset object */
+      function listToPreset(item) {
+        if ('li' != $(item).prop('tagName').toLowerCase()) {
+          console.log('Error: cannot translate item ' + $(item).prop('tagName'));
+          return;
+        }
+        return {
+          "path": $(item).attr('data-preset'),
+          "name" : $(item).text(),
+          "favorite" : $(item).attr('data-fav')
+        }
+      }
+      
+      /* ajax function */
+      function doAjax(params, onDone) {
+        $.ajax(params)
+        .done(function(data) {
+            onDone(data);
+          })
+        .fail( function(jqXHR, textStatus, errorThrown) {
+          $('#presetName').text(`Error #${errorThrown}`);  
+        });
+      }
       
       /* Bank button load */
       function onBanksButtonClick() {
@@ -63,20 +100,26 @@
         console.log('selected ' + selectedBank);
                 
           $.ajax({method:'get', dataType: 'json', 
-                  url: window.location.href+"getPatches", 
+                  url: window.location.href+"getPresets", 
                   data: {bank: selectedBank},
                   contentType: 'application/json; charset=utf-8'
             })
           .done (function(data){ 
             console.log('hey, it worked!'); console.log(data)
             /*TODO: check result*/
-            let patches = data;
+            let presets = data;
             let entry = '';
-            let selectObject = $('#selPatches');
+            let selectObject = $('#selPresets');
             selectObject.empty();
             
-            patches.forEach( (value, index, array) => {
-               selectObject.append("<li data-patch=\""+value.path+"\">"+value.name+"</li>");
+            presets.forEach( (value, index, array) => {
+              let entry = `<li data-preset="${value.path}" data-fav="${value.favorite}">${value.name}`;
+              //let entry = "<li data-preset=\""+value.path+"\">"+value.name;
+              
+              if (value.favorite)
+                entry += '<span style="float:right"><i class="fas fa-star"></i></span>';
+                
+               selectObject.append(entry+"</li>");
              });
              
              selectObject.removeClass('hidden');
@@ -85,13 +128,48 @@
           .fail(function(){console.log('...and failed.')});
       }
       
-      function onPatchSelection(patch) {
-        $.ajax({method:'post', url: window.location.href+"setPatch",
-                data: JSON.stringify({"patch":patch}), 
+      function onPresetSelection(preset) {
+        
+        $.ajax({method:'post', url: window.location.href+"loadPreset",
+                data: JSON.stringify({"preset":preset}), 
                 contentType: 'application/json; charset=utf-8'})
-                .done( function() {})
+                .done( 
+                  function() {
+                    $('#presetName').text(preset.name);
+                    //$('#currentPreset').val(JSON.stringify(preset));
+                    window.zsession.preset = preset;
+                    
+                    $('#btnDoFavorite i').removeClass('far fas');
+                    $('#btnDoFavorite i').addClass((preset.favorite=='true') 
+                                          ? 'fas' : 'far'); 
+                  }
+                )
                 .fail( function() {console.log('...and failed.')});
       }
+      
+      function setFavorite (preset, value) {
+        let action = (value) ? 'set' : 'unset';
+        
+        doAjax({method:'post', url: window.location.href+"setFavorite",
+                data: JSON.stringify({"preset":preset, "action": action}), 
+                contentType: 'application/json; charset=utf-8'},
+        function(data) {
+          
+          if (preset.name == window.zsession.preset.name) {
+            $('#btnDoFavorite i').removeClass('far fas');
+            $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
+          }
+          
+          let li = $('#selPresets li.btn-selected');
+          if (li !== undefined && li.attr('data-preset') == preset.path) {
+            $(li).empty();
+            $(li).text(preset.name);
+            if (value)
+              $(li).append('<span style="float:right"><i class="fas fa-star"></i></span>');
+          }
+        });
+      }
+      
       
       /* Init */
       $(document).ready(function() {
@@ -99,7 +177,6 @@
             console.log('test');
             $('.bar-1').removeClass('btn-selected');
             $(this).addClass('btn-selected');
-            
           });
           
           //Double filter is necessary or new elements won't be looked up
@@ -117,8 +194,23 @@
           $('#selBanks').on('click', 'li', function(e) {
             onBankSelection($(e.target).attr('data-bank'));
           });
-          $('#selPatches').on('click', 'li', function(e) {
-            onPatchSelection($(e.target).attr('data-patch'));
+          $('#selPresets').on('click', 'li', function(e) {
+            
+            if ('span' == $(e.target).prop('tagName').toLowerCase()
+                  || 'i' == $(e.target).prop('tagName').toLowerCase()) {
+                    
+              let preset = listToPreset($(e.target).closest('li'));
+              
+              setFavorite(
+                preset,
+                $(e.target).hasClass('far'));
+            } else
+              onPresetSelection(listToPreset($(e.target)));
+          });
+          
+          $('#btnDoFavorite').on('click', function(){
+            let preset = window.zsession.preset;
+            setFavorite(preset, (preset.favorite == 'false'));
           });
          
       });

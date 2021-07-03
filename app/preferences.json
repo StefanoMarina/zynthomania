@@ -3,6 +3,7 @@
   "synth": {
     "port" : "7777"
   },
-  "custom_dir": "/home/pi/custom",
+  "custom_dir": "/home/pi/zynthomania/custom",
+  "favorites": "/home/pi/zynthomania/favorites.json",
   "bank_dir": "/usr/local/share/zynaddsubfx/banks/"
 }
