@@ -76,6 +76,15 @@ app.get('/', function(req, res,next) {
     res.sendFile(__dirname + '/index.html');
 });
 
+/**
+ * FX DryOut
+ * Sends OSC message to remove any part fx on instrument 0
+ */
+ 
+app.fxDryout = function() {
+  osc.send (new OSC.Message("/part0/Pefxbypass[0-2]"), { port: Preferences.synth.port });
+}
+  
 /************************
  * REST CALLBACKS
  ************************/
@@ -136,6 +145,7 @@ app.get('/getPresets', function (req, res, next) {
   res.json(result);
 });
 
+
 /**
  * loadPreset
  * POST loads xiz
@@ -147,9 +157,18 @@ app.post('/loadPreset', function (req, res) {
   var preset=req.body.preset;
   
   osc.send(new OSC.Message('/load_xiz', 0, preset.path), { port: Preferences.synth.port })
-  res.status(200).send("OK");
 });
 
+/**
+ * dryOut
+ * POST sends OSC to stop all part fx
+ * BODY : {}
+ */
+ app.post('/dryOut', function(req, res) {
+     console.log(`[POST] /dryOut body: ${JSON.stringify(req.body)}`);
+    app.fxDryout();
+  });
+  
 /**
  * setFavorite
  * POST set/unset favorite
@@ -177,38 +196,15 @@ const server = require('http').createServer(app);
 server.listen(7000);
 
 
-//Websocket
-/*
-const wsocket = new WebSocketServer({httpServer:server});
-wsocket.on('request', function(message) {
-  const connection = request.accept(null, request.origin);
-  connection.on('message', function(message) {
-      console.log('Received Message:', message.utf8Data);
-      //connection.sendUTF('Hi this is WebSocket server!');
-    });
-     connection.on('close', function(reasonCode, description) {
-        console.log('Client has disconnected.');
-    });
-});*/
-
 //OSC bridge 9912 - 7777 (synth))
 const options = { send: { port: Preferences.synth.port } }
 const osc = new OSC({ plugin: new OSC.DatagramPlugin(options) })
 
 osc.on('open', () => {
   console.log ("Opened OSC Server");
-  // send only this message to `localhost:9002`
- // osc.send(new OSC.Message('/load_xiz', 0, '/usr/local/share/zynaddsubfx/banks/Brass/0001-FM Thrumpet.xiz'), { port: 7777 })
-/*
-  setInterval(() => {
-     // send these messages to `localhost:11245`
-     osc.send(new OSC.Message('/response', Math.random()))
-  }, 1000)
-  */
 })
 
-
-osc.on('*', message => {
+osc.on('message', message => {
   //console.log("Message received.");
   console.log('received message :' + JSON.stringify(message));
 })
