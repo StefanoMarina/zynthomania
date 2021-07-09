@@ -1,5 +1,5 @@
 const BodyParser = require('body-parser');
-const OSC = require('osc-js');
+const Osc = require('osc');
 const EXPRESS = require('express');
 const Fs = require('fs');
 const Util = require ('util');
@@ -82,7 +82,17 @@ app.get('/', function(req, res,next) {
  */
  
 app.fxDryout = function() {
-  osc.send (new OSC.Message("/part0/Pefxbypass[0-2]"), { port: Preferences.synth.port });
+  let bundle = {
+    timeTag: {raw: [0,1], native: Number},
+    packets: [
+      { address: "/part0/Pefxbypass0",  args: [ { type: 'T', value: true } ] },
+      { address: "/part0/Pefxbypass1",  args: [ { type: 'T', value: true } ] },
+      { address: "/part0/Pefxbypass2",  args: [ { type: 'T', value: true } ] }
+    ]
+  }
+  
+  osc.send(bundle);
+  //osc.send (new OSC.Message("/part0/Pefxbypass[0-2]"), { port: Preferences.synth.port });
 }
   
 /************************
@@ -156,7 +166,15 @@ app.post('/loadPreset', function (req, res) {
   
   var preset=req.body.preset;
   
-  osc.send(new OSC.Message('/load_xiz', 0, preset.path), { port: Preferences.synth.port })
+  let msg = {
+        address: '/load_xiz',
+        args: [
+            { type: 'i', value: 0 },
+            { type: 's', value: preset.path }
+        ]
+    };
+    osc.send(msg);
+//  osc.send(new OSC.Message('/load_xiz', 0, preset.path), { port: Preferences.synth.port })
 });
 
 /**
@@ -196,13 +214,31 @@ const server = require('http').createServer(app);
 server.listen(7000);
 
 
+var osc = new Osc.UDPPort({
+    localAddress: "127.0.0.1",
+    localPort: 6666,
+
+    remoteAddress: "127.0.0.1",
+    remotePort: 7777,
+    metadata: true
+});
+
+
+osc.open();
+
+osc.on('ready', () => {
+  console.log ("Opened OSC Server");
+})
+
+osc.on("message", function (oscMsg) {
+    console.log("An OSC message just arrived!", oscMsg);
+});
+
 //OSC bridge 9912 - 7777 (synth))
+/*
 const options = { send: { port: Preferences.synth.port } }
 const osc = new OSC({ plugin: new OSC.DatagramPlugin(options) })
 
-osc.on('open', () => {
-  console.log ("Opened OSC Server");
-})
 
 osc.on('message', message => {
   //console.log("Message received.");
@@ -210,3 +246,4 @@ osc.on('message', message => {
 })
 
 osc.open({ port: 9912 }) // bind socket to localhost:9912
+*/
