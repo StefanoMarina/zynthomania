@@ -2,7 +2,7 @@
   "name": "Zynthomania",
   "version": "0.0.1",
   "description": "web app for zynaddsubfx",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,6 +18,7 @@
     "express": "^4.17.1",
     "jquery": "^3.6.0",
     "body-parser": "^1.19.0",
+    "simple-text-parser": "2.1.1",
     "util" : "^0.12.4"
   }
 }
