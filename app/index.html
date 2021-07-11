@@ -11,35 +11,60 @@
   </head>
 
   <body>
-    <input id="currentPreset" type="hidden">
+    <input id="currentInstrument" type="hidden">
     
     <div class="container">
+      
       <div class="row">
         <div class="col-10 col-xs-10">
-          <h3 id="presetName">Welcome to Zynthomania!</h3>
+          <h3 id="instrumentName">Welcome to Zynthomania!</h3>
         </div>
         <div class="col-2 col-xs-2">
           <h3><span id="btnDoFavorite"><i class="far fa-star"></i></span>
           </h3>
         </div>
       </div>
+      
       <div class="row">
-        <div class="col-xs-10">
-          <header class="d-flex flex-row">
-            <button class="bar-1" id="btnBanks"><a>Banks</a></button>
-            <button class="bar-1" data-open="pnlFX" id=""><a>FX</a></button>
-            <button class="bar-1" id=""><a>OSC</a></button>
-            <button class="bar-1" id=""><a>Presets</a></button>
+        <div class="col-12 tab">
+          <header class="d-flex flex-row tab-h">
+            <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks"><a>Banks</a></button>
+            <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
+            <button class="tab-header" data-tab="controlPanel" id=""><a>OSC</a></button>
+            <button class="tab-header" data-tab="controlPanel" id=""><a>Instruments</a></button>
+            <button class="tab-header" data-tab="controlPanel" data-open="pnlScript">Script</button>
           </header>
           
           <!--panels-->
-          <div id="pnlBanks" class="row controlPanel hidden">
+          <div id="pnlBanks" class="row controlPanel no-gutters hidden">
               <ul id="selBanks" class="select col-6 col-xs-6"></ul>
-              <ul id="selPresets" class="select col-6 col-xs-6 hidden"></ul>
+              <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
           </div>
           
-          <div id="pnlFX" class="row controlPanel hidden">
-            <button onclick="onDryout()">Dry out</button>
+          <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
+            <header class="col-4 no-gutters tab-v br">
+              <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
+              <button class="tab-header" data-tab="" data-open="">Part</button>
+              <button class="tab-header" data-tab="" data-open="">Insert</button>
+              <button class="tab-header" data-tab="" data-open="">System</button>
+            </header>
+            <div class="col-8">
+              <div id="pnlDry" class="panel fxPanel hidden">
+                <button id="btnDryPart" class="col-12 big-btn">Dry Part</button>
+                <button id="btnDryAll" class="col-12 big-btn" >Dry All</button>
+              </div>
+            </div>
+          </div>
+          
+          <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
+            <div class="col-10">
+              <label for="commandline">&gt;</label>
+              <input id="commandLine" placeholder="Input parameter...">
+            </div>
+            <div class="col-2">
+              <button onclick="onScriptSend();">Send</button>
+            </div>
+            
           </div>
         </div> <!--col-10 -->
       </div> <!-- main row -->
@@ -48,42 +73,57 @@
     
     <script type="text/javascript">
       window.zsession = {
-        "preset" : {},
-        "presetList" : {},
+        "instrument" : {},
+        "instrumentList" : {},
         "bank" : ''
       };
             
-      /* create a Preset object */
-      function listToPreset(item) {
+      /* create a Instrument object */
+      function listToInstrument(item) {
         if ('li' != $(item).prop('tagName').toLowerCase()) {
           console.log('Error: cannot translate item ' + $(item).prop('tagName'));
           return;
         }
         return {
-          "path": $(item).attr('data-preset'),
+          "path": $(item).attr('data-instrument'),
           "name" : $(item).text()
         }
       }
       
-      /* Quickie to check if preset if favorite */
-      function isFavorite(preset) {
-        if (window.zsession.presetList.Favorites === undefined ||
-            window.zsession.presetList.Favorites.length == 0)
+      /* Quickie to check if instrument if favorite */
+      function isFavorite(instrument) {
+        if (window.zsession.instrumentList.Favorites === undefined ||
+            window.zsession.instrumentList.Favorites.length == 0)
         return false;
         
-        return window.zsession.presetList.Favorites.
-            filter((fav)=> {return fav.path == preset.path})
+        return window.zsession.instrumentList.Favorites.
+            filter((fav)=> {return fav.path == instrument.path})
             .length > 0;
       }
       
+      const isObject = (obj) => {
+        return Object.prototype.toString.call(obj) === '[object Object]';
+      };
+
       /* ajax function */
       function doAjax(params, onDone) {
+        
+        //auto add json formatting
+        /*
+        if (params.data !== undefined && isObject(params.data)) {
+          params.data = JSON.stringify(params.data);
+          if (params.method=='post')
+            params.contentType ='application/json; charset=utf-8'
+          else if (params.method == 'get')
+            dataType: 'json'
+        }
+        */
         $.ajax(params)
         .done(function(data) {
             onDone(data);
           })
         .fail( function(jqXHR, textStatus, errorThrown) {
-          $('#presetName').text(`Error #${errorThrown}`);  
+          $('#instrumentName').text(`Error #${errorThrown}`);  
         });
       }
       
@@ -116,13 +156,13 @@
       }
       
       function onBankSelection(selectedBank) {
-        if (window.zsession.presetList[selectedBank] === undefined) {
+        if (window.zsession.instrumentList[selectedBank] === undefined) {
           doAjax({method:'get', dataType: 'json', 
-                  url: window.location.href+"getPresets", 
+                  url: window.location.href+"getInstruments", 
                   data: {bank: selectedBank},
                   contentType: 'application/json; charset=utf-8'
             }, function(data){
-              window.zsession.presetList[selectedBank] = data;
+              window.zsession.instrumentList[selectedBank] = data;
               onBankSelection(selectedBank);
               return;
             });
@@ -131,13 +171,13 @@
 
         window.zsession.bank = selectedBank;
         
-        let presets = window.zsession.presetList[selectedBank];
+        let instruments = window.zsession.instrumentList[selectedBank];
         let entry = '';
-        let selectObject = $('#selPresets');
+        let selectObject = $('#selInstruments');
         selectObject.empty();
         
-        presets.forEach( (value, index, array) => {
-          let entry = `<li data-preset="${value.path}">${value.name}`;
+        instruments.forEach( (value, index, array) => {
+          let entry = `<li data-instrument="${value.path}">${value.name}`;
                 
           if (isFavorite(value))
             entry += '<span style="float:right"><i class="fas fa-star"></i></span>';
@@ -147,55 +187,55 @@
         });
       }
       
-      function onPresetSelection(preset) {
-        doAjax({method:'post', url: window.location.href+"loadPreset",
-                data: JSON.stringify({"preset":preset}), 
+      function onInstrumentSelection(instrument) {
+        doAjax({method:'post', url: window.location.href+"loadInstrument",
+                data: JSON.stringify({"instrument":instrument}), 
                 contentType: 'application/json; charset=utf-8'},
                 function(){
-             $('#presetName').text(preset.name);
-                window.zsession.preset = preset;    
+             $('#instrumentName').text(instrument.name);
+                window.zsession.instrument = instrument;    
                 $('#btnDoFavorite i').removeClass('far fas');
-                $('#btnDoFavorite i').addClass( (isFavorite(preset)) 
+                $('#btnDoFavorite i').addClass( (isFavorite(instrument)) 
                                           ? 'fas' : 'far');        
         });
       }
-      
-      function onDryout() {
-        doAjax(
-          {method:'post', url: window.location.href+"dryOut"},
-          (data) => {
-            
-          });
-        }
-        
-      function setFavorite (preset, value) {
+
+      function onScriptSend() {
+        let data = $('#commandLine').val();
+        doAjax({method:'post', url: window.location.href+"script",
+                data: JSON.stringify({script: data}), 
+                contentType: 'application/json; charset=utf-8'},
+                function(){
+        });
+      }
+      function setFavorite (instrument, value) {
         let action = (value) ? 'set' : 'unset';
         
         //First, we update server
         doAjax({method:'post', url: window.location.href+"setFavorite",
-                data: JSON.stringify({"preset":preset, "action": action}), 
+                data: JSON.stringify({"instrument":instrument, "action": action}), 
                 contentType: 'application/json; charset=utf-8'},
         function() {
           
           //Then we update client, without ajax
           if (!value) {
-            window.zsession.presetList.Favorites = 
-            window.zsession.presetList.Favorites.filter( (entry) => {
-              return (entry.path != preset.path);});
+            window.zsession.instrumentList.Favorites = 
+            window.zsession.instrumentList.Favorites.filter( (entry) => {
+              return (entry.path != instrument.path);});
           } else {
-            window.zsession.presetList.Favorites.push(preset);
+            window.zsession.instrumentList.Favorites.push(instrument);
           }
           
           //last we update display
-          if (preset.name == window.zsession.preset.name) {
+          if (instrument.name == window.zsession.instrument.name) {
             $('#btnDoFavorite i').removeClass('far fas');
             $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
           }
           
-          let li = $('#selPresets li.btn-selected');
-          if (li !== undefined && li.attr('data-preset') == preset.path) {
+          let li = $('#selInstruments li.btn-selected');
+          if (li !== undefined && li.attr('data-instrument') == instrument.path) {
             $(li).empty();
-            $(li).text(preset.name);
+            $(li).text(instrument.name);
             if (value)
               $(li).append('<span style="float:right"><i class="fas fa-star"></i></span>');
           }
@@ -205,16 +245,36 @@
       
       /* Init */
       $(document).ready(function() {
-          $('.bar-1').on('click', function() {
+        /**
+        Tab button management
+        **/
+          $('.tab-header').on('click', function() {
+            let tab = $(this).closest('.tab');
             
-            $('.bar-1').removeClass('btn-selected');
+            $(tab).find('> header .tab-header').removeClass('btn-selected');
             $(this).addClass('btn-selected');
+            
             if ( $(this).attr('data-open') !== undefined) {
-              $('.controlPanel').addClass('hidden');
+              let className= $(this).attr('data-tab');
+              $('.'+className).addClass('hidden');
               $('#'+$(this).attr('data-open')).removeClass('hidden');
             }
           });
           
+                
+          // ::dryout part
+          $('#btnDryPart').on('click', function () {
+            console.log('called dry part');
+            doAjax(
+              {method:'post', url: window.location.href+"dryOut/part",
+                data: JSON.stringify ({"value": "true", "part": 0}),
+                contentType: 'application/json; charset=utf-8' },
+              (data) => {
+                console.log("done!");
+                $('#btnDryPart').addClass('btn-selected');
+              });
+            });
+                
           //Double filter is necessary or new elements won't be looked up
           $('ul.select').on('click', 'li', function(e){
             var item = $(e.target);
@@ -229,29 +289,29 @@
           $('#selBanks').on('click', 'li', function(e) {
             onBankSelection($(e.target).attr('data-bank'));
           });
-          $('#selPresets').on('click', 'li', function(e) {
+          $('#selInstruments').on('click', 'li', function(e) {
             
             if ('span' == $(e.target).prop('tagName').toLowerCase()
                   || 'i' == $(e.target).prop('tagName').toLowerCase()) {
                     
-              let preset = listToPreset($(e.target).closest('li'));
-              setFavorite(preset, false);
+              let instrument = listToInstrument($(e.target).closest('li'));
+              setFavorite(instrument, false);
             } else
-              onPresetSelection(listToPreset($(e.target)));
+              onInstrumentSelection(listToInstrument($(e.target)));
           });
           
           $('#btnDoFavorite').on('click', function(){
-            let preset = window.zsession.preset;
-            setFavorite(preset, (!isFavorite(preset)));
+            let instrument = window.zsession.instrument;
+            setFavorite(instrument, (!isFavorite(instrument)));
           });
          
          doAjax({method:'get', dataType: 'json', 
-                  url: window.location.href+"getPresets", 
+                  url: window.location.href+"getInstruments", 
                   data: {bank: 'Favorites'},
                   contentType: 'application/json; charset=utf-8'},
           function(data) {
-              window.zsession.presetList.Favorites = data;
-              $('#presetName').text('Welcome to Zynthomania!');
+              window.zsession.instrumentList.Favorites = data;
+              $('#instrumentName').text('Welcome to Zynthomania!');
           });
       });
     </script>
