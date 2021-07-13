@@ -17,22 +17,27 @@ body, body * {font-family: Minecart}
 /*FONT SIZE*/
 @media only screen and (max-width: 768px) {
   body, body * {  
-    font-size: 16px !important;
+    font-size: 16px 
   }
+  
   .controlPanel * {
-    font-size: 10px !important;
+    font-size: 10px 
   }
 }
+
 @media only screen and (min-width: 768px) {
   body, body * {  
-    font-size: 24px !important;
+    font-size: 24px
   }
   .controlPanel * {
-    font-size: 14px !important;
+    font-size: 14px 
   }
 }
 
 
+/*
+ * utilities for bordering
+ *  */
 .bl {border-left: 2px dotted black;}
 .br {border-right: 2px dotted black;}
 
@@ -61,12 +66,34 @@ body::after {
   );
 }
 */
+
+/* button look & feel */
 .btn { border: 2px dotted black !important;}
 
-.controlPanel { border: 2px dotted black; }
+/*
+ * tab classes
+ * .tab
+ * .tab-header
+ * .tab-v
+ */
+ 
+/*
+ * Controlpanel class
+ * all main control divs under the header
+ */
+.controlPanel { border: 2px dotted black; min-width:350px; min-height: 300px}
 
+.controlPanel aside { font-size: 16px; }
+.controlPanel aside button { padding: 4px; width: 100%; border: none; border-bottom: 2px dotted black }
 
+/* add/remove this to hide */
 .hidden {display: none !important}
+
+/*
+ * internal tab panel
+ */
+.panel {padding-left: 5%; padding-right: 5%}
+.panel * {margin-top: 4px; margin-bottom: 4px;}
 
 button, select {
   background-color: transparent;
@@ -75,11 +102,30 @@ button, select {
 
 button {
   border: 2px dotted black;
-  border-bottom: none;
 }
 
-header button { border-right:none !important }
-header button:last-child {border-right: 2px dotted black !important}
+/**
+ * head tab headers look and feel
+ */
+.toolbar  button {border: none !important;}
+.toolbar tr td {border: 2px dotted black; text-align:center}
+.toolbar { border: 2px dotted black; border-collapse: collapse}
+
+.tab-h button { border-right:none; border-bottom:none !important }
+.tab-h button:last-child {border-right: 2px dotted black !important}
+
+.tab-v button {
+  width: 100% !important;
+  display: block !important;
+  border-style: dotted;
+  border-width: 0px 0px 2px 0px;
+ }
+ 
+.tab-header, .big-btn {
+  padding: 8px;
+  font-size: 24px !important;
+}
+
 
 button:hover, .btn-selected {
   background-color: black !important;

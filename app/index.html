@@ -14,60 +14,72 @@
     <input id="currentInstrument" type="hidden">
     
     <div class="container">
-      
-      <div class="row">
-        <div class="col-10 col-xs-10">
-          <h3 id="instrumentName">Welcome to Zynthomania!</h3>
-        </div>
-        <div class="col-2 col-xs-2">
-          <h3><span id="btnDoFavorite"><i class="far fa-star"></i></span>
-          </h3>
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="col-12 tab">
-          <header class="d-flex flex-row tab-h">
-            <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks"><a>Banks</a></button>
-            <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
-            <button class="tab-header" data-tab="controlPanel" id=""><a>OSC</a></button>
-            <button class="tab-header" data-tab="controlPanel" id=""><a>Instruments</a></button>
-            <button class="tab-header" data-tab="controlPanel" data-open="pnlScript">Script</button>
-          </header>
+      <div class="row no-gutters">
+        
+        <div class="col-12"> <!-- main body -->
           
-          <!--panels-->
-          <div id="pnlBanks" class="row controlPanel no-gutters hidden">
-              <ul id="selBanks" class="select col-6 col-xs-6"></ul>
-              <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
-          </div>
-          
-          <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
-            <header class="col-4 no-gutters tab-v br">
-              <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
-              <button class="tab-header" data-tab="" data-open="">Part</button>
-              <button class="tab-header" data-tab="" data-open="">Insert</button>
-              <button class="tab-header" data-tab="" data-open="">System</button>
-            </header>
-            <div class="col-8">
-              <div id="pnlDry" class="panel fxPanel hidden">
-                <button id="btnDryPart" class="col-12 big-btn">Dry Part</button>
-                <button id="btnDryAll" class="col-12 big-btn" >Dry All</button>
-              </div>
-            </div>
-          </div>
-          
-          <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
-            <div class="col-10">
-              <label for="commandline">&gt;</label>
-              <input id="commandLine" placeholder="Input parameter...">
-            </div>
-            <div class="col-2">
-              <button onclick="onScriptSend();">Send</button>
-            </div>
+          <table class="col-12 toolbar">
+            <tr>
+              <td><button id="btnDoFavorite"><i class="far fa-star big-btn"></i></button></td>
+              <td><button onclick="onChangePart(-1)" class="big-btn">&lt;</button></td>
+              <td><span id="currentPart" class="big-btn">1</span></td>
+              <td><button onclick="onChangePart(1)" class="big-btn">&gt;</button></td>
+            </tr>
+          </table>
+        
+        <div class="col-12"><h3><span id="instrumentName">Welcome to Zynthomania! </span></h3></div>        
+        
+          <div class="row">
+            <div class="col-12 tab">
+              <header class="d-flex flex-row tab-h">
+                <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks"><a>Banks</a></button>
+                <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
+                <button class="tab-header" data-tab="controlPanel" id=""><a>OSC</a></button>
+                <button class="tab-header" data-tab="controlPanel" id=""><a>Instruments</a></button>
+                <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
+              </header>
             
-          </div>
-        </div> <!--col-10 -->
-      </div> <!-- main row -->
+            <!--panels-->
+              <div id="pnlBanks" class="row controlPanel no-gutters hidden">
+                  <ul id="selBanks" class="select col-6 col-xs-6"></ul>
+                  <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
+              </div>
+              
+              <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
+                <header class="col-4 no-gutters tab-v br">
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="loadPartFx()">Part</button>
+                  <button class="tab-header" data-tab="" data-open="">Insert</button>
+                  <button class="tab-header" data-tab="" data-open="">System</button>
+                </header>
+                <div class="col-8">
+                  <div id="pnlDry" class="panel fxPanel hidden">
+                    
+                    <button id="btnDryPart" class="col-12 big-btn">None</button>
+                    <button id="btnDryPart" class="col-12 big-btn">Bypass</button>
+                    <button id="btnDryPart" class="col-12 big-btn">Unmount</button>
+                    
+                  </div>
+                  <div id="pnlPart" class="panel fxPanel hidden">
+                    <button id="btnpfx0" class="col-12 big-btn"></button>
+                    <button id="btnpfx1" class="col-12 big-btn"></button>
+                    <button id="btnpfx2" class="col-12 big-btn"></button>
+                  </div>
+                </div>
+              </div>            
+              <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
+                <div class="col-10">
+                  <label for="commandline">&gt;</label>
+                  <input id="commandLine" placeholder="Input parameter...">
+                </div>
+                <div class="col-2">
+                  <button onclick="onScriptSend();">Send</button>
+                </div>
+              </div>
+            </div> 
+          </div> 
+        </div> <!--col-10 -->        
+      </div><!-- main row -->
     </div> <!--container-->
 
     
@@ -75,7 +87,8 @@
       window.zsession = {
         "instrument" : {},
         "instrumentList" : {},
-        "bank" : ''
+        "bank" : '',
+        "partID": 0
       };
             
       /* create a Instrument object */
@@ -104,20 +117,26 @@
       const isObject = (obj) => {
         return Object.prototype.toString.call(obj) === '[object Object]';
       };
-
+      
+      /* Utility to do GET rest methods */
+      function doQuery(rest, data, onDone) {
+        return doAjax({method:'get', dataType: 'json', 
+                  url: window.location.href+rest, 
+                  data: data,
+                  contentType: 'application/json; charset=utf-8'
+        }, onDone);
+      }
+      
+      function doAction(rest, data, onDone) {
+        return doAjax( {method: 'post', 
+          url: window.location.href+rest,
+          data: JSON.stringify(data),
+          contentType: 'application/json; charset=utf-8'
+          }, onDone );
+      }
+      
       /* ajax function */
       function doAjax(params, onDone) {
-        
-        //auto add json formatting
-        /*
-        if (params.data !== undefined && isObject(params.data)) {
-          params.data = JSON.stringify(params.data);
-          if (params.method=='post')
-            params.contentType ='application/json; charset=utf-8'
-          else if (params.method == 'get')
-            dataType: 'json'
-        }
-        */
         $.ajax(params)
         .done(function(data) {
             onDone(data);
@@ -125,6 +144,49 @@
         .fail( function(jqXHR, textStatus, errorThrown) {
           $('#instrumentName').text(`Error #${errorThrown}`);  
         });
+      }
+      
+      function onChangePart(index) {
+        if (window.zsession.partID+index < 0)
+          window.zsession.partID = 15;
+        else if (window.zsession.partID+index > 15)
+          window.zsession.partID = 0;
+        else
+          window.zsession.partID += index;
+        $('#currentPart').text( ('0'+window.zsession.partID).substr(-2) );
+        //retrieve part info
+        doQuery('status/part', {id: window.zsession.partID}, (data) => {
+          console.log(data);
+          if (data.name == '') data.name = 'Unloaded';
+          $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
+        });
+        
+        //any active panel must be re-triggered
+        $('.controlPanel tab-header.btn-selected').trigger('click');
+      }
+      /** loads part fx */
+      function loadPartFx() {
+        doQuery('status/partfx', {id: 0}, function(data){
+          console.log(data);
+            onPartLoad('btnpfx', data);
+        });
+      }
+      
+      /** updates button fx with same id */
+      function onPartLoad(baseID, data) {
+        for (let i = 0; i < 3; i++) {
+          let button = `#${baseID}${i}`;
+          if ('None' == data.efx[i].name) {
+            $(button).addClass('hidden');
+          } else {
+            $(button).removeClass('hidden');
+            $(button).text(data.efx[i].name);
+          if (data.efx[i].bypass)
+            $(button).removeClass('btn-selected');
+          else
+            $(button).addClass('btn-selected');
+          }
+        }
       }
       
       /* Bank button load */
@@ -188,17 +250,17 @@
       }
       
       function onInstrumentSelection(instrument) {
-        doAjax({method:'post', url: window.location.href+"loadInstrument",
-                data: JSON.stringify({"instrument":instrument}), 
-                contentType: 'application/json; charset=utf-8'},
-                function(){
-             $('#instrumentName').text(instrument.name);
-                window.zsession.instrument = instrument;    
-                $('#btnDoFavorite i').removeClass('far fas');
-                $('#btnDoFavorite i').addClass( (isFavorite(instrument)) 
-                                          ? 'fas' : 'far');        
-        });
-      }
+        doAction("loadInstrument", {'instrument': instrument, 
+          'id': window.zsession.partID}, (data) => {
+            console.log('done');
+//             $('#instrumentName').text(instrument.name);
+              window.zsession.instrument = instrument;    
+              $('#btnDoFavorite i').removeClass('far fas');
+              $('#btnDoFavorite i').addClass( (isFavorite(instrument)) 
+                                        ? 'fas' : 'far');
+              onChangePart(0);
+          })
+        }
 
       function onScriptSend() {
         let data = $('#commandLine').val();
@@ -243,7 +305,9 @@
       }
       
       
-      /* Init */
+      /**
+       Init 
+       */
       $(document).ready(function() {
         /**
         Tab button management
@@ -261,7 +325,8 @@
             }
           });
           
-                
+          onChangePart(0);
+          
           // ::dryout part
           $('#btnDryPart').on('click', function () {
             console.log('called dry part');

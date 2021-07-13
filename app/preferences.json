@@ -1,8 +1,12 @@
 {
   "user": "pi",
   "synth": {
-    "port" : "7777"
+    "port" : "7777",
   },
+  "zyntho" : {
+    "dry" : "none",
+    "fxroute": { "value": 64, "effects" : [] }
+  }
   "custom_dir": "/home/pi/zynthomania/custom",
   "favorites": "/home/pi/zynthomania/favorites.json",
   "bank_dir": "/usr/local/share/zynaddsubfx/banks/"

@@ -34,11 +34,14 @@ exports.OSCParser = class {
   constructor() {
     
     this.sanitizer =  new SimpleTextParser.Parser();
-    
+    /**
+     * todo
+     * add path sanitizer
     this.sanitizer.addRule(/\/[\w\d ]+(?=[\/\[\d ])/gmi, function (tag) {
       //sanitize path from spaces
       return tag.replaceAll(' ', '');
     });
+    */
     
     this.sanitizer.addRule(/\ ?[[\d ,]+ ?\]/gmi, function (tag) {
       //Sanitize path array
@@ -89,17 +92,18 @@ exports.OSCParser = class {
       return { type: 's', value : string };
     });
     
-    this.argParser.addRule(/(^|[^\w])([TF])( |$)/gm, function(full, before, string) {
+    this.argParser.addRule(/(^|[^\w])([TF])( +|$)/gm, function(full, before, string) {
       let value = (string == 'T');
+      console.log('test');
       console.log('test');
       return {type: string, value: value};
     });
     
-    this.argParser.addRule(/(\d+[ ,.]+\d+) +/gm, function(value, float) {
+    this.argParser.addRule(/(\d+[ ,.]+\d+)( +|$)/gm, function(value, float) {
       return {type: 'f', value: float}
     });
     
-    this.argParser.addRule(/(\d+) /gm, function(value, number) {
+    this.argParser.addRule(/(\d+)( +|$)/gm, function(value, number) {
       return {type: 'i', value: number}
     });
   }
