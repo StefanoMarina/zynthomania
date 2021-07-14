@@ -199,4 +199,11 @@ exports.OSCParser = class {
     
     return result;
   }
+  
+  emptyBundle() {
+    return {
+        timeTag: {raw: [0,1], native: Number},
+        packets: []
+      }
+  }
 }

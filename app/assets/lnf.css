@@ -23,12 +23,14 @@ body, body * {font-family: Minecart}
   .controlPanel * {
     font-size: 10px 
   }
+  
 }
 
 @media only screen and (min-width: 768px) {
   body, body * {  
     font-size: 24px
   }
+  
   .controlPanel * {
     font-size: 14px 
   }
@@ -92,8 +94,29 @@ body::after {
 /*
  * internal tab panel
  */
-.panel {padding-left: 5%; padding-right: 5%}
-.panel * {margin-top: 4px; margin-bottom: 4px;}
+ 
+@media only screen and (max-width: 768px) { 
+  .panel {padding-left: 2px; padding-right: 2px}
+  .panel * {margin-top: 2px; margin-bottom: 2px;}
+
+  .tab-header, .big-btn {
+      padding: 4px;
+      font-size: 16px !important;
+   }
+   
+   .big-icon {}
+}
+
+@media only screen and (min-width: 768px) { 
+  .panel {padding-left: 5%; padding-right: 5%}
+  .panel * {margin-top: 4px; margin-bottom: 4px;}
+
+  .tab-header, .big-btn {
+      padding: 8px;
+      font-size: 24px !important;
+    }
+  .big-icon {font-size: 32px !important;}
+}
 
 button, select {
   background-color: transparent;
@@ -120,12 +143,6 @@ button {
   border-style: dotted;
   border-width: 0px 0px 2px 0px;
  }
- 
-.tab-header, .big-btn {
-  padding: 8px;
-  font-size: 24px !important;
-}
-
 
 button:hover, .btn-selected {
   background-color: black !important;

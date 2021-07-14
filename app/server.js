@@ -282,6 +282,8 @@ app.post('/setFavorite', function (req, res) {
  * Body { script : "" }
  */
 app.post('/script', function(req, res) {
+  console.log(`[POST] /script body: ${JSON.stringify(req.body)}`);
+  
   if (req.body.script === undefined) {
     res.status(401).send("Missing script");
     return;
@@ -297,18 +299,15 @@ app.post('/script', function(req, res) {
  * Utility to find out fx status (type, part bypass)
  * bypass is usable only by part fx query
  * TODO: add preset id
- * basePath: base path for looking, without channels i.e. /part0/partefx
- * channels: how many channels to look for (3 for part, 4 for sys, 8 for insert)
  * bypassQuery: a osc query for part bypass
  * onDone: callback to call when everything is done
  */ 
-function fxStatusQuery (basePath, channels, bypassQuery, onDone) {
+function fxStatusQuery (nameQuery, bypassQuery, onDone) {
   const returnObject = {
     efx : [{},{},{}]
   };
   
-  
-  let efftypeQuery = app.oscParser.translate(`${basePath}[0-${channels-1}]/efftype`);
+  JSON.stringify(nameQuery);
   
   //callback events on OSC response
   const effectNameCallback = function (fxid, efx) {
@@ -324,8 +323,8 @@ function fxStatusQuery (basePath, channels, bypassQuery, onDone) {
   
 
   //register events
-  if (efftypeQuery.packets !== undefined) {
-    efftypeQuery.packets.forEach( (item) => {
+  if (nameQuery.packets !== undefined) {
+    nameQuery.packets.forEach( (item) => {
       let i = RegExp("efx(\\d+)\/efftype", "gm").exec(item.address);
       if (i == null)
         throw `address ${item.address} failed to match regex`;
@@ -333,9 +332,9 @@ function fxStatusQuery (basePath, channels, bypassQuery, onDone) {
       app.oscPathEvent.once(item.address,  function (args) { effectNameCallback(i[1], args[0].value) });  
     });
   } else {
-    let i = RegExp("efx(\\d+)\/efftype", "gm").exec(efftypeQuery.address);
+    let i = RegExp("efx(\\d+)\/efftype", "gm").exec(nameQuery.address);
       if (i == null)
-        throw `address ${item.address} failed to match regex`;
+        throw `address ${nameQuery.address} failed to match regex`;
         
     app.oscPathEvent.once(nameQuery.address,  function (args) { effectNameCallback(i[1], args[0].value) });
   }
@@ -353,24 +352,36 @@ function fxStatusQuery (basePath, channels, bypassQuery, onDone) {
     } else {
       let i = RegExp("Pefxbypass(\\d)", "gm").exec(item.address);
         if (i == null)
-          throw `address ${item.address} failed to match bypass regex`;
+          throw `address ${bypassQuery.address} failed to match bypass regex`;
       app.oscPathEvent.once(bypassQuery.address,  function (args) { bypassCallback(i[1], args[0].value) });
     }
   }
-  
-  //app.oscPathEvent.once(app.defaultDoneQuery.address, function(args) {console.log('ok'); onDone(returnObject); });
-  
+ 
   //send all queries
   osc.send(nameQuery);
   osc.send(bypassQuery);
-  //osc.send(app.defaultDoneQuery);
   app.onOSCDone( (args) => { onDone(returnObject);});
   
-  //register the final command
+}
+
+function fxPresetQuery(queryString, efx, onDone) {
   
+  const presetTypeQuery = app.oscParser.emptyBundle();
   
+  for (let i = 0; i < efx.length; i++) {
+    if (efx[i].name == 'None')
+      continue;
+      
+    let address = `${queryString}${i}/${efx[i].name}/preset`;
+    presetTypeQuery.packets.push(app.oscParser.translate(address));
+    
+    app.oscPathEvent.once(address, (args) => {efx[i].preset = args[0].value} );
+  }
   
-  //osc.send(app.defaultDoneQuery);
+  console.log(JSON.stringify(presetTypeQuery));
+  
+  osc.send(presetTypeQuery);
+  app.onOSCDone( (args) => { onDone(efx) });
 }
 
 /**
@@ -388,15 +399,18 @@ app.get('/status/partfx', function (req, res, next) {
    res.status(401).json({});
    return;
  }
- 
- //let effTypeRequest = app.oscParser.translate(`/part${req.query.id}/partefx[0-2]/efftype`);
+
+ let effectNameRequest = app.oscParser.translate(`/part${req.query.id}/partefx[0-2]/efftype`);
  let effBypassRequest = app.oscParser.translate(`/part${req.query.id}/Pefxbypass[0-2]`);
  
  //let onDoneRequest = app.oscParser.translate('/last_xmz');
  
- fxStatusQuery(`part${req.query.id}/partefx`, 3, effBypassRequest, function (returnObject) {
+ fxStatusQuery(effectNameRequest, effBypassRequest, function (returnObject) {
       //set dry
-      res.json(returnObject);
+      fxPresetQuery(`/part${req.query.id}/partefx`, returnObject.efx, (efx) => {
+        returnObject.efx = efx;
+        res.json(returnObject);
+      });
     });
 })
 

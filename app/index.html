@@ -5,7 +5,7 @@
   <head>
     <link href="lnf.css" rel="stylesheet">
     <link href="bootstrap-grid.min.css" rel="stylesheet">
-    <link href="fontawesome-5-css/css/fontawesome-all.css" rel="stylesheet">
+    <link href="fontawesome-free-5.15.3-web/css/all.css" rel="stylesheet">
     <script src="jquery/dist/jquery.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
@@ -13,14 +13,14 @@
   <body>
     <input id="currentInstrument" type="hidden">
     
-    <div class="container">
+    <div class="">
       <div class="row no-gutters">
         
         <div class="col-12"> <!-- main body -->
           
           <table class="col-12 toolbar">
             <tr>
-              <td><button id="btnDoFavorite"><i class="far fa-star big-btn"></i></button></td>
+              <td><button id="btnDoFavorite"><i class="far fa-star big-icon"></i></button></td>
               <td><button onclick="onChangePart(-1)" class="big-btn">&lt;</button></td>
               <td><span id="currentPart" class="big-btn">1</span></td>
               <td><button onclick="onChangePart(1)" class="big-btn">&gt;</button></td>
@@ -35,7 +35,6 @@
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks"><a>Banks</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
                 <button class="tab-header" data-tab="controlPanel" id=""><a>OSC</a></button>
-                <button class="tab-header" data-tab="controlPanel" id=""><a>Instruments</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
               </header>
             
@@ -48,7 +47,7 @@
               <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="loadPartFx()">Part</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="queryPartFX()">Part</button>
                   <button class="tab-header" data-tab="" data-open="">Insert</button>
                   <button class="tab-header" data-tab="" data-open="">System</button>
                 </header>
@@ -60,10 +59,29 @@
                     <button id="btnDryPart" class="col-12 big-btn">Unmount</button>
                     
                   </div>
-                  <div id="pnlPart" class="panel fxPanel hidden">
-                    <button id="btnpfx0" class="col-12 big-btn"></button>
-                    <button id="btnpfx1" class="col-12 big-btn"></button>
-                    <button id="btnpfx2" class="col-12 big-btn"></button>
+                  <div id="pnlPart" class="panel fxPanel hidden row">
+                    <div class="col-8">
+                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx0" id="btnpfx0" onclick="onFXPartButtonSelect(0)"></button>
+                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx1" id="btnpfx1" onclick="onFXPartButtonSelect(1)"></button>
+                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx2" id="btnpfx2" onclick="onFXPartButtonSelect(2)"></button>
+                    </div>
+                    <div class="col-4 hidden" id="fxPartPopup">
+                      <button class="big-btn col-12" id="fxBypass" onclick="actionBypassPartFX();"><i class="big-icon fas fa-volume-mute"></i></button>
+                      <button class="big-btn col-12">&lt;</button>
+                      <button class="big-btn col-12">&gt;</button>
+                      <button class="hidden big-btn col-12 pfx-preset">+</button>
+                      <button class="hidden big-btn col-12 pfx-preset">-</button>
+                    </div>
+                    <!--
+                    <table class="toolbar col-12">
+                      <tr>
+                        <td><button class="big-btn">&lt;</button></td>
+                        <td><button class="big-btn">&gt;</button></td>
+                        <td><button class="big-btn">+</button></td>
+                        <td><button class="big-btn">-</button></td>
+                      </tr>
+                    </table>
+                    -->
                   </div>
                 </div>
               </div>            
@@ -86,9 +104,11 @@
     <script type="text/javascript">
       window.zsession = {
         "instrument" : {},
-        "instrumentList" : {},
         "bank" : '',
-        "partID": 0
+        "partID": 0,
+        "partefx" : new Array(15),
+         fx : { fxpath : ''},
+         banks : {}
       };
             
       /* create a Instrument object */
@@ -105,12 +125,12 @@
       
       /* Quickie to check if instrument if favorite */
       function isFavorite(instrument) {
-        if (window.zsession.instrumentList.Favorites === undefined ||
-            window.zsession.instrumentList.Favorites.length == 0)
+        if (window.zsession.banks['Favorites'] === undefined ||
+            window.zsession.banks['Favorites'].length == 0)
         return false;
         
-        return window.zsession.instrumentList.Favorites.
-            filter((fav)=> {return fav.path == instrument.path})
+        return window.zsession.banks['Favorites'].filter
+                ((fav)=> {return fav.path == instrument.path})
             .length > 0;
       }
       
@@ -164,41 +184,79 @@
         //any active panel must be re-triggered
         $('.controlPanel tab-header.btn-selected').trigger('click');
       }
+      
       /** loads part fx */
-      function loadPartFx() {
-        doQuery('status/partfx', {id: 0}, function(data){
+      function queryPartFX() {
+        doQuery('status/partfx', {id: window.zsession.partID}, function(data){
           console.log(data);
-            onPartLoad('btnpfx', data);
+            window.zsession.partefx[window.zsession.partID] = data.efx;
+            onFXLoad('btnpfx', data);
         });
       }
       
       /** updates button fx with same id */
-      function onPartLoad(baseID, data) {
-        for (let i = 0; i < 3; i++) {
+      function onFXLoad(baseID, data) {
+        for (let i = 0; i < data.efx.length; i++) {
+          
           let button = `#${baseID}${i}`;
-          if ('None' == data.efx[i].name) {
-            $(button).addClass('hidden');
-          } else {
-            $(button).removeClass('hidden');
-            $(button).text(data.efx[i].name);
-          if (data.efx[i].bypass)
-            $(button).removeClass('btn-selected');
-          else
-            $(button).addClass('btn-selected');
-          }
+          
+          //$(button).removeClass('hidden');
+          $(button).removeClass('btn-selected');
+          $(button).text( (data.efx[i].preset === undefined)
+                          ? data.efx[i].name
+                          : `${data.efx[i].name}/${data.efx[i].preset}`
+                        );
         }
       }
       
+      function onFXPartButtonSelect(fxid) {
+        $('.fx-btn').removeClass('btn-selected');
+        $(`#btnpfx${fxid}`).addClass('btn-selected');
+        $('#fxPartPopup').removeClass('hidden');
+        
+        let pfx = window.zsession.partefx[window.zsession.partID][fxid];
+        $('#fxBypass').removeClass('btn-selected');
+        if (pfx.bypass) $('#fxBypass').addClass('btn-selected');
+        
+        if ('None' == pfx.name)
+          $('.pfx-preset').addClass('hidden');
+        else
+          $('.pfx-preset').removeClass('hidden');
+        
+        window.zsession.fx.pefx = fxid;
+      }
+      
+     function actionBypassPartFX() {
+         let pID = window.zsession.partID;
+         let fxID = window.zsession.fx.pefx;
+         
+         let path = `/part${pID}/Pefxbypass${fxID}`;
+         path += (window.zsession.partefx[pID][fxID].bypass) ? ' F' : ' T';
+         console.log(`path: ${path}`);
+         
+         doAction('script', { script: path }, (data) => {
+            window.zsession.partefx[pID][fxID].bypass = 
+            !window.zsession.partefx[pID][fxID].bypass;
+            
+            if (!window.zsession.partefx[pID][fxID].bypass)
+              $('#fxBypass').removeClass('btn-selected');
+            else
+              $('#fxBypass').addClass('btn-selected');
+         });
+      }
+     
       /* Bank button load */
-      function onBanksButtonClick() {
+      function queryBankList() {
         //Banks preloading
-        if (window.zsession.banks === undefined) {
-          doAjax({method:'get', dataType: 'json', url: window.location.href+"getBanks"},
-          function(data) {
-              window.zsession.banks = data;
-              onBanksButtonClick();
-              return;
-          });
+        if (Object.keys(window.zsession.banks).length <= 1) {
+          doQuery('getBanks', null, (data) => {
+            data.forEach( (item) => {
+              window.zsession.banks[item] = [];
+              
+            queryBankList();
+            return;
+            });
+          })
           return;
         }
         
@@ -207,33 +265,28 @@
         let selectObject = $('#selBanks');
         selectObject.empty();
             
-        banks.forEach( (value, index, array) => {
-           let option = "<li data-bank=\""+value+"\">"+value+'</li>';
-          // console.log(option);
-           selectObject.append(option);
-         });
+        Object.keys(banks).forEach( (key) => {
+          selectObject.append('<li data-bank="'+key+'">'+key+'</li>');
+      
+        });
              
          $('.controlPanel').addClass('hidden');
          $('#pnlBanks').removeClass('hidden');
       }
       
-      function onBankSelection(selectedBank) {
-        if (window.zsession.instrumentList[selectedBank] === undefined) {
-          doAjax({method:'get', dataType: 'json', 
-                  url: window.location.href+"getInstruments", 
-                  data: {bank: selectedBank},
-                  contentType: 'application/json; charset=utf-8'
-            }, function(data){
-              window.zsession.instrumentList[selectedBank] = data;
-              onBankSelection(selectedBank);
-              return;
-            });
+      function queryBank(selectedBank) {
+        if (window.zsession.banks[selectedBank].length == 0) {
+          doQuery('getInstruments', {bank: selectedBank}, (data) => {
+            window.zsession.banks[selectedBank] = data;
+            queryBank(selectedBank);
+            return;
+          });
           return;
         }
 
         window.zsession.bank = selectedBank;
         
-        let instruments = window.zsession.instrumentList[selectedBank];
+        let instruments = window.zsession.banks[selectedBank];
         let entry = '';
         let selectObject = $('#selInstruments');
         selectObject.empty();
@@ -281,11 +334,11 @@
           
           //Then we update client, without ajax
           if (!value) {
-            window.zsession.instrumentList.Favorites = 
-            window.zsession.instrumentList.Favorites.filter( (entry) => {
+            window.zsession.banks['Favorites']= 
+            window.zsession.banks.Favorites.filter( (entry) => {
               return (entry.path != instrument.path);});
           } else {
-            window.zsession.instrumentList.Favorites.push(instrument);
+            window.zsession.banks.Favorites.push(instrument);
           }
           
           //last we update display
@@ -325,21 +378,7 @@
             }
           });
           
-          onChangePart(0);
           
-          // ::dryout part
-          $('#btnDryPart').on('click', function () {
-            console.log('called dry part');
-            doAjax(
-              {method:'post', url: window.location.href+"dryOut/part",
-                data: JSON.stringify ({"value": "true", "part": 0}),
-                contentType: 'application/json; charset=utf-8' },
-              (data) => {
-                console.log("done!");
-                $('#btnDryPart').addClass('btn-selected');
-              });
-            });
-                
           //Double filter is necessary or new elements won't be looked up
           $('ul.select').on('click', 'li', function(e){
             var item = $(e.target);
@@ -349,10 +388,12 @@
             //$(eventId).val(item.text());
           });
           
-          $('#btnBanks').on('click', function() { onBanksButtonClick(); });
-          
+          /**
+          Button actions
+          */
+          $('#btnBanks').on('click', function() { queryBankList(); });
           $('#selBanks').on('click', 'li', function(e) {
-            onBankSelection($(e.target).attr('data-bank'));
+            queryBank($(e.target).attr('data-bank'));
           });
           $('#selInstruments').on('click', 'li', function(e) {
             
@@ -370,14 +411,19 @@
             setFavorite(instrument, (!isFavorite(instrument)));
           });
          
-         doAjax({method:'get', dataType: 'json', 
-                  url: window.location.href+"getInstruments", 
-                  data: {bank: 'Favorites'},
-                  contentType: 'application/json; charset=utf-8'},
-          function(data) {
-              window.zsession.instrumentList.Favorites = data;
-              $('#instrumentName').text('Welcome to Zynthomania!');
+          
+          /**
+          Init actions
+          - get favorites
+          - update part names
+          */
+          doQuery('getInstruments', {bank: 'Favorites'}, 
+            function(data) {
+                window.zsession.banks['Favorites'] = data;
+                $('#instrumentName').text('Welcome to Zynthomania!');
           });
+          
+          onChangePart(0);
       });
     </script>
   </body>
