@@ -104,7 +104,7 @@ exports.OSCParser = class {
     });
     
     this.argParser.addRule(/(\d+)( +|$)/gm, function(value, number) {
-      return {type: 'i', value: number}
+      return {type: 'i', value: parseInt(number)}
     });
   }
   

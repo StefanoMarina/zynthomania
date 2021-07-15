@@ -61,14 +61,14 @@
                   </div>
                   <div id="pnlPart" class="panel fxPanel hidden row">
                     <div class="col-8">
-                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx0" id="btnpfx0" onclick="onFXPartButtonSelect(0)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx1" id="btnpfx1" onclick="onFXPartButtonSelect(1)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx2" id="btnpfx2" onclick="onFXPartButtonSelect(2)"></button>
+                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx0" id="btnpfx0" onclick="onPartFXButtonSelect(0)"></button>
+                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx1" id="btnpfx1" onclick="onPartFXButtonSelect(1)"></button>
+                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx2" id="btnpfx2" onclick="onPartFXButtonSelect(2)"></button>
                     </div>
                     <div class="col-4 hidden" id="fxPartPopup">
                       <button class="big-btn col-12" id="fxBypass" onclick="actionBypassPartFX();"><i class="big-icon fas fa-volume-mute"></i></button>
                       <button class="big-btn col-12">&lt;</button>
-                      <button class="big-btn col-12">&gt;</button>
+                      <button class="big-btn col-12" onclick="actionNextPartFX()">&gt;</button>
                       <button class="hidden big-btn col-12 pfx-preset">+</button>
                       <button class="hidden big-btn col-12 pfx-preset">-</button>
                     </div>
@@ -157,11 +157,28 @@
       
       /* ajax function */
       function doAjax(params, onDone) {
+        const oldValue = $('#instrumentName').text();
+        $('#instrumentName').text('.');
+        
+        const timer = setInterval ( () =>{
+          let text = $('#instrumentName').text('.');
+          if (text.length < 4)
+            text += ".";
+          else if (text.length < 24)
+           text += " ";
+          else
+            text = " ";
+          $('#instrumentName').text(text);
+        }, 500);
+        
         $.ajax(params)
         .done(function(data) {
+            clearInterval(timer);
+            $('#instrumentName').text(oldValue);
             onDone(data);
           })
         .fail( function(jqXHR, textStatus, errorThrown) {
+          clearInterval(timer);
           $('#instrumentName').text(`Error #${errorThrown}`);  
         });
       }
@@ -209,7 +226,7 @@
         }
       }
       
-      function onFXPartButtonSelect(fxid) {
+      function onPartFXButtonSelect(fxid) {
         $('.fx-btn').removeClass('btn-selected');
         $(`#btnpfx${fxid}`).addClass('btn-selected');
         $('#fxPartPopup').removeClass('hidden');
@@ -218,7 +235,7 @@
         $('#fxBypass').removeClass('btn-selected');
         if (pfx.bypass) $('#fxBypass').addClass('btn-selected');
         
-        if ('None' == pfx.name)
+        if ('None' == pfx.name || 'EQ' == pfx.name)
           $('.pfx-preset').addClass('hidden');
         else
           $('.pfx-preset').removeClass('hidden');
@@ -244,6 +261,21 @@
               $('#fxBypass').addClass('btn-selected');
          });
       }
+     
+     function actionNextPartFX() {
+       doAction('fx/part/next_fx', {efxID: window.zsession.fx.pefx, partID:  window.zsession.partID},
+       (data) => {
+         console.log(data);
+         let buttonID=`#btnpfx${window.zsession.fx.pefx}`;
+         if (data.preset > -1){
+          $(buttonID).text(`${data.name}/${data.preset}`);
+          $('.pfx-preset').removeClass('hidden');
+         }else {
+          $(buttonID).text(data.name);
+          $('.pfx-preset').addClass('hidden');
+        }
+       })
+     }
      
       /* Bank button load */
       function queryBankList() {
