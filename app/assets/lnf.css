@@ -104,7 +104,7 @@ body::after {
       font-size: 16px !important;
    }
    
-   .big-icon {}
+   .big-icon { font-size: 20 px !important}
 }
 
 @media only screen and (min-width: 768px) { 

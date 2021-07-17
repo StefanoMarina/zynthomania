@@ -178,6 +178,27 @@ app.post('/fx/part/next_fx', function (req, res) {
 })
 
 /**
+ * /fx/part/prev_fx
+ * POST
+ * changes a part efx
+ * body {part: part id, efx: efx id}
+ */
+app.post('/fx/part/prev_fx', function (req, res) {
+  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  
+  let partID = req.body.partID;
+  let efxID = req.body.efxID;
+  
+  app.zyntho.query(app.zyntho.parser.translate(`/part${partID}/partefx${efxID}/efftype`),
+  (msg) => {
+    let value = msg.args[0].value;
+    app.zyntho.changeFX(partID, efxID, --value, (result) =>{
+      res.json(result);
+    });
+  });
+})
+
+/**
  * /status/part
  * GET returns part info
  * query {id: part id}

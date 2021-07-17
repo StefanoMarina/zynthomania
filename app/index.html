@@ -8,6 +8,7 @@
     <link href="fontawesome-free-5.15.3-web/css/all.css" rel="stylesheet">
     <script src="jquery/dist/jquery.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="pureknob.js"></script>
   </head>
 
   <body>
@@ -64,24 +65,20 @@
                       <button class="fx-btn col-12 big-btn" data-osc="/part/partefx0" id="btnpfx0" onclick="onPartFXButtonSelect(0)"></button>
                       <button class="fx-btn col-12 big-btn" data-osc="/part/partefx1" id="btnpfx1" onclick="onPartFXButtonSelect(1)"></button>
                       <button class="fx-btn col-12 big-btn" data-osc="/part/partefx2" id="btnpfx2" onclick="onPartFXButtonSelect(2)"></button>
+                      <div class="row">
+                        <div class="col-2 send1"></div>
+                        <div class="col-2 send1"></div>
+                        <div class="col-2 send1"></div>
+                        <div class="col-2 send1"></div>
+                      </table>
                     </div>
                     <div class="col-4 hidden" id="fxPartPopup">
                       <button class="big-btn col-12" id="fxBypass" onclick="actionBypassPartFX();"><i class="big-icon fas fa-volume-mute"></i></button>
-                      <button class="big-btn col-12">&lt;</button>
-                      <button class="big-btn col-12" onclick="actionNextPartFX()">&gt;</button>
-                      <button class="hidden big-btn col-12 pfx-preset">+</button>
-                      <button class="hidden big-btn col-12 pfx-preset">-</button>
+                      <button class="big-btn col-12" onclick="actionChangePartFX('next_fx')">&gt;</button>
+                      <button class="big-btn col-12" onclick="actionChangePartFX('prev_fx')">&lt;</button>
+                      <button class="hidden big-btn col-12 pfx-preset" onclick="actionChangeFXPreset(1, 'btnpfx'+window.zsession.fx.id)" >+</button>
+                      <button class="hidden big-btn col-12 pfx-preset" onclick="actionChangeFXPreset(-1,'btnpfx'+window.zsession.fx.id)">-</button>
                     </div>
-                    <!--
-                    <table class="toolbar col-12">
-                      <tr>
-                        <td><button class="big-btn">&lt;</button></td>
-                        <td><button class="big-btn">&gt;</button></td>
-                        <td><button class="big-btn">+</button></td>
-                        <td><button class="big-btn">-</button></td>
-                      </tr>
-                    </table>
-                    -->
                   </div>
                 </div>
               </div>            
@@ -103,14 +100,26 @@
     
     <script type="text/javascript">
       window.zsession = {
-        "instrument" : {},
-        "bank" : '',
-        "partID": 0,
-        "partefx" : new Array(15),
-         fx : { fxpath : ''},
-         banks : {}
+        "instrument" : {}, //curent instrument
+        "bank" : '', //current bank
+        "partID": 0, //current part id
+        "partefx" : new Array(15), //last part efx query
+         fx : { path : ''}, //fx panel data
+         banks : {} //banks panel data
       };
-            
+      
+      window.zsession.fx.get =function () {
+        if (window.zsession.fx.path.search('partefx')>0)
+          return window.zsession.partefx[window.zsession.partID][window.zsession.fx.id];
+        else
+          return undefined;
+      }
+      
+      window.zsession.fx.set = function (object) {
+        if (window.zsession.fx.path.search('partefx')>0)
+          window.zsession.partefx[window.zsession.partID][window.zsession.fx.id] = object;
+      }
+      
       /* create a Instrument object */
       function listToInstrument(item) {
         if ('li' != $(item).prop('tagName').toLowerCase()) {
@@ -161,7 +170,7 @@
         $('#instrumentName').text('.');
         
         const timer = setInterval ( () =>{
-          let text = $('#instrumentName').text('.');
+          let text = $('#instrumentName').text();
           if (text.length < 4)
             text += ".";
           else if (text.length < 24)
@@ -232,6 +241,7 @@
         $('#fxPartPopup').removeClass('hidden');
         
         let pfx = window.zsession.partefx[window.zsession.partID][fxid];
+        
         $('#fxBypass').removeClass('btn-selected');
         if (pfx.bypass) $('#fxBypass').addClass('btn-selected');
         
@@ -240,12 +250,13 @@
         else
           $('.pfx-preset').removeClass('hidden');
         
-        window.zsession.fx.pefx = fxid;
+        window.zsession.fx.id = fxid;
+        window.zsession.fx.path = `/part${window.zsession.partID}/partefx${fxid}/${window.zsession.partefx[window.zsession.partID][fxid].name}`;
       }
       
      function actionBypassPartFX() {
          let pID = window.zsession.partID;
-         let fxID = window.zsession.fx.pefx;
+         let fxID = window.zsession.fx.id;
          
          let path = `/part${pID}/Pefxbypass${fxID}`;
          path += (window.zsession.partefx[pID][fxID].bypass) ? ' F' : ' T';
@@ -262,21 +273,55 @@
          });
       }
      
-     function actionNextPartFX() {
-       doAction('fx/part/next_fx', {efxID: window.zsession.fx.pefx, partID:  window.zsession.partID},
+     function actionChangePartFX(rest) {
+       doAction(`fx/part/${rest}`, {efxID: window.zsession.fx.id, partID:  window.zsession.partID},
        (data) => {
          console.log(data);
-         let buttonID=`#btnpfx${window.zsession.fx.pefx}`;
-         if (data.preset > -1){
-          $(buttonID).text(`${data.name}/${data.preset}`);
-          $('.pfx-preset').removeClass('hidden');
-         }else {
-          $(buttonID).text(data.name);
-          $('.pfx-preset').addClass('hidden');
-        }
+         
+         window.zsession.partefx[window.zsession.partID][window.zsession.fx.id] = data;
+         
+         let buttonID=`#btnpfx${window.zsession.fx.id}`;
+         if (data.preset > -1)
+          $(buttonID).text(`${data.name}/${data.preset}`)
+         else
+          $(buttonID).text(`${data.name}`)
+          
+         onPartFXButtonSelect(window.zsession.fx.id);
        })
      }
      
+     function actionChangeFXPreset(preset, id) {
+       /* presets up to zynaddsubfx 3.0.6 */
+         const limits = {
+          'Reverb' : 13,
+          'Echo': 9,
+          'Chorus': 10,
+          'Phaser': 12,
+          'Alienwah': 4,
+          'Distorsion': 6,
+          'DynamicFilter': 5
+        }
+        
+        
+        let path = window.zsession.fx.path;
+        const currentFX = window.zsession.fx.get();
+        
+        preset += currentFX.preset;
+        
+        let fxName = path.substring(path.lastIndexOf('/')+1);
+        if (!limits.hasOwnProperty(fxName))
+          return; 
+          
+        let limit = limits[fxName];
+        preset = Math.min(limit, Math.max(0, preset))
+        
+        doAction('script', { script : `${path}/preset ${preset}`} , (data) => {
+          $('#'+id).text(`${fxName}/${preset}`);
+          currentFX.preset = preset;
+          window.zsession.fx.set(currentFX);
+        })
+      }
+      
       /* Bank button load */
       function queryBankList() {
         //Banks preloading
@@ -393,7 +438,17 @@
       /**
        Init 
        */
-      $(document).ready(function() {
+      $(document).ready( init );
+        
+      function init() {
+        //Create knobs
+        $('.send1').each( function () {
+          let knob = pureknob.createKnob(64,64);
+          let node = knob.node();
+          console.log(node);
+          //$(this).get().appendChild(node);
+          $(this).append(node);
+        })
         /**
         Tab button management
         **/
@@ -456,7 +511,7 @@
           });
           
           onChangePart(0);
-      });
+      }
     </script>
   </body>
 </html>

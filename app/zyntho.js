@@ -435,6 +435,31 @@ class ZynthoServer extends EventEmitter {
         //console.log(JSON.stringify(bundle.packets));
         this.osc.send(bundle);
       }
+      
+      /**
+       * changeFXPreset
+       * changes a fx preset
+       * path : osc path for fx. ie. part0/partefx0/Reverb
+       * preset: new preset
+       */
+       /*
+      changeFXPreset(path, preset) {
+        const limits = {
+          'Reverb' : 13,
+          'Echo': 9,
+          'Chorus': 10,
+          'Phaser': 12,
+          'Alienwah': 4,
+          'Distorsion': 6,
+          'DynamicFilter': 5
+        }
+        
+        this.query(`${path}/preset`, (msg) =>{
+          let currentValue = msg.args[0].value;
+          
+        })
+        
+      } */
 }
 
 exports.ZynthoServer = ZynthoServer;
