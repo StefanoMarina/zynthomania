@@ -101,9 +101,9 @@ body::after {
 
   .tab-header, .big-btn {
       padding: 4px;
-      font-size: 16px !important;
    }
    
+   .tab-header, .big-btn, .big-btn * {font-size: 16px !important;}
    .big-icon { font-size: 20 px !important}
 }
 
@@ -113,8 +113,10 @@ body::after {
 
   .tab-header, .big-btn {
       padding: 8px;
-      font-size: 24px !important;
     }
+    
+   .tab-header, .big-btn, .big-btn * {font-size: 24px !important;}
+   
   .big-icon {font-size: 32px !important;}
 }
 

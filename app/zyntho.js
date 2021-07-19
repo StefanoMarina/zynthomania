@@ -375,6 +375,19 @@ class ZynthoServer extends EventEmitter {
         this.bundleBind(query, (msg) => {bypassCallback(msg)});
         fxQuery.packets = fxQuery.packets.concat(query.packets);
         
+        //System send is handled as part
+        query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
+        const sendCallback = function (msg) {
+          let regexp = RegExp('\/Psysefxvol(\\d)').exec(msg.address);
+          
+          if (returnObject.send === undefined)
+            returnObject.send = new Array(4);
+            
+          returnObject.send[parseInt(regexp[1])] = msg.args[0].value;
+        }
+        this.bundleBind(query, (msg) => {sendCallback(msg)});
+        fxQuery.packets = fxQuery.packets.concat(query.packets);
+        
         //Preset - generic
         let presetsQuery = this.parser.emptyBundle();
         for (let type = 1; type < 8; type++) {
@@ -436,30 +449,6 @@ class ZynthoServer extends EventEmitter {
         this.osc.send(bundle);
       }
       
-      /**
-       * changeFXPreset
-       * changes a fx preset
-       * path : osc path for fx. ie. part0/partefx0/Reverb
-       * preset: new preset
-       */
-       /*
-      changeFXPreset(path, preset) {
-        const limits = {
-          'Reverb' : 13,
-          'Echo': 9,
-          'Chorus': 10,
-          'Phaser': 12,
-          'Alienwah': 4,
-          'Distorsion': 6,
-          'DynamicFilter': 5
-        }
-        
-        this.query(`${path}/preset`, (msg) =>{
-          let currentValue = msg.args[0].value;
-          
-        })
-        
-      } */
 }
 
 exports.ZynthoServer = ZynthoServer;
