@@ -112,7 +112,7 @@ body::after {
   .panel * {margin-top: 4px; margin-bottom: 4px;}
 
   .tab-header, .big-btn {
-      padding: 8px;
+      padding: 8px !important;
     }
     
    .tab-header, .big-btn, .big-btn * {font-size: 24px !important;}
@@ -120,14 +120,16 @@ body::after {
   .big-icon {font-size: 32px !important;}
 }
 
-button, select {
+button, select, .btn, .fx-btn {
   background-color: transparent;
   color: black;
 }
 
-button {
+button, .btn, .fx-btn {
   border: 2px dotted black;
 }
+
+.fx-btn button { border: none !important}
 
 /**
  * head tab headers look and feel
@@ -146,7 +148,7 @@ button {
   border-width: 0px 0px 2px 0px;
  }
 
-button:hover, .btn-selected {
+button:hover, .btn-selected, .btn-selected *, button:hover *, .fx-btn:hover, .fx-btn:hover * {
   background-color: black !important;
   color: rgba(204, 204, 0) !important;
 }
@@ -173,3 +175,12 @@ ul.select li.selected {
    background-color: black;
    color: white;
 }
+
+.knob {
+  border-radius: 1rem;
+  background-color: black;
+  color: rgb(153,204,0);
+  text-align:center;
+  height:40px;
+}
+

@@ -11,6 +11,7 @@
     <script src="lcdknob.js"></script>
     <script src="fxbutton.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    
   </head>
 
   <body>
@@ -63,45 +64,34 @@
                     
                   </div>
                   <div id="pnlPart" class="panel fxPanel hidden row">
-                    <div class="col-8">
-                      <div class="fx-btn big-btn" data-osc="/part/partefx0" id="fxbtnPart0"></div>
-                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx0" id="btnpfx0" onclick="onPartFXButtonSelect(0)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx1" id="btnpfx1" onclick="onPartFXButtonSelect(1)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/part/partefx2" id="btnpfx2" onclick="onPartFXButtonSelect(2)"></button>
+                    <div class="col-12">
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx0"></div>
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
+                    </div>
+                    <div class="row col-12">
+                      <div class="col-3 col-md-2"><button class="knob" id="kss0"></button></div>
+                      <div class="col-3 col-md-2"><button class="knob" id="kss1"></button></div>
+                      <div class="col-3 col-md-2"><button class="knob" id="kss2"></button></div>
+                      <div class="col-3 col-md-2"><button class="knob" id="kss3"></button></div>
+                      <div class="col-12 col-sm-2"><button onclick="actionMaximizeSend()">Send &gt; </button></div>
+                    </div>
                       <table class="toolbar col-12">
                         <tr>
-                          <td><button onclick="actionMaximizeSend()">Send &gt; </button></td>
-                          <td><button class="knob" id="kss0"></button></td>
-                          <td><button class="knob" id="kss1"></button></td>
-                          <td><button class="knob" id="kss2"></button></td>
-                          <td><button class="knob" id="kss3"></button></td>
+                      
                         </tr>
                       </table>
-                    </div>
-                    <div class="col-4 hidden" id="fxPartPopup">
-                      <button class="big-btn col-12" id="fxBypass" onclick="actionBypassPartFX();"><i class="big-icon fas fa-volume-mute"></i></button>
-                      <button class="big-btn col-12" onclick="actionChangePartFX('next_fx')">&gt;</button>
-                      <button class="big-btn col-12" onclick="actionChangePartFX('prev_fx')">&lt;</button>
-                      <button class="hidden big-btn col-12 pfx-preset" onclick="actionChangeFXPreset(1, 'btnpfx'+window.zsession.fx.id)" >+</button>
-                      <button class="hidden big-btn col-12 pfx-preset" onclick="actionChangeFXPreset(-1,'btnpfx'+window.zsession.fx.id)">-</button>
                     </div>
                   </div>
                 </div>
                 <div id="pnlSystem" class="panel fxPanel hidden row">
-                    <div class="col-8">
-                      <button class="fx-btn col-12 big-btn" data-osc="/sysefx0" id="btnpfx0" onclick="onSysFXButtonSelect(0)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/sysefx1" id="btnsfx1" onclick="onSysFXButtonSelect(1)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/sysefx2" id="btnsfx2" onclick="onSysFXButtonSelect(2)"></button>
-                      <button class="fx-btn col-12 big-btn" data-osc="/sysefx3" id="btnsfx3" onclick="onSysFXButtonSelect(3)"></button>
+                    <div class="col-12">
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx0"></div>
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx1"></div>
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx2"></div>
+                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx3"></div>
                     </div>
-                    <div class="col-4 hidden" id="fxSysPopup">
-                      <button class="big-btn col-12" id="fxBypass" onclick="actionBypassSystemFX();"><i class="big-icon fas fa-volume-mute"></i></button>
-                      <button class="big-btn col-12" onclick="actionChangeSysFX('next_fx')">&gt;</button>
-                      <button class="big-btn col-12" onclick="actionChangeSysFX('prev_fx')">&lt;</button>
-                      <button class="hidden big-btn col-12 sfx-preset" onclick="actionChangeFXPreset(1, 'btnsfx'+window.zsession.fx.id)" >+</button>
-                      <button class="hidden big-btn col-12 sfx-preset" onclick="actionChangeFXPreset(-1,'btnsfx'+window.zsession.fx.id)">-</button>
-                    </div>
-                  </div>
+                </div>
               </div>            
               <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
                 <div class="col-10">
@@ -138,6 +128,12 @@
         return window.zsession.parts[id];
       }*/
       
+      window.zsession.sanitize = function (path) {
+        if (path.search('part/') > 0)
+          path = path.replace('part/', `part${window.zsession.partID}/`)
+        
+        return path;
+      }
       
       window.zsession.fx.getFX =function (id) {
         if (id === undefined)
@@ -207,20 +203,30 @@
         $('#instrumentName').text('.');
         
         const timer = setInterval ( () =>{
+          
           let text = $('#instrumentName').text();
-          if (text.length < 4)
-            text += ".";
-          else if (text.length < 24)
-           text += " ";
-          else
-            text = " ";
+          
+          if (text.length < 8)
+            text += "..";
+          else {
+            padding = parseInt( /(\d+)px/.exec($('#instrumentName').css('padding-left'))[1] )
+            if (padding < 100)
+              $('#instrumentName').css('padding-left', padding+10);
+            else {
+              $('#instrumentName').css('padding-left', 0);
+              text = "..";
+            }
+          }
+            
           $('#instrumentName').text(text);
         }, 500);
         
         $.ajax(params)
         .done(function(data) {
             clearInterval(timer);
-            $('#instrumentName').text(oldValue);
+            $('#instrumentName').text('OK');
+            $('#instrumentName').css('padding-left' , 0);
+            
             if (onDone !== undefined)
               onDone(data);
           })
@@ -254,9 +260,10 @@
         doQuery('status/partfx', {id: window.zsession.partID}, function(data){
           console.log(data);
             window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
-            onFXLoad('btnpfx', data);
+            //onFXLoad('btnpfx', data);
             
-            window.buttons['fxbtnPart0'].setFX(data.efx[0]);
+            for (let i = 0; i < 3; i++)
+              window.buttons[`btnpfx${i}`].setFX(data.efx[i]);
             
             //update send
             for (let i = 0; i < 4; i++) {
@@ -365,7 +372,6 @@
          
          let currentFX = window.zsession.fx.getFX();
          let newFX = {...data, send : currentFX.send}
-         
          window.zsession.fx.setFX(newFX);
          
          //window.zsession.partefx[window.zsession.partID].fx[window.zsession.fx.id] = data;
@@ -562,19 +568,28 @@
         });
         
         /**
-        swipe buttons
+        FX buttons
         */
         window.buttons = {};
-        $('#fxbtnPart0').each( function (index) {
+        
+        $('.fx-btn').each( function (index) {
           let id = $(this).attr('id');
-          let path = $(this).attr('osc-path');
-          let fxButton = new FXButton(id);
+          let chid = parseInt(/\w+(\d+)/.exec(id)[1]);
+            
+          let fxButton = new FXButton(id, chid);
           
           $(this).on('next-fx', (event) => {
-            console.log('requested next fx');
+            console.log('requested next fx');  
+            //actionChangePartFX('next_fx');
           });
           
           window.buttons[id] = fxButton;
+        });
+        
+        //Part efx
+        $('#btnpfx0, #btnpfx1, #btnpfx2').each( function (index) {
+          let id = $(this).attr('id');
+          window.buttons[id].base_path = '/part/partefx';
         });
         
         /**
