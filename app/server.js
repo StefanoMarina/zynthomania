@@ -146,6 +146,20 @@ app.get('/status/partfx', function (req, res, next) {
 })
 
 /**
+ * /status/partfx
+ * GET creates an object to be filled with info on part efx.
+ * this is an asynch function, it will wait for all effect to return
+ * before sending.
+ * id: part id
+ */
+ 
+app.get('/status/systemfx', function (req, res, next) {
+ console.log(`[GET] systemfx query: ${JSON.stringify(req.query)}`);
+ app.zyntho.querySystemFX((result) => { res.json(result) });
+})
+
+
+/**
  * GET returns all zynthomania static options
  * query: none
  * return : json
@@ -193,6 +207,46 @@ app.post('/fx/part/prev_fx', function (req, res) {
   (msg) => {
     let value = msg.args[0].value;
     app.zyntho.changeFX(partID, efxID, --value, (result) =>{
+      res.json(result);
+    });
+  });
+})
+
+/**
+ * /fx/system/next_fx
+ * POST
+ * changes a system efx
+ * body { efx: efx id}
+ */
+app.post('/fx/system/next_fx', function (req, res) {
+  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  
+  let efxID = req.body.efxID;
+  
+  app.zyntho.query(app.zyntho.parser.translate(`/sysefx${efxID}/efftype`),
+  (msg) => {
+    let value = msg.args[0].value;
+    app.zyntho.changeFX(undefined, efxID, ++value, (result) =>{
+      res.json(result);
+    });
+  });
+})
+
+/**
+ * /fx/system/prev_fx
+ * POST
+ * changes a system efx
+ * body { efx: efx id}
+ */
+app.post('/fx/system/prev_fx', function (req, res) {
+  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  
+  let efxID = req.body.efxID;
+  
+  app.zyntho.query(app.zyntho.parser.translate(`/sysefx${efxID}/efftype`),
+  (msg) => {
+    let value = msg.args[0].value;
+    app.zyntho.changeFX(undefined, efxID, --value, (result) =>{
       res.json(result);
     });
   });

@@ -131,6 +131,8 @@ button, .btn, .fx-btn {
 
 .fx-btn button { border: none !important}
 
+.fx-btn .text::before {content : "< "}
+.fx-btn .text::after {content : " >"}
 /**
  * head tab headers look and feel
  */

@@ -85,6 +85,8 @@ class FXButton {
       $(`${qid} .fxBypass`).removeClass('hidden');
       let icon = (fx.bypass) ? 'fa-volume-mute' : 'fa-volume-up';
       $(`${qid} .fxBypass > i`).removeClass('fa-volume-mute fa-volume-up').addClass(icon);  
+    } else {
+      $(`${qid} .fxBypass`).addClass('hidden');
     }
     
     if (fx.preset > -1) {

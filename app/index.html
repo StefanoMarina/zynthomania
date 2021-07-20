@@ -53,9 +53,9 @@
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="queryPartFX()">Part</button>
                   <button class="tab-header" data-tab="" data-open="">Insert</button>
-                  <button class="tab-header" data-tab="" data-open="">System</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="querySystemFX()">System</button>
                 </header>
-                <div class="col-8">
+                <div class="col-8"> <!-- fx content container -->
                   <div id="pnlDry" class="panel fxPanel hidden">
                     
                     <button id="btnDryPart" class="col-12 big-btn">None</button>
@@ -76,23 +76,18 @@
                       <div class="col-3 col-md-2"><button class="knob" id="kss3"></button></div>
                       <div class="col-12 col-sm-2"><button onclick="actionMaximizeSend()">Send &gt; </button></div>
                     </div>
-                      <table class="toolbar col-12">
-                        <tr>
-                      
-                        </tr>
-                      </table>
-                    </div>
                   </div>
-                </div>
-                <div id="pnlSystem" class="panel fxPanel hidden row">
+                  <div id="pnlSystemFX" class="panel fxPanel hidden row">
                     <div class="col-12">
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx0"></div>
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx1"></div>
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx2"></div>
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx3"></div>
                     </div>
-                </div>
-              </div>            
+                  </div>         
+                </div> <!-- /fx content -->
+              </div> <!-- /fx -->
+              
               <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
                 <div class="col-10">
                   <label for="commandline">&gt;</label>
@@ -274,85 +269,16 @@
             
         });
       }
-      
-      /** updates button fx with same id */
-      function onFXLoad(baseID, data) {
-        for (let i = 0; i < data.efx.length; i++) {
-          
-          let button = `#${baseID}${i}`;
-          
-          //$(button).removeClass('hidden');
-          $(button).removeClass('btn-selected');
-          $(button).text( (data.efx[i].preset === undefined)
-                          ? data.efx[i].name
-                          : `${data.efx[i].name}/${data.efx[i].preset}`
-                        );
-        }
-      }
-      
-      function onPartFXButtonSelect(fxid) {
-        window.zsession.fx.path = `/part${window.zsession.partID}/partefx${fxid}`;
-        
-        $('.fx-btn').removeClass('btn-selected');
-        $(`#btnpfx${fxid}`).addClass('btn-selected');
-        $('#fxPartPopup').removeClass('hidden');
-        
-        let pfx = window.zsession.fx.getFX(fxid); //window.zsession.partefx[window.zsession.partID].fx[fxid];
-        
-        $('#fxBypass').removeClass('btn-selected');
-        if (pfx.bypass) $('#fxBypass').addClass('btn-selected');
-        
-        if ('None' == pfx.name || 'EQ' == pfx.name)
-          $('.pfx-preset').addClass('hidden');
-        else
-          $('.pfx-preset').removeClass('hidden');
-        
-        window.zsession.fx.id = fxid;
-        window.zsession.fx.path = `/part${window.zsession.partID}/partefx${fxid}/${pfx.name}`;
-        
-      }
-      
-      function onSystemFXButtonSelect(fxid) {
-        window.zsession.fx.path = `/sysefx${fxid}`;
-        
-        $('.fx-btn').removeClass('btn-selected');
-        $(`#btnsfx${fxid}`).addClass('btn-selected');
-        $('#fxSysPopup').removeClass('hidden');
-        
-        let sfx = window.zsession.fx.system[fxid];
-        
-        //let pfx = window.zsession.fx.getFX(fxid);
-        
-        if ('None' == pfx.name || 'EQ' == pfx.name)
-          $('.sfx-preset').addClass('hidden');
-        else
-          $('.sfx-preset').removeClass('hidden');
-        
-        window.zsession.fx.id = fxid;
-        window.zsession.fx.path += `${pfx.name}`;
-      }
-      
-     function actionBypassPartFX() {
-         let pID = window.zsession.partID;
-         let fxID = window.zsession.fx.id;
-         
-         const currentFX = window.zsession.fx.getFX(fxID);
-         
-         let path = `/part${pID}/Pefxbypass${fxID}`;
-         
-         path += (currentFX.bypass) ? ' F' : ' T';
-         console.log(`path: ${path}`);
-         
-         doAction('script', { script: path }, (data) => {
-            currentFX.bypass = !currentFX.bypass;
+  
+      function querySystemFX() {
+         doQuery('status/systemfx', undefined, function(data){
+          console.log(data);
+            //window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
+            //onFXLoad('btnpfx', data);
             
-            if (!currentFX.bypass)
-              $('#fxBypass').removeClass('btn-selected');
-            else
-              $('#fxBypass').addClass('btn-selected');
-              
-            window.zsession.fx.setFX(currentFX, fxID);
-         });
+            for (let i = 0; i < 4; i++)
+              window.buttons[`btnsfx${i}`].setFX(data.efx[i]);
+        });
       }
      
      function actionMaximizeSend() {
@@ -364,59 +290,6 @@
          window.knobs['kss3'].setValue(127);
        })
      }
-     
-     function actionChangePartFX(rest) {
-       doAction(`fx/part/${rest}`, {efxID: window.zsession.fx.id, partID:  window.zsession.partID},
-       (data) => {
-         console.log(data);
-         
-         let currentFX = window.zsession.fx.getFX();
-         let newFX = {...data, send : currentFX.send}
-         window.zsession.fx.setFX(newFX);
-         
-         //window.zsession.partefx[window.zsession.partID].fx[window.zsession.fx.id] = data;
-         
-         let buttonID=`#btnpfx${window.zsession.fx.id}`;
-         if (data.preset > -1)
-          $(buttonID).text(`${data.name}/${data.preset}`)
-         else
-          $(buttonID).text(`${data.name}`)
-          
-         onPartFXButtonSelect(window.zsession.fx.id);
-       })
-     }
-     
-     function actionChangeFXPreset(preset, id) {
-       /* presets up to zynaddsubfx 3.0.6 */
-         const limits = {
-          'Reverb' : 13,
-          'Echo': 9,
-          'Chorus': 10,
-          'Phaser': 12,
-          'Alienwah': 4,
-          'Distorsion': 6,
-          'DynamicFilter': 5
-        }
-        
-        
-        let path = window.zsession.fx.path;
-        const currentFX = window.zsession.fx.get();
-        
-        preset += currentFX.preset;
-        
-        let fxName = path.substring(path.lastIndexOf('/')+1);
-        if (!limits.hasOwnProperty(fxName))
-          return; 
-          
-        let limit = limits[fxName];
-        preset = Math.min(limit, Math.max(0, preset))
-        
-        doAction('script', { script : `${path}/preset ${preset}`} , (data) => {
-          $('#'+id).text(`${fxName}/${preset}`);
-          currentFX.preset = preset;
-          window.zsession.fx.set(currentFX);
-        })
-      }
       
       /* Bank button load */
       function queryBankList() {
@@ -578,10 +451,10 @@
             
           let fxButton = new FXButton(id, chid);
           
-          $(this).on('next-fx', (event) => {
-            console.log('requested next fx');  
+          /*$(this).on('next-fx', (event) => {
+            //console.log('requested next fx');  
             //actionChangePartFX('next_fx');
-          });
+          });*/
           
           window.buttons[id] = fxButton;
         });
@@ -590,6 +463,12 @@
         $('#btnpfx0, #btnpfx1, #btnpfx2').each( function (index) {
           let id = $(this).attr('id');
           window.buttons[id].base_path = '/part/partefx';
+        });
+        
+        //system efx
+        $('#btnsfx0, #btnsfx1, #btnsfx2 #btnsfx3').each( function (index) {
+          let id = $(this).attr('id');
+          window.buttons[id].base_path = '/sysefx';
         });
         
         /**

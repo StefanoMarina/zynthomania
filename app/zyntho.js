@@ -415,7 +415,7 @@ class ZynthoServer extends EventEmitter {
      }
      
      /**
-      * changePartFX
+      * changeFX
       * Changes the current part FX, queries new preset, sends done
       * part: part id
       * fxid : efx id
@@ -425,14 +425,18 @@ class ZynthoServer extends EventEmitter {
         efftype = (efftype < 0) ? 8 : efftype % 8;
         const newEffName = exports.typeToString(efftype);
         
+        const nameQueryString = (part === undefined)
+            ? `/sysefx${fxid}` : `/part${part}/partefx${fxid}`;
+        
+            
         let bundle = this.parser.emptyBundle();
         
         bundle.packets.push(
-          this.parser.translate(`/part${part}/partefx${fxid}/efftype ${efftype}`)
+          this.parser.translate(`${nameQueryString}/efftype ${efftype}`)
         );
         
         if (efftype != 0 && efftype != 7) {
-          let presetQuery = `/part${part}/partefx${fxid}/${newEffName}/preset`;
+          let presetQuery = `${nameQueryString}/${newEffName}/preset`;
           bundle.packets.push(this.parser.translate(presetQuery));
           
           this.once(presetQuery, (msg) =>{
@@ -449,6 +453,55 @@ class ZynthoServer extends EventEmitter {
         this.osc.send(bundle);
       }
       
+     /**
+     * querySystemFX
+     * queries part fx info, such as effect name, bypass status and preset
+     * Those are effectively 3 bundled queries
+     * partID: part to query
+     * onDone: query to call when all is done
+     */
+     querySystemFX(onDone) {
+       const returnObject = {
+          efx : [{},{},{}, {}]
+        };
+        
+        let fxQuery = this.parser.emptyBundle();
+        
+        let query = this.parser.translate(`/sysefx[0-3]/efftype`);
+        const nameCallback = function(msg) {
+          let efftype = msg.args[0].value;
+          let id = parseInt(/sysefx(\d)/.exec(msg.address)[1]);
+          let name = exports.typeToString(efftype);
+          returnObject.efx[id].name = name;
+        }
+        this.bundleBind(query, (msg) => {nameCallback(msg)});
+        fxQuery.packets = query.packets;
+        
+        //Preset - generic
+        let presetsQuery = this.parser.emptyBundle();
+        for (let type = 1; type < 8; type++) {
+          let name = exports.typeToString(type);
+          let query = this.parser.translate(`/sysefx[0-2]/${name}/preset`);
+          presetsQuery.packets = presetsQuery.packets.concat(query.packets);
+        }
+        const presetCallback = function(msg) {
+          let regexp = /sysefx(\d)\/(\w+)/.exec(msg.address);
+          let id = parseInt(regexp[1]);
+          let name = regexp[2];
+          
+          //if OSC 1.0 is respected, this should be already ready
+          if (name == returnObject.efx[id].name)
+            returnObject.efx[id].preset = msg.args[0].value;
+        };
+        this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
+        fxQuery.packets = fxQuery.packets.concat(presetsQuery);
+        
+        fxQuery = this.injectDone(fxQuery, (done) => {
+          onDone(returnObject);
+        });
+        
+        this.osc.send(fxQuery);
+     }
 }
 
 exports.ZynthoServer = ZynthoServer;
