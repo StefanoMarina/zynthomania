@@ -82,6 +82,10 @@ app.post('/loadInstrument', function (req, res) {
     res.status(400).end();
   }
   
+  app.zyntho.loadInstrument(req.body.id, req.body.instrument.path, function() {
+    res.status(200).end();
+  })
+  /*
   app.zyntho.once('/damage', (msg) => {
         let score =RegExp("part(\\d+)","gm").exec(msg.args[0].value);
         if (score != null && score[1] == req.body.id) {
@@ -91,6 +95,7 @@ app.post('/loadInstrument', function (req, res) {
   });
     
   app.zyntho.send(`/load_xiz ${req.body.id} "${req.body.instrument.path}"`);
+  */
 });
 
   
@@ -167,6 +172,26 @@ app.get('/status/systemfx', function (req, res, next) {
 app.get('/status/options', function (req, res, next) {
   console.log(`[GET] getoptions query: ${JSON.stringify(req.query)}`);
   res.json(app.zyntho.preferences);
+});
+
+
+/**
+ * /status/part
+ * GET returns part info
+ * query {id: part id}
+ * return: json
+ */
+
+app.get('/status/part', function( req, res, next) {
+  console.log(`[GET] getStatusPart query: ${JSON.stringify(req.query)}`);
+  if ( req.query.id === undefined) {
+    res.status(400).end();
+    return;
+  }
+
+  app.zyntho.query(`/part${req.query.id}/Pname`, (result) => {
+    res.json({name: result.args[0].value})
+  });
 });
 
 /**
@@ -252,24 +277,6 @@ app.post('/fx/system/prev_fx', function (req, res) {
   });
 })
 
-/**
- * /status/part
- * GET returns part info
- * query {id: part id}
- * return: json
- */
-
-app.get('/status/part', function( req, res, next) {
-  console.log(`[GET] getStatusPart query: ${JSON.stringify(req.query)}`);
-  if ( req.query.id === undefined) {
-    res.status(400).end();
-    return;
-  }
-
-  app.zyntho.query(`/part${req.query.id}/Pname`, (result) => {
-    res.json({name: result.args[0].value})
-  });
-});
 
 /**
  * /fx/route
@@ -291,6 +298,25 @@ app.post('/fx/route', function(req, res) {
   });
 });
 
+/**
+ * /fx/dry
+ * POST sets new dry filter
+ * @body : {dry: array of names}
+ */
+app.post('/fx/dry', function(req, res) {
+  if (req.body.dry === undefined){
+    res.status(400).end();
+    return;
+  }
+  
+  app.zyntho.preferences.dry = req.body.dry;
+  app.zyntho.save();
+  
+  //force routing
+  app.zyntho.route(undefined, undefined, (msg) =>{
+    res.status(200).end();
+  });
+});
 app.on('open', () => {
   console.log ("Opened web application");
 });

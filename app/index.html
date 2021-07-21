@@ -50,14 +50,14 @@
               
               <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onDryPanelLoad()")>Dry</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="queryPartFX()">Part</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onRoutePanelLoad()">Route</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="querySystemFX()">System</button>
                 </header>
                 <div class="col-8"> <!-- fx content container -->
                   
-                  <div id="pnlDry" class="panel fxPanel hidden row" onclick="onDryPanelLoad()">
+                  <div id="pnlDry" class="panel fxPanel hidden row">
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Reverb</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Echo</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Chorus</button></div>
@@ -65,6 +65,10 @@
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Distorsion</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">EQ</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">DynamicFilter</button></div>
+                    <div class="col-12 col-md-6">
+                      <button class="col-12 big-btn btn-selected" id="applyDry">Dry <i class="fa fa-level-down-alt"></i>
+                      </button>
+                    </div>
                   </div>
                   <div id="pnlPart" class="panel fxPanel hidden row">
                     <div class="col-12">
@@ -261,6 +265,7 @@
         else
           window.zsession.partID += index;
         $('#currentPart').text( ('0'+window.zsession.partID).substr(-2) );
+        
         //retrieve part info
         doQuery('status/part', {id: window.zsession.partID}, (data) => {
           console.log(data);
@@ -315,16 +320,17 @@
       
       /* Bank button load */
       function queryBankList() {
+        
         //Banks preloading
         if (Object.keys(window.zsession.banks).length <= 1) {
           doQuery('getBanks', null, (data) => {
             data.forEach( (item) => {
               window.zsession.banks[item] = [];
-              
-            queryBankList();
-            return;
             });
+            queryBankList(-1);
+            return;
           })
+          
           return;
         }
         
@@ -349,9 +355,16 @@
       }
       
       function queryBank(selectedBank) {
+        
         if (window.zsession.banks[selectedBank].length == 0) {
           doQuery('getInstruments', {bank: selectedBank}, (data) => {
             window.zsession.banks[selectedBank] = data;
+            
+            if (data.length == 0) {
+              $('#instrumentName').text('Empty!');
+              return;
+            }
+            
             queryBank(selectedBank);
             return;
           });
@@ -433,25 +446,29 @@
       
       
       function onDryPanelLoad() {
-        onQuery('status/options', null, (data) => {
-         
+        doQuery('status/options', null, (data) => {
+          console.log(data);
+          let fxes = data.dry;
           $('.btnDrySelection').removeClass('btn-selected');
-          for (fx in data.dry) {
-            $(`.btnDrySelection:contains(${fx})`).addClass('btn-selected');
-          }
+          
+          fxes.forEach( (fx) => {
+              $(`.btnDrySelection:contains(${fx})`).addClass('btn-selected');
+          })
         });
       }
       
       function onRoutePanelLoad() {
         doQuery('status/options', null, (data) => {
           console.log(data);
-          let route = data.zyntho.route;
+          let route = data.route;
           
-          let status = route.fx;
+          let fxes = route.fx;
+          
           $('.btnRouteSelection').removeClass('btn-selected');
-          for (fx in status) {  
-            $(`.btnRouteSelection:contains(${fx})`).addClass('btn-selected');
-          }
+          
+          fxes.forEach( (fx) => {
+              $(`.btnRouteSelection:contains(${fx})`).addClass('btn-selected');
+          })
           
           window.knobs['routeSend'].setValue(route.send);
         });
@@ -577,18 +594,24 @@
             }
           })
         
-        
-        
+          
           $('#applyRoute').on('click', function() {
             const route = {};
             route.send = window.knobs['routeSend'].getValue();
-            route.fx =            
+            route.fx = $.makeArray(
             $('.btnRouteSelection.btn-selected').map( function() {return $(this).text()})
+            );
             
             //console.log(route);
             doAction('fx/route', {route: route});
           })
-          
+          $('#applyDry').on('click', function() {
+            const dry = $.makeArray(
+              $('.btnDrySelection.btn-selected').map( function() {return $(this).text()})
+            );
+            
+            doAction('fx/dry', {dry: dry});
+          })
             
           /**
           Init actions
@@ -597,11 +620,12 @@
           */
           doQuery('getInstruments', {bank: 'Favorites'}, 
             function(data) {
-                window.zsession.banks['Favorites'] = data;
-                $('#instrumentName').text('Welcome to Zynthomania!');
+              window.zsession.banks['Favorites'] = data;
+              //$('#instrumentName').text('Welcome to Zynthomania!');
+              onChangePart(0);
           });
           
-          onChangePart(0);
+       
       }
     </script>
   </body>

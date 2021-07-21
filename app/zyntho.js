@@ -123,6 +123,37 @@ class ZynthoServer extends EventEmitter {
    }
    
    /**
+    * getDryMode
+    * returns dry mode
+    */
+    getDryMode() {
+      if (this.preferences.dry === undefined)
+        this.preferences.dry = [];
+      return this.preferences.dry;
+    }
+    
+  /**
+  * ZynthoServer::merge
+  * merge 2 queries
+  * @returns merged bundle
+  */
+  merge(queryA, queryB) {
+    let result;
+    if (queryA.packets === undefined) {
+     result = this.parser.emptyBundle();
+     result.packets.push(queryA);
+    } else 
+      result = { ...queryA };
+    
+    if (queryB.packets === undefined)
+      result.packets.push(queryB);
+    else
+      result.packets = result.packets.concat(queryB.packets);
+    
+    return result;
+  }
+  
+   /**
     * ZynthoServer::onDone
     * injects an internal get message and binds it to a callback
     * this should work if the OSC 1.0 bundle rule is respected - packets
@@ -326,9 +357,26 @@ class ZynthoServer extends EventEmitter {
   /**
    * loadInstrument(part, instrumentPath)
    * loads an instrument into a part, then routes all FX
+   * if necessary, will enable the instrument
+   * if keyboard mode, instrument channel will be routed
+   * @partID : part id (0,15)
+   * @intrumentPath: file to load
+   * @onDone: done callback
    */
-   loadInstrument(part, instrumentPath) {
+   loadInstrument(part, instrumentPath, onDone) {
+     let load_xiz = this.parser.translate(`/load_xiz ${part} "${instrumentPath}"`);
      
+     this.once('/damage', function (msg) {
+       let partID = parseInt(/part(\d+)/.exec(msg.args[0].value)[1]);
+       
+       //apply routing to this part
+       if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
+         this.route(partID, undefined, onDone);
+       } else if (onDone !== undefined)
+        onDone(msg);
+     });
+     
+     this.osc.send(load_xiz);
    }
    
   
@@ -509,26 +557,6 @@ class ZynthoServer extends EventEmitter {
    
   }
      
-  /**
-  * merge
-  * merge 2 queries
-  * returns merged bundle
-  */
-  merge(queryA, queryB) {
-    let result;
-    if (queryA.packets === undefined) {
-     result = this.parser.emptyBundle();
-     result.packets.push(queryA);
-    } else 
-      result = { ...queryA };
-    
-    if (queryB.packets === undefined)
-      result.packets.push(queryB);
-    else
-      result.packets = result.packets.concat(queryB.packets);
-    
-    return result;
-  }
       
   /**
   * route
@@ -549,10 +577,14 @@ class ZynthoServer extends EventEmitter {
           : ((Array.isArray(fxName) ? fxName : [fxName]));
     
     const _this = this;
-    const resultObject = { part : new Array(16), sys: new Array (4)}
     const _route = this.getRoute();
     
-    /* Query della situazione fx master*/
+    //translate dry names into efftype ids
+    const _dry = this.getDryMode().map( (fx)=>{ return exports.nameToType(fx);} ) ;
+    
+    const resultObject = { part : new Array(16), sys: new Array (4)}
+    
+    /* Query della situazione fx master */
     let masterQuery = this.parser.translate('/sysefx[0-2]/efftype');
     this.bundleBind(masterQuery, function (msg) {
       let masterType = msg.args[0].value;
@@ -561,13 +593,14 @@ class ZynthoServer extends EventEmitter {
     });
     
     let query = this.parser.translate(`${partPath}/efftype`);
+    
     const onPathMessage = function (msg) {
-      console.log(`onPathMessage: ${JSON.stringify(msg)}`);
+      //console.log(`::route:onPathMessage: ${JSON.stringify(msg)}`);
       
       let partID = parseInt(/\/part(\d+)/.exec(msg.address)[1]);
       let fxChanID =parseInt(/\/partefx(\d)/.exec(msg.address)[1]);
       
-      console.log(`onPathMessage: part ${partID} chan ${fxChanID} status ${JSON.stringify(resultObject.part[partID])}`);
+    //  console.log(`::route:onPathMessage: part ${partID} chan ${fxChanID} status ${JSON.stringify(resultObject.part[partID])}`);
       
       if (resultObject.part[partID] === undefined)
         resultObject.part[partID] = new Array(3);
@@ -575,10 +608,9 @@ class ZynthoServer extends EventEmitter {
       
       resultObject.part[partID][fxChanID] = msg.args[0].value;
     }
-    if (query.packets === undefined)
-      this.on(query.address, onPathMessage);
-    else
-      this.bundleBind(query, onPathMessage);
+    this.bundleBind(query, onPathMessage);
+    
+    //console.log(`::route: part fx bundle ${JSON.stringify(query)}`);  
     
     //merge two queries
     query = this.merge(masterQuery, query);
@@ -598,9 +630,14 @@ class ZynthoServer extends EventEmitter {
             continue;
           
           for (let fxChanID = 0; fxChanID < 3; fxChanID++) {
-            if (resultObject.part[partID][fxChanID] == masterType) {  
+            let pefxType = resultObject.part[partID][fxChanID];
+            if ( pefxType == masterType) {  
+              console.log(`ZynthoServer: routing part ${partID} fx {$fxChanID} to system fx ${sysID}`);
               bundle.packets.push ( _this.parser.translate (`/part${partID}/Pefxbypass${fxChanID} T`));
               bundle.packets.push ( _this.parser.translate (`/Psysefxvol${sysID}/part${partID} ${_route.send}`));
+            } else if (_dry.indexOf(pefxType) > -1) {
+              console.log(`ZynthoServer: drying  part ${partID} of fx {$fxChanID}`);
+              bundle.packets.push ( _this.parser.translate (`/part${partID}/Pefxbypass${fxChanID} T`));
             }
           }
         }

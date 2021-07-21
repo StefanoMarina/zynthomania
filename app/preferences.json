@@ -1,8 +1,8 @@
 {
   "user": "pi",
   "synth": { "port" : "7777" },
-  "dry" : [],
-  "route": { "send": 64, "fx" : [] }
+  "dry" : ["Reverb"],
+  "route": { "send": 64, "fx" : [] },
   "custom_dir": "/home/pi/zynthomania/custom",
   "favorites": "/home/pi/zynthomania/favorites.json",
   "bank_dir": "/usr/local/share/zynaddsubfx/banks/"
