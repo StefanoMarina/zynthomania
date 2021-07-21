@@ -32,8 +32,8 @@ class LCDKnob {
   }
   
   setValue(value) {
-    value = value % 128;
-    this.value = Math.min(127,(Math.round(value/32)*32));
+    this.value = Math.min(127, (Math.round(value/32*32) % 159 ) ) ;
+    
    // console.log('new value :' + this.value);
     this.render();
     return this.value;
