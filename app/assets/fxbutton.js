@@ -77,23 +77,26 @@ class FXButton {
   }
   
   setFX(fx) {
-    let qid = `#${this.id}`
+    let qid = `#${this.id}`;
     
     //bypass status
-    if (fx.bypass !== undefined) 
+    let btnBypass = $(`${qid} .fxBypass`);
+    
+    if (fx.bypass !== undefined)
     {
-      $(`${qid} .fxBypass`).removeClass('hidden');
+      $(btnBypass).removeClass('hidden');
       let icon = (fx.bypass) ? 'fa-volume-mute' : 'fa-volume-up';
       $(`${qid} .fxBypass > i`).removeClass('fa-volume-mute fa-volume-up').addClass(icon);  
     } else {
-      $(`${qid} .fxBypass`).addClass('hidden');
+      $(btnBypass).addClass('hidden');
     }
     
+    let btnPreset = $(`${qid} .fxPreset`);
     if (fx.preset > -1) {
-      $(`${qid} .fxPreset`).removeClass('hidden')
+      $(btnPreset).removeClass('hidden')
         .text(fx.preset);
     } else
-      $(`${qid} .fxPreset`).addClass('hidden');
+      $(btnPreset).addClass('hidden');
     
     $(`${qid} > .text`).text(fx.name);
     
@@ -155,12 +158,18 @@ class FXButton {
   }
   
   actionChangeFX(rest) {
+    let qid = `#${this.id}`;
+    
     let rest_path = (this.base_path.search('part') > -1)
               ? `fx/part/${rest}`
               : `fx/system/${rest}`;
     
     doAction(rest_path, {efxID: this.channelid, partID: window.zsession.partID },
      (data) => {
+       console.log(data);
+       //change fx does not return bypass status
+       data.bypass = $(`${qid} .btnBypass`).hasClass('hidden');
+       
        this.setFX(data);
      })
   }

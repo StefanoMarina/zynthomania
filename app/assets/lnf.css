@@ -20,10 +20,11 @@ body, body * {font-family: Minecart}
     font-size: 16px 
   }
   
-  .controlPanel * {
+  #pnlBanks * { font-size: 12px }
+/*  .controlPanel * {
     font-size: 10px 
   }
-  
+  */
 }
 
 @media only screen and (min-width: 768px) {
@@ -31,9 +32,8 @@ body, body * {font-family: Minecart}
     font-size: 24px
   }
   
-  .controlPanel * {
-    font-size: 14px 
-  }
+  #pnlBanks * { font-size: 12px }
+  
 }
 
 
@@ -186,3 +186,14 @@ ul.select li.selected {
   height:40px;
 }
 
+.check {
+  border: none !important;
+  margin-left: 5px !important;
+}
+.check[data-check="false"]::before {content: '[ ] '; }
+.check[data-check="false"]:hover::before {content: '[-] '; }
+.check[data-check="true"]::before {content: '[X] '; }
+
+.toggle {
+  border-radius: 10px;
+}

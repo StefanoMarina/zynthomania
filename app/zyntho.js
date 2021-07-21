@@ -111,16 +111,15 @@ class ZynthoServer extends EventEmitter {
    * getRouteMode
    * returns route mode
    */
-   getRouteMode() {
+   getRoute() {
      if (this.preferences.route === undefined) {
        this.preferences.route = {
-         mode : 'none', //none / route / force
          fx : [],
-         q: 0 //0-127 of send to global
+         send: 0 //0-127 of send to global
        }
      }
      
-     return route;
+     return this.preferences.route;
    }
    
    /**
@@ -142,7 +141,7 @@ class ZynthoServer extends EventEmitter {
       } 
       
       message.packets.push(this.defaultDoneQuery);
-      this.once('query-done', (msg) => {console.log('done!');onDone();})
+      this.once('query-done', (msg) => {onDone();})
       return message;
     }
     
@@ -155,16 +154,19 @@ class ZynthoServer extends EventEmitter {
    * does not send anything.
    */
    send(message, onDone) {
+     
+     
      if (Object.prototype.toString.call(message)!=='[object Object]') {
        message = this.parser.translate(message);
      }
      
      
      if (onDone !== undefined) {
-       message = injectDone(message, onDone);
+       message = this.injectDone(message, onDone);
      }
      
-     this.osc.send(message);
+     
+     this.osc.send.call(this.osc, message);
    }
    
    
@@ -209,7 +211,7 @@ class ZynthoServer extends EventEmitter {
      }
     
     if (onDone !== undefined && onDone != null) {
-      message = injectDone(message, onDone);
+      message = this.injectDone(message, onDone);
     }
     this.osc.send(message);
    }
@@ -284,25 +286,25 @@ class ZynthoServer extends EventEmitter {
   }
   
   /**
-   * ZynthoServer::addFavorite
-   * adds a favorite
-   * returns true if the favorite is set, false if it was already set
-   */
-    addFavorite(entry) {
-      if (Array.isArray(this.favorites)) {
-        this.favorites.forEach( (item) => {
-          if (item.path == entry.path)
-            return false;
-        });
-      } else
-        this.favorites = [];
-      
-      this.favorites.push(entry);
-      
-      //save changes
-      this.save();
-      return true;
-    }
+  * ZynthoServer::addFavorite
+  * adds a favorite
+  * returns true if the favorite is set, false if it was already set
+  */
+  addFavorite(entry) {
+    if (Array.isArray(this.favorites)) {
+      this.favorites.forEach( (item) => {
+        if (item.path == entry.path)
+          return false;
+      });
+    } else
+      this.favorites = [];
+    
+    this.favorites.push(entry);
+    
+    //save changes
+    this.save();
+    return true;
+  }
     
   /**
    * ZynthoServer::addFavorite
@@ -329,179 +331,296 @@ class ZynthoServer extends EventEmitter {
      
    }
    
-   /**
-    * routeFX
-    * routes all part FX to global fx according to:
-    * 1. FX is present on global with the same name
-    * 2. FX is present on the route list
-    * 3. If forced, all FX on the list are bypassed regardless
-    * 4. If present, send to appropriate global fX is set
-    */
-    routeFX(partID) {
+  
+  /**
+  * queryPartFX
+  * queries part fx info, such as effect name, bypass status and preset
+  * Those are effectively 3 bundled queries
+  * partID: part to query
+  * onDone: query to call when all is done
+  */
+  queryPartFX(part, onDone) {
+   const returnObject = {
+      efx : [{},{},{}]
+    };
+    
+    let fxQuery = this.parser.emptyBundle();
+    
+    let query = this.parser.translate(`/part${part}/partefx[0-2]/efftype`);
+    const nameCallback = function(msg) {
+      let efftype = msg.args[0].value;
+      let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(msg.address)[1]);
+      let name = exports.typeToString(efftype);
+      returnObject.efx[id].name = name;
+    }
+    this.bundleBind(query, (msg) => {nameCallback(msg)});
+    fxQuery.packets = query.packets;
+    
+    //Bypass
+    query = this.parser.translate(`/part${part}/Pefxbypass[0-2]`);
+    const bypassCallback = function(msg) {
+      let bypass = msg.args[0].value;
+      let id = parseInt(RegExp(`\/part${part}\/Pefxbypass(\\d)`).exec(msg.address)[1]);
+      returnObject.efx[id].bypass = bypass;
+    };
+    this.bundleBind(query, (msg) => {bypassCallback(msg)});
+    fxQuery.packets = fxQuery.packets.concat(query.packets);
+    
+    //System send is handled as part
+    query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
+    const sendCallback = function (msg) {
+      let regexp = RegExp('\/Psysefxvol(\\d)').exec(msg.address);
       
+      if (returnObject.send === undefined)
+        returnObject.send = new Array(4);
+        
+      returnObject.send[parseInt(regexp[1])] = msg.args[0].value;
+    }
+    this.bundleBind(query, (msg) => {sendCallback(msg)});
+    fxQuery.packets = fxQuery.packets.concat(query.packets);
+    
+    //Preset - generic
+    let presetsQuery = this.parser.emptyBundle();
+    for (let type = 1; type < 8; type++) {
+      let name = exports.typeToString(type);
+      let query = this.parser.translate(`/part${part}/partefx[0-2]/${name}/preset`);
+      presetsQuery.packets = presetsQuery.packets.concat(query.packets);
+    }
+    const presetCallback = function(msg) {
+      let regexp = RegExp(`\/part${part}\/partefx(\\d)\/(\\w+)`).exec(msg.address);
+      let id = parseInt(regexp[1]);
+      let name = regexp[2];
+      
+      //if OSC 1.0 is respected, this should be already ready
+      if (name == returnObject.efx[id].name)
+        returnObject.efx[id].preset = msg.args[0].value;
+    };
+    this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
+    fxQuery.packets = fxQuery.packets.concat(presetsQuery);
+    
+    fxQuery = this.injectDone(fxQuery, (done) => {
+      onDone(returnObject);
+    });
+    
+    this.osc.send(fxQuery);
+  }
+
+  /**
+  * changeFX
+  * Changes the current part FX, queries new preset, sends done
+  * part: part id
+  * fxid : efx id
+  * number: new fx (0-8)
+  */
+  changeFX(part, fxid, efftype, onDone) {
+    efftype = (efftype < 0) ? 8 : efftype % 8;
+    const newEffName = exports.typeToString(efftype);
+    
+    const nameQueryString = (part === undefined)
+        ? `/sysefx${fxid}` : `/part${part}/partefx${fxid}`;
+    
+        
+    let bundle = this.parser.emptyBundle();
+    
+    bundle.packets.push(
+      this.parser.translate(`${nameQueryString}/efftype ${efftype}`)
+    );
+    
+    if (efftype != 0 && efftype != 7) {
+      let presetQuery = `${nameQueryString}/${newEffName}/preset`;
+      bundle.packets.push(this.parser.translate(presetQuery));
+      
+      this.once(presetQuery, (msg) =>{
+      //  console.log("called onDone");
+        onDone({name : newEffName, preset: msg.args[0].value});
+      })
+    } else {
+      bundle = this.injectDone(bundle, (msg) =>{
+        onDone({name : newEffName, preset: -1});
+      })
     }
     
-    /**
-     * queryPartFX
-     * queries part fx info, such as effect name, bypass status and preset
-     * Those are effectively 3 bundled queries
-     * partID: part to query
-     * onDone: query to call when all is done
-     */
-     queryPartFX(part, onDone) {
-       const returnObject = {
-          efx : [{},{},{}]
-        };
-        
-        let fxQuery = this.parser.emptyBundle();
-        
-        let query = this.parser.translate(`/part${part}/partefx[0-2]/efftype`);
-        const nameCallback = function(msg) {
-          let efftype = msg.args[0].value;
-          let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(msg.address)[1]);
-          let name = exports.typeToString(efftype);
-          returnObject.efx[id].name = name;
-        }
-        this.bundleBind(query, (msg) => {nameCallback(msg)});
-        fxQuery.packets = query.packets;
-        
-        //Bypass
-        query = this.parser.translate(`/part${part}/Pefxbypass[0-2]`);
-        const bypassCallback = function(msg) {
-          let bypass = msg.args[0].value;
-          let id = parseInt(RegExp(`\/part${part}\/Pefxbypass(\\d)`).exec(msg.address)[1]);
-          returnObject.efx[id].bypass = bypass;
-        };
-        this.bundleBind(query, (msg) => {bypassCallback(msg)});
-        fxQuery.packets = fxQuery.packets.concat(query.packets);
-        
-        //System send is handled as part
-        query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
-        const sendCallback = function (msg) {
-          let regexp = RegExp('\/Psysefxvol(\\d)').exec(msg.address);
-          
-          if (returnObject.send === undefined)
-            returnObject.send = new Array(4);
-            
-          returnObject.send[parseInt(regexp[1])] = msg.args[0].value;
-        }
-        this.bundleBind(query, (msg) => {sendCallback(msg)});
-        fxQuery.packets = fxQuery.packets.concat(query.packets);
-        
-        //Preset - generic
-        let presetsQuery = this.parser.emptyBundle();
-        for (let type = 1; type < 8; type++) {
-          let name = exports.typeToString(type);
-          let query = this.parser.translate(`/part${part}/partefx[0-2]/${name}/preset`);
-          presetsQuery.packets = presetsQuery.packets.concat(query.packets);
-        }
-        const presetCallback = function(msg) {
-          let regexp = RegExp(`\/part${part}\/partefx(\\d)\/(\\w+)`).exec(msg.address);
-          let id = parseInt(regexp[1]);
-          let name = regexp[2];
-          
-          //if OSC 1.0 is respected, this should be already ready
-          if (name == returnObject.efx[id].name)
-            returnObject.efx[id].preset = msg.args[0].value;
-        };
-        this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
-        fxQuery.packets = fxQuery.packets.concat(presetsQuery);
-        
-        fxQuery = this.injectDone(fxQuery, (done) => {
-          onDone(returnObject);
-        });
-        
-        this.osc.send(fxQuery);
-     }
+    //console.log(JSON.stringify(bundle.packets));
+    this.osc.send(bundle);
+  } 
+      
+  /**
+  * querySystemFX
+  * queries part fx info, such as effect name, bypass status and preset
+  * Those are effectively 3 bundled queries
+  * partID: part to query
+  * onDone: query to call when all is done
+  */
+  querySystemFX(onDone) {
+   const returnObject = {
+      efx : [{},{},{}, {}]
+    };
+    
+    let fxQuery = this.parser.emptyBundle();
+    
+    let query = this.parser.translate(`/sysefx[0-3]/efftype`);
+    const nameCallback = function(msg) {
+      let efftype = msg.args[0].value;
+      let id = parseInt(/sysefx(\d)/.exec(msg.address)[1]);
+      let name = exports.typeToString(efftype);
+      returnObject.efx[id].name = name;
+    }
+    this.bundleBind(query, (msg) => {nameCallback(msg)});
+    fxQuery.packets = query.packets;
+    
+    //Preset - generic
+    let presetsQuery = this.parser.emptyBundle();
+    for (let type = 1; type < 8; type++) {
+      let name = exports.typeToString(type);
+      let query = this.parser.translate(`/sysefx[0-2]/${name}/preset`);
+      presetsQuery.packets = presetsQuery.packets.concat(query.packets);
+    }
+    const presetCallback = function(msg) {
+      let regexp = /sysefx(\d)\/(\w+)/.exec(msg.address);
+      let id = parseInt(regexp[1]);
+      let name = regexp[2];
+      
+      //if OSC 1.0 is respected, this should be already ready
+      if (name == returnObject.efx[id].name)
+        returnObject.efx[id].preset = msg.args[0].value;
+    };
+    this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
+    fxQuery.packets = fxQuery.packets.concat(presetsQuery);
+    
+    fxQuery = this.injectDone(fxQuery, (done) => {
+      onDone(returnObject);
+    });
+    
+    this.osc.send(fxQuery);
+  }
+
+  /**
+  * dry
+  * automatically set bypass to true on each selected fx in
+  * all parts.
+  * Dry is automatically used by route() to re-route part fx.
+  * partID: can be integer or query [x-y] [x,y]
+  * fxName: if set, will look for that single FX. Otherwise it will
+  * parse all preferences.dry names.
+  * 
+  * Note that removing a dry state will NOT remove the fx bypass.
+  */
+  dry(partID, fxName) {
+   
+  }
      
-     /**
-      * changeFX
-      * Changes the current part FX, queries new preset, sends done
-      * part: part id
-      * fxid : efx id
-      * number: new fx (0-8)
-      */
-      changeFX(part, fxid, efftype, onDone) {
-        efftype = (efftype < 0) ? 8 : efftype % 8;
-        const newEffName = exports.typeToString(efftype);
+  /**
+  * merge
+  * merge 2 queries
+  * returns merged bundle
+  */
+  merge(queryA, queryB) {
+    let result;
+    if (queryA.packets === undefined) {
+     result = this.parser.emptyBundle();
+     result.packets.push(queryA);
+    } else 
+      result = { ...queryA };
+    
+    if (queryB.packets === undefined)
+      result.packets.push(queryB);
+    else
+      result.packets = result.packets.concat(queryB.packets);
+    
+    return result;
+  }
+      
+  /**
+  * route
+  * automatically bypass any part fx if a system fx of the same efftype
+  * is present. This will also automatically set the appropriate fx.
+  * partID: integer or query []. undefined will find all enabled parts.
+  * fxName: fx or array to Parse, if undefined, the preferences.route.fx array will be used.
+  * onDone: callback quando si è finito
+  */
+  route (partID, fxName, onDone) {
+    let partPath = (partID === undefined)
+          ? '/part[0-15]/partefx[0-2]'
+          : `/part${partID}/partefx[0-2]`;
+    
+    /* per ogni effetto effetto che combacia, bypass + send appropriato*/
+    const fxArray =  (fxName === undefined) 
+          ? this.getRoute().fx
+          : ((Array.isArray(fxName) ? fxName : [fxName]));
+    
+    const _this = this;
+    const resultObject = { part : new Array(16), sys: new Array (4)}
+    const _route = this.getRoute();
+    
+    /* Query della situazione fx master*/
+    let masterQuery = this.parser.translate('/sysefx[0-2]/efftype');
+    this.bundleBind(masterQuery, function (msg) {
+      let masterType = msg.args[0].value;
+      let masterChan = parseInt(/sysefx(\d)/.exec(msg.address)[1]);
+      resultObject.sys[masterChan] = masterType;
+    });
+    
+    let query = this.parser.translate(`${partPath}/efftype`);
+    const onPathMessage = function (msg) {
+      console.log(`onPathMessage: ${JSON.stringify(msg)}`);
+      
+      let partID = parseInt(/\/part(\d+)/.exec(msg.address)[1]);
+      let fxChanID =parseInt(/\/partefx(\d)/.exec(msg.address)[1]);
+      
+      console.log(`onPathMessage: part ${partID} chan ${fxChanID} status ${JSON.stringify(resultObject.part[partID])}`);
+      
+      if (resultObject.part[partID] === undefined)
+        resultObject.part[partID] = new Array(3);
+      
+      
+      resultObject.part[partID][fxChanID] = msg.args[0].value;
+    }
+    if (query.packets === undefined)
+      this.on(query.address, onPathMessage);
+    else
+      this.bundleBind(query, onPathMessage);
+    
+    //merge two queries
+    query = this.merge(masterQuery, query);
+    
+    this.query(query, undefined, function () {
+      let bundle = _this.parser.emptyBundle();
+      
+      try {
+      for (let sysID = 0; sysID < 4; sysID++) {
+        let masterType = resultObject.sys[sysID];
+         
+        if (masterType == 0)
+          continue;
         
-        const nameQueryString = (part === undefined)
-            ? `/sysefx${fxid}` : `/part${part}/partefx${fxid}`;
-        
-            
-        let bundle = this.parser.emptyBundle();
-        
-        bundle.packets.push(
-          this.parser.translate(`${nameQueryString}/efftype ${efftype}`)
-        );
-        
-        if (efftype != 0 && efftype != 7) {
-          let presetQuery = `${nameQueryString}/${newEffName}/preset`;
-          bundle.packets.push(this.parser.translate(presetQuery));
+        for (let partID = 0; partID < 16; partID++) {
+          if (resultObject.part[partID] === undefined)
+            continue;
           
-          this.once(presetQuery, (msg) =>{
-          //  console.log("called onDone");
-            onDone({name : newEffName, preset: msg.args[0].value});
-          })
-        } else {
-          bundle = this.injectDone(bundle, (msg) =>{
-            onDone({name : newEffName, preset: -1});
-          })
+          for (let fxChanID = 0; fxChanID < 3; fxChanID++) {
+            if (resultObject.part[partID][fxChanID] == masterType) {  
+              bundle.packets.push ( _this.parser.translate (`/part${partID}/Pefxbypass${fxChanID} T`));
+              bundle.packets.push ( _this.parser.translate (`/Psysefxvol${sysID}/part${partID} ${_route.send}`));
+            }
+          }
         }
-        
-        //console.log(JSON.stringify(bundle.packets));
-        this.osc.send(bundle);
       }
       
-     /**
-     * querySystemFX
-     * queries part fx info, such as effect name, bypass status and preset
-     * Those are effectively 3 bundled queries
-     * partID: part to query
-     * onDone: query to call when all is done
-     */
-     querySystemFX(onDone) {
-       const returnObject = {
-          efx : [{},{},{}, {}]
-        };
-        
-        let fxQuery = this.parser.emptyBundle();
-        
-        let query = this.parser.translate(`/sysefx[0-3]/efftype`);
-        const nameCallback = function(msg) {
-          let efftype = msg.args[0].value;
-          let id = parseInt(/sysefx(\d)/.exec(msg.address)[1]);
-          let name = exports.typeToString(efftype);
-          returnObject.efx[id].name = name;
-        }
-        this.bundleBind(query, (msg) => {nameCallback(msg)});
-        fxQuery.packets = query.packets;
-        
-        //Preset - generic
-        let presetsQuery = this.parser.emptyBundle();
-        for (let type = 1; type < 8; type++) {
-          let name = exports.typeToString(type);
-          let query = this.parser.translate(`/sysefx[0-2]/${name}/preset`);
-          presetsQuery.packets = presetsQuery.packets.concat(query.packets);
-        }
-        const presetCallback = function(msg) {
-          let regexp = /sysefx(\d)\/(\w+)/.exec(msg.address);
-          let id = parseInt(regexp[1]);
-          let name = regexp[2];
-          
-          //if OSC 1.0 is respected, this should be already ready
-          if (name == returnObject.efx[id].name)
-            returnObject.efx[id].preset = msg.args[0].value;
-        };
-        this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
-        fxQuery.packets = fxQuery.packets.concat(presetsQuery);
-        
-        fxQuery = this.injectDone(fxQuery, (done) => {
-          onDone(returnObject);
-        });
-        
-        this.osc.send(fxQuery);
-     }
+    } catch (err) { console.log (`::route: error on executing query: ${err}`)}
+    try {
+      
+      console.log (`::route: packets ${JSON.stringify(bundle)}`);
+      
+      if (onDone !== undefined)
+      _this.send.call(_this, bundle, onDone);
+     else
+      _this.send(bundle);
+      
+    } catch (err)
+      { console.log (`::route: error on route send: ${err}`); }
+      
+    });
+  }
 }
 
 exports.ZynthoServer = ZynthoServer;

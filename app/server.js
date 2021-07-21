@@ -166,7 +166,7 @@ app.get('/status/systemfx', function (req, res, next) {
  */
 app.get('/status/options', function (req, res, next) {
   console.log(`[GET] getoptions query: ${JSON.stringify(req.query)}`);
-  res.json(zyntho.preferences);
+  res.json(app.zyntho.preferences);
 });
 
 /**
@@ -268,6 +268,26 @@ app.get('/status/part', function( req, res, next) {
 
   app.zyntho.query(`/part${req.query.id}/Pname`, (result) => {
     res.json({name: result.args[0].value})
+  });
+});
+
+/**
+ * /fx/route
+ * POST sets the new route filter
+ * body: { route: route object }
+ */
+
+app.post('/fx/route', function(req, res) {
+  if (req.body.route === undefined){
+    res.status(400).end();
+    return;
+  }
+  
+  app.zyntho.preferences.route = req.body.route;
+  app.zyntho.save();
+  
+  app.zyntho.route(undefined, undefined, (msg) =>{
+    res.status(200).end();
   });
 });
 

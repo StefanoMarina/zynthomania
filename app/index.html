@@ -52,16 +52,19 @@
                 <header class="col-4 no-gutters tab-v br">
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlDry">Dry</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="queryPartFX()">Part</button>
-                  <button class="tab-header" data-tab="" data-open="">Insert</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onRoutePanelLoad()">Route</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="querySystemFX()">System</button>
                 </header>
                 <div class="col-8"> <!-- fx content container -->
-                  <div id="pnlDry" class="panel fxPanel hidden">
-                    
-                    <button id="btnDryPart" class="col-12 big-btn">None</button>
-                    <button id="btnDryPart" class="col-12 big-btn">Bypass</button>
-                    <button id="btnDryPart" class="col-12 big-btn">Unmount</button>
-                    
+                  
+                  <div id="pnlDry" class="panel fxPanel hidden row" onclick="onDryPanelLoad()">
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Reverb</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Echo</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Chorus</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Phaser</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Distorsion</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">EQ</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">DynamicFilter</button></div>
                   </div>
                   <div id="pnlPart" class="panel fxPanel hidden row">
                     <div class="col-12">
@@ -85,6 +88,25 @@
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx3"></div>
                     </div>
                   </div>         
+                  <div id="pnlRoute" class="panel fxPanel hidden row">
+                    <div class="col-6 col-md-8 align:center"><h3 style="text-align:center">Send to master</h3></div>
+                    <div class="col-6 col-md-4"><button class="col-12 knob" id="routeSend"></button></div>
+                    <div class="col-12">
+                      <h3 class="check" data-check="0">Send to all</h3>
+                    </div>
+                    
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Reverb</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Echo</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Chorus</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Phaser</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Distorsion</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">EQ</button></div>
+                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">DynamicFilter</button></div>
+                    <div class="col-12 col-md-6">
+                      <button class="col-12 big-btn btn-selected" id="applyRoute">Apply <i class="fa fa-level-down-alt"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div> <!-- /fx content -->
               </div> <!-- /fx -->
               
@@ -410,6 +432,31 @@
       }
       
       
+      function onDryPanelLoad() {
+        onQuery('status/options', null, (data) => {
+         
+          $('.btnDrySelection').removeClass('btn-selected');
+          for (fx in data.dry) {
+            $(`.btnDrySelection:contains(${fx})`).addClass('btn-selected');
+          }
+        });
+      }
+      
+      function onRoutePanelLoad() {
+        doQuery('status/options', null, (data) => {
+          console.log(data);
+          let route = data.zyntho.route;
+          
+          let status = route.fx;
+          $('.btnRouteSelection').removeClass('btn-selected');
+          for (fx in status) {  
+            $(`.btnRouteSelection:contains(${fx})`).addClass('btn-selected');
+          }
+          
+          window.knobs['routeSend'].setValue(route.send);
+        });
+      }
+      
       /**
        Init 
        */
@@ -448,14 +495,7 @@
         $('.fx-btn').each( function (index) {
           let id = $(this).attr('id');
           let chid = parseInt(/\w+(\d+)/.exec(id)[1]);
-            
           let fxButton = new FXButton(id, chid);
-          
-          /*$(this).on('next-fx', (event) => {
-            //console.log('requested next fx');  
-            //actionChangePartFX('next_fx');
-          });*/
-          
           window.buttons[id] = fxButton;
         });
         
@@ -520,7 +560,36 @@
             setFavorite(instrument, (!isFavorite(instrument)));
           });
          
+        
+          $('.check').on('click', function() {
+            $(this).attr('data-check', $(this).attr('data-check') == 'true' ? 'false' : 'true');
+            console.log('check!');
+          });
           
+          $('.toggle').on('click', function() {
+            if( $(this).hasClass('btn-selected'))
+              $(this).removeClass('btn-selected');
+            else {
+              let group = $(this).attr('data-group');
+              if ( group !== undefined)
+                $(`.toggle[data-group=${group}]`).removeClass('btn-selected');
+              $(this).addClass('btn-selected');
+            }
+          })
+        
+        
+        
+          $('#applyRoute').on('click', function() {
+            const route = {};
+            route.send = window.knobs['routeSend'].getValue();
+            route.fx =            
+            $('.btnRouteSelection.btn-selected').map( function() {return $(this).text()})
+            
+            //console.log(route);
+            doAction('fx/route', {route: route});
+          })
+          
+            
           /**
           Init actions
           - get favorites
