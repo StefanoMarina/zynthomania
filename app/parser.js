@@ -93,10 +93,7 @@ exports.OSCParser = class {
     });
     
     this.argParser.addRule(/(^|[^\w])([TF])( +|$)/gm, function(full, before, string) {
-      let value = (string == 'T');
-      console.log('test');
-      console.log('test');
-      return {type: string, value: value};
+      return {type: string, value: (string == 'T')};
     });
     
     this.argParser.addRule(/(\d+[ ,.]+\d+)( +|$)/gm, function(value, float) {
