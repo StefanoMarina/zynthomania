@@ -186,13 +186,14 @@ ul.select li.selected {
   height:40px;
 }
 
-.check {
+input[type=checkbox].check {display:hidden;}
+input[type=checkbox] + label {
   border: none !important;
   margin-left: 5px !important;
 }
-.check[data-check="false"]::before {content: '[ ] '; }
-.check[data-check="false"]:hover::before {content: '[-] '; }
-.check[data-check="true"]::before {content: '[X] '; }
+
+input[type=checkbox] + label::before {content: '[ ] '; }
+input[type=checkbox][checked] + label::before { content: '[X]';}
 
 .toggle {
   border-radius: 10px;

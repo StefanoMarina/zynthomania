@@ -11,7 +11,7 @@
     <script src="lcdknob.js"></script>
     <script src="fxbutton.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+    <title>ZynthoMania!</title>
   </head>
 
   <body>
@@ -40,6 +40,7 @@
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
                 <button class="tab-header" data-tab="controlPanel" id=""><a>OSC</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
+                <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem"><a>System</a></button>
               </header>
             
             <!--panels-->
@@ -123,6 +124,18 @@
                   <button onclick="onScriptSend();">Send</button>
                 </div>
               </div>
+              
+              
+              <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
+                <header class="col-4 no-gutters tab-v br">
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlMIDI" onclick="onMIDIPanelLoad();")>MIDI</button>
+                </header>
+                <div class="col-8"> <!-- fx content container -->
+                  <div id="pnlMIDI" class="panel hidden row">
+                    <div class="col-12" id="sysMidiContainer">
+                    </div>
+                  </div>
+                </div>
             </div> 
           </div> 
         </div> <!--col-10 -->        
@@ -471,6 +484,56 @@
           })
           
           window.knobs['routeSend'].setValue(route.send);
+        });
+      }
+      
+      function onMIDIPanelLoad() {
+        doQuery('status/midi', null, (data) => {
+          
+//          data = JSON.parse(data);
+          if (Object.prototype.toString.call(data) !== '[object Array]') {
+            console.log("Error: data is not array.");
+            console.log(data);
+            return;
+          }
+          
+          //data is array
+          let midiCont = $('#sysMidiContainer');
+          $(midiCont).empty();
+          
+          const zynConnection = data.filter((item)=>{
+            return item.name=="ZynAddSubFX";
+          })[0];
+          
+          if (zynConnection === undefined) {
+            $('#sysMIDI').text('ZynAddSubFX ALSA is not present!');
+            return;
+          }
+          
+          console.log("zyn connection:");
+          console.log(zynConnection);
+          
+          data.forEach( (item) => {
+            if (item.name == zynConnection.name)
+              return;
+            
+            let plugged = (item.connections !== undefined && 
+                      item.connections.indexOf(zynConnection.plug) > -1);
+            let selClass = (plugged) ? "btn-selected" : "";
+            
+            let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.plug}">${item.name}`+"</button>";
+            $(midiCont).append(content);
+          });
+          
+          $(midiCont).children('button').on('click', (e) => {
+            let target = $(e.target);
+            let plugged = $(target).hasClass('btn-selected');
+            
+            doAction('status/midi/plug', 
+              {'plug': $(target).val(), 'status': !plugged}, (data) =>{
+                onMIDIPanelLoad();
+              });
+          });
         });
       }
       

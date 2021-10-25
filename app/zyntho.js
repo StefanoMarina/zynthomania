@@ -20,13 +20,14 @@ const Osc = require('osc');
 const Fs = require('fs');
 const OSCParser = require ('./parser.js')
 const EventEmitter = require('events');
+const {execSync, exec} = require("child_process");
 
 var exports = module.exports = {};
 
 class ZynthoServer extends EventEmitter {
   constructor() {
     super()
-    this.preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom", "bank_dir": "/usr/local/share/zynaddsubfx/banks/" }
+    this.preferences = undefined;
     this.favorites = [];
     this.parser = new OSCParser.OSCParser();
     
@@ -48,14 +49,19 @@ class ZynthoServer extends EventEmitter {
    */
   open(preferencesFile) {
     
-    try {
-      console.log('reading preferences...');
-      let data = Fs.readFileSync('./preferences.json', 'utf-8');
-      this.preferences = JSON.parse(data);
-    } catch (err) {
-      console.log(`Could not read Preferences.json : ${err}`);
-      //this.preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom", "bank_dir": "/usr/local/share/zynaddsubfx/banks/" }
-    }
+    if (preferencesFile !== undefined) {
+      this.preferencesFile = preferencesFile;
+
+      try {
+        console.log('reading preferences...');
+        let data = Fs.readFileSync(preferencesFile, 'utf-8');
+        this.preferences = JSON.parse(data);
+      } catch (err) {
+        console.log(`Could not read preferences.json : ${err}`);
+        //this.preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom", "bank_dir": "/usr/local/share/zynaddsubfx/banks/" }
+      }
+    } 
+    console.log("opening client on port " + this.preferences.services.user.zyn_osc_port + "...");
 
     //if favorites.json exists, try to read it
     if (this.preferences.favorites !== undefined && fileExists(this.preferences.favorites)) {
@@ -77,7 +83,7 @@ class ZynthoServer extends EventEmitter {
       localPort: 6666,
 
       remoteAddress: "127.0.0.1",
-      remotePort: this.preferences.synth.port,
+      remotePort: this.preferences.services.user.zyn_osc_port,
       metadata: true
     });
     
@@ -657,6 +663,49 @@ class ZynthoServer extends EventEmitter {
       { console.log (`::route: error on route send: ${err}`); }
       
     });
+  }
+
+  /** 
+    MIDI query
+    retrieves ALSA information such as connection status
+  */
+  midiQuery() {
+    const TOOL = `${__dirname}/../tools/json_connect.pl`;
+    const joutput =  execSync (`${TOOL}`, {'encoding': 'utf8'});
+
+    return joutput;
+  }
+  
+  /**
+   * Plug
+   * Connects a device through alsa connect
+   * dev device id in H:D form
+   * status 1 or 0 for connection/disconnection
+   * returns true for success : false
+   */
+  plug(dev, status) {
+    const TOOL = `${__dirname}/../tools/json_connect.pl`;
+    const joutput = execSync(`${TOOL} ZynAddSubFX`, {"encoding": "utf8"} );
+    
+    if (joutput == "" || joutput == null) {
+      console.log("<3> ::plug: missing zynadd service!")
+      return false;
+    } 
+    
+    var zynPlug = undefined;
+    try {
+      zynPlug = JSON.parse(joutput);
+      zynPlug = zynPlug[0];
+    }catch (err) {
+      console.log('<3>::plug: json error $err.');
+      return false;
+    }
+    
+    
+    let action = (status) ? "" : " -d "
+    execSync(`aconnect ${action} ${dev} ${zynPlug.plug}`);
+    
+    return true;
   }
 }
 

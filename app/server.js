@@ -174,6 +174,16 @@ app.get('/status/options', function (req, res, next) {
   res.json(app.zyntho.preferences);
 });
 
+/**
+ * GET returns MIDI information status
+ * query: none
+ * return: json
+ */
+app.get('/status/midi', function (req, res, next) {
+  console.log(`[GET] getMIDI query: ${JSON.stringify(req.query)}`);
+  res.json(JSON.parse(app.zyntho.midiQuery()));
+});
+ 
 
 /**
  * /status/part
@@ -317,6 +327,23 @@ app.post('/fx/dry', function(req, res) {
     res.status(200).end();
   });
 });
+
+/**
+ * POST /status/midi/plug
+ * connect or disconnect midi device
+ * @body : {plug: device id, status: desired action, true for connect}
+ */
+app.post('/status/midi/plug', function(req, res) {
+  console.log(`[POST] plug request: ${JSON.stringify(req.body)}`);
+  if (req.body.plug === undefined || req.body.status === undefined){
+    res.status(400).end();
+    return;
+  }
+  
+  res.status(app.zyntho.plug(req.body.plug, req.body.status) ? 200 : 400)
+    .end();
+});
+
 app.on('open', () => {
   console.log ("Opened web application");
 });
@@ -325,7 +352,14 @@ app.on('data', (data) =>{
   console.log('data: ' + JSON.stringify(data));
 });
 
-app.zyntho.open();
+var myArgv = process.argv.slice(2);
+if (myArgv.length > 0)
+  app.zyntho.open(myArgv[0]);
+else
+  app.zyntho.open("./default.json");
 
 const server = require('http').createServer(app);
 server.listen(7000);
+
+const {exec} = require("child_process");
+

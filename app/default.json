@@ -1,9 +1,9 @@
 {
   "user": "pi",
-  "synth": { "port" : "7777" },
   "dry" : ["Reverb"],
   "route": { "send": 64, "fx" : [] },
   "custom_dir": "/home/pi/zynthomania/custom",
   "favorites": "/home/pi/zynthomania/favorites.json",
-  "bank_dir": "/usr/local/share/zynaddsubfx/banks/"
+  "bank_dir": "/usr/local/share/zynaddsubfx/banks/",
+  "services" : { "user" : { "zyn_osc_port": 7777}}
 }
