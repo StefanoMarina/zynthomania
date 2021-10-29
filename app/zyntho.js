@@ -140,7 +140,7 @@ class ZynthoServer extends EventEmitter {
     
   /**
   * ZynthoServer::merge
-  * merge 2 queries
+  * merge 2 osc messages/bundles
   * @returns merged bundle
   */
   merge(queryA, queryB) {
@@ -160,10 +160,10 @@ class ZynthoServer extends EventEmitter {
   }
   
    /**
-    * ZynthoServer::onDone
+    * ZynthoServer::injects
     * injects an internal get message and binds it to a callback
     * this should work if the OSC 1.0 bundle rule is respected - packets
-    * are handled one at time.
+    * are handled one at time, but no order is guaranteed on bundles.
     */
     
     injectDone(message, onDone) {

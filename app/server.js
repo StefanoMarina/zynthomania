@@ -27,7 +27,8 @@ const ZynthoMania = require ('./zyntho.js');
 
 const app = EXPRESS();
 
-app.zyntho = new ZynthoMania.ZynthoServer('preferences.json');
+var args = process.argv.slice(2);
+app.zyntho = new ZynthoMania.ZynthoServer(args[0]);
 
 //express html server (7000)
 app.use(EXPRESS.static(__dirname + '/node_modules'));  
@@ -360,6 +361,3 @@ else
 
 const server = require('http').createServer(app);
 server.listen(7000);
-
-const {exec} = require("child_process");
-
