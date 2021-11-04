@@ -20,6 +20,7 @@ const Osc = require('osc');
 const Fs = require('fs');
 const OSCParser = require ('./parser.js')
 const EventEmitter = require('events');
+
 const {execSync, exec} = require("child_process");
 
 var exports = module.exports = {};
@@ -27,7 +28,7 @@ var exports = module.exports = {};
 class ZynthoServer extends EventEmitter {
   constructor() {
     super()
-    this.preferences = undefined;
+    this.config = undefined;
     this.favorites = [];
     this.parser = new OSCParser.OSCParser();
     
@@ -47,27 +48,24 @@ class ZynthoServer extends EventEmitter {
    * ZynthoServer::open
    * open preferences file and OSC connection
    */
-  open(preferencesFile) {
+  open(configFile) {
+    if (configFile === undefined)
+      throw "Missing configuration file";
     
-    if (preferencesFile !== undefined) {
-      this.preferencesFile = preferencesFile;
-
-      try {
-        console.log('reading preferences...');
-        let data = Fs.readFileSync(preferencesFile, 'utf-8');
-        this.preferences = JSON.parse(data);
-      } catch (err) {
-        console.log(`Could not read preferences.json : ${err}`);
-        //this.preferences = { "user": "pi", "synth": { "port" : "7777" }, "custom_dir": "/home/pi/custom", "bank_dir": "/usr/local/share/zynaddsubfx/banks/" }
-      }
-    } 
-    console.log("opening client on port " + this.preferences.services.user.zyn_osc_port + "...");
-
+    try {
+      let data = Fs.readFileSync(configFile, 'utf-8');
+      this.config = JSON.parse(data);
+    } catch (err) {
+      throw `Error while reading ${configFile}: ${err}. Aborting`;
+    }
+    
+    console.log("opening client on port " + this.config.services.user.zyn_osc_port + "...");
+  
     //if favorites.json exists, try to read it
-    if (this.preferences.favorites !== undefined && fileExists(this.preferences.favorites)) {
+    if (this.config.favorites != null && fileExists(this.config.favorites)) {
       console.log('reading favorites...');
       try {
-        let data = Fs.readFileSync(this.preferences.favorites);
+        let data = Fs.readFileSync(this.config.favorites);
         this.favorites = JSON.parse(data);
       } catch (err) {
         console.log (`Cannot read favorites: ${err}`);
@@ -80,10 +78,10 @@ class ZynthoServer extends EventEmitter {
     //Init osc, bind to custom emitter, try to open
     this.osc = new Osc.UDPPort({
       localAddress: "127.0.0.1",
-      localPort: 6666,
+      localPort: this.config.services.user.osc_local_port,
 
       remoteAddress: "127.0.0.1",
-      remotePort: this.preferences.services.user.zyn_osc_port,
+      remotePort: this.config.services.user.zyn_osc_port,
       metadata: true
     });
     
@@ -118,14 +116,14 @@ class ZynthoServer extends EventEmitter {
    * returns route mode
    */
    getRoute() {
-     if (this.preferences.route === undefined) {
-       this.preferences.route = {
+     if (this.config.route === undefined) {
+       this.config.route = {
          fx : [],
          send: 0 //0-127 of send to global
        }
      }
      
-     return this.preferences.route;
+     return this.config.route;
    }
    
    /**
@@ -133,9 +131,9 @@ class ZynthoServer extends EventEmitter {
     * returns dry mode
     */
     getDryMode() {
-      if (this.preferences.dry === undefined)
-        this.preferences.dry = [];
-      return this.preferences.dry;
+      if (this.config.dry === undefined)
+        this.config.dry = [];
+      return this.config.dry;
     }
     
   /**
@@ -261,9 +259,9 @@ class ZynthoServer extends EventEmitter {
   getBanks() {
     var _this = this;
     var bankList = ['Favorites', 'Custom'];
-    var files = Fs.readdirSync (this.preferences.bank_dir)
+    var files = Fs.readdirSync (this.config.bank_dir)
                 .filter(function (file) {
-                    return Fs.statSync(_this.preferences.bank_dir+'/'+file).isDirectory();
+                    return Fs.statSync(_this.config.bank_dir+'/'+file).isDirectory();
                 });
   
   files.forEach(file => { bankList.push(file); });
@@ -283,7 +281,7 @@ class ZynthoServer extends EventEmitter {
     if ('Custom' == bank) {
     /** TODO **/  
     } else {
-      var fullpath = this.preferences.bank_dir + bank;  
+      var fullpath = this.config.bank_dir + bank;  
       var files = Fs.readdirSync (fullpath)
                   .filter(function (file) {
                       return !Fs.statSync(fullpath+'/'+file).isDirectory();
@@ -312,9 +310,9 @@ class ZynthoServer extends EventEmitter {
    */
   save() {
     //try to save favorites
-    if (this.preferences.favorites !== undefined) {
+    if (this.config.favorites !== undefined) {
       try {
-        Fs.writeFileSync(this.preferences.favorites, JSON.stringify(this.favorites));
+        Fs.writeFileSync(this.config.favorites, JSON.stringify(this.favorites));
       } catch (err) {
         console.log("Could not save favorites: "+ err);
         return false;
@@ -696,7 +694,7 @@ class ZynthoServer extends EventEmitter {
     try {
       zynPlug = JSON.parse(joutput);
       zynPlug = zynPlug[0];
-    }catch (err) {
+    } catch (err) {
       console.log('<3>::plug: json error $err.');
       return false;
     }
