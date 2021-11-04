@@ -674,6 +674,7 @@ class ZynthoServer extends EventEmitter {
       
     });
   }
+}
 
 exports.ZynthoServer = ZynthoServer;
 
