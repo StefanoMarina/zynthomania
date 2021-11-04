@@ -17,12 +17,10 @@
 ***********************************************************************/
 
 const BodyParser = require('body-parser');
-//const Osc = require('osc');
 const EXPRESS = require('express');
 const Fs = require('fs');
 const Util = require ('util');
 const OSCParser = require ('./parser.js')
-//const EventEmitter = require('events');
 const ZynthoMania = require ('./zyntho.js');
 
 const app = EXPRESS();
@@ -182,7 +180,7 @@ app.get('/status/options', function (req, res, next) {
  */
 app.get('/status/midi', function (req, res, next) {
   console.log(`[GET] getMIDI query: ${JSON.stringify(req.query)}`);
-  res.json(JSON.parse(app.zyntho.midiQuery()));
+  res.json(app.zyntho.midiService.enumerateInputs());
 });
  
 
@@ -336,13 +334,20 @@ app.post('/fx/dry', function(req, res) {
  */
 app.post('/status/midi/plug', function(req, res) {
   console.log(`[POST] plug request: ${JSON.stringify(req.body)}`);
-  if (req.body.plug === undefined || req.body.status === undefined){
+  if (req.body.name === undefined || req.body.status === undefined){
     res.status(400).end();
     return;
   }
   
-  res.status(app.zyntho.plug(req.body.plug, req.body.status) ? 200 : 400)
-    .end();
+  
+  try {
+    app.zyntho.midiService.setConnection(req.body.name, req.body.status);
+    res.status(200).end();
+  } catch (err) {
+    console.log (`Error on plug operation: ${err}`);
+    res.status(500).end();
+  }
+  
 });
 
 app.on('open', () => {

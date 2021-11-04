@@ -501,27 +501,14 @@
           let midiCont = $('#sysMidiContainer');
           $(midiCont).empty();
           
-          const zynConnection = data.filter((item)=>{
-            return item.name=="ZynAddSubFX";
-          })[0];
-          
-          if (zynConnection === undefined) {
-            $('#sysMIDI').text('ZynAddSubFX ALSA is not present!');
-            return;
-          }
-          
-          console.log("zyn connection:");
-          console.log(zynConnection);
           
           data.forEach( (item) => {
-            if (item.name == zynConnection.name)
-              return;
             
             let plugged = (item.connections !== undefined && 
                       item.connections.indexOf(zynConnection.plug) > -1);
-            let selClass = (plugged) ? "btn-selected" : "";
+            let selClass = (item.connected) ? "btn-selected" : "";
             
-            let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.plug}">${item.name}`+"</button>";
+            let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.port}">${item.name}`+"</button>";
             $(midiCont).append(content);
           });
           
@@ -530,7 +517,7 @@
             let plugged = $(target).hasClass('btn-selected');
             
             doAction('status/midi/plug', 
-              {'plug': $(target).val(), 'status': !plugged}, (data) =>{
+              {'name': $(target).val(), 'status': !plugged}, (data) =>{
                 onMIDIPanelLoad();
               });
           });

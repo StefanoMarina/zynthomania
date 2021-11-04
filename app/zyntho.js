@@ -18,7 +18,9 @@
 
 const Osc = require('osc');
 const Fs = require('fs');
-const OSCParser = require ('./parser.js')
+const OSCParser = require ('./knot/parser.js')
+const ZynthoMidi = require ('./midi.js');
+
 const EventEmitter = require('events');
 
 const {execSync, exec} = require("child_process");
@@ -87,7 +89,17 @@ class ZynthoServer extends EventEmitter {
     
     this.osc.on('ready', () => {
         console.log ("Opened OSC Server");
-    })
+        
+        this.midiService = new ZynthoMidi.ZynthoMidi(this.osc, this.config.cartridge_dir);
+        console.log ("Started midi service");
+        
+        try {
+          this.midiService.connectToZyn();
+          console.log("<6> Created zynthomania virtual port.");
+        } catch (err) {
+          console.log("<3> Error on creating zynthomania virtual port");
+        }
+    });
     
     this.osc.on('error', (err) => {
       throw `OSC ERROR: ${err}`;
@@ -264,8 +276,8 @@ class ZynthoServer extends EventEmitter {
                     return Fs.statSync(_this.config.bank_dir+'/'+file).isDirectory();
                 });
   
-  files.forEach(file => { bankList.push(file); });
-   return bankList;
+    files.forEach(file => { bankList.push(file); });
+    return bankList;
   }
   
   /**
@@ -662,50 +674,6 @@ class ZynthoServer extends EventEmitter {
       
     });
   }
-
-  /** 
-    MIDI query
-    retrieves ALSA information such as connection status
-  */
-  midiQuery() {
-    const TOOL = `${__dirname}/../tools/json_connect.pl`;
-    const joutput =  execSync (`${TOOL}`, {'encoding': 'utf8'});
-
-    return joutput;
-  }
-  
-  /**
-   * Plug
-   * Connects a device through alsa connect
-   * dev device id in H:D form
-   * status 1 or 0 for connection/disconnection
-   * returns true for success : false
-   */
-  plug(dev, status) {
-    const TOOL = `${__dirname}/../tools/json_connect.pl`;
-    const joutput = execSync(`${TOOL} ZynAddSubFX`, {"encoding": "utf8"} );
-    
-    if (joutput == "" || joutput == null) {
-      console.log("<3> ::plug: missing zynadd service!")
-      return false;
-    } 
-    
-    var zynPlug = undefined;
-    try {
-      zynPlug = JSON.parse(joutput);
-      zynPlug = zynPlug[0];
-    } catch (err) {
-      console.log('<3>::plug: json error $err.');
-      return false;
-    }
-    
-    
-    let action = (status) ? "" : " -d "
-    execSync(`aconnect ${action} ${dev} ${zynPlug.plug}`);
-    
-    return true;
-  }
-}
 
 exports.ZynthoServer = ZynthoServer;
 
