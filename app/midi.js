@@ -17,13 +17,22 @@
 ***********************************************************************/
 
 const Osc = require('osc');
-const Fs = require('fs');
+
 const OSCParser = require ('./parser.js')
+
 const EventEmitter = require('events');
+
 const {execSync, exec} = require("child_process");
+
 const KNOT = require('./knot/knot.js');
+
 const MIDI = require('midi');
+
 const Cartridge = require('./cartridge.js');
+
+const Fs = require('fs');
+
+const KnotFilters = require('./knot/filter.js');
 
 var exports = module.exports = {};
 
@@ -33,8 +42,16 @@ exports.ZynthoMidi = class {
     this.midiInputs = {};
     this.midiOutput = null;
     this.knot = new KNOT.Knot(osc_server);
-    this.filterList = []; 
+    this.filterList = [];
+    this.baseFilterMap = null;
+    this.instrumentMap = null;
+    
     this.cartridgeDir = cartridge_dir + "/binds";
+    
+    if (Fs.existsSync(this.cartridgeDir + "/default.json")) {
+      this.filterList[0] = this.cartridgeDir + "/default.json";
+      this.basefilterMap = new KnotFilters.FilterMap(this.filterList[0]);
+    }
   }
   
   getMidiOutput(){
@@ -86,7 +103,8 @@ exports.ZynthoMidi = class {
       midi.closePort();
     } else {
       midi.openVirtualPort('Zynthomania');
-      exec("aconnect 'Zynthomania':0 'ZynAddSubFX':0");
+      exec("aconnect 'RtMidi Output Client:Zynthomania' 'ZynAddSubFX'");
+      this.knot.setMidiOut(midi);
     }
   }
   
@@ -133,12 +151,16 @@ exports.ZynthoMidi = class {
       
       let deviceName = devicePort.match(/[^:]+:(.*) \d+:\d+.*/)[1];
       let deviceBindFile = deviceName.replace(/[<>:;,?"*|/]+$/g,"_"),
-          deviceBindPath = this.cartridgeDir+`/binds/${deviceBindFile}.json`;
-          
-      if (Cartridge.fileExists(deviceBindPath)){
+          deviceBindPath = this.cartridgeDir+`/${deviceBindFile}.json`;
+      
+      console.log(deviceBindPath);
+      
+      if (Fs.existsSync(deviceBindPath)){
+        console.log("<6> Found bind file for device.");
+        
         try {
-          this.knot.loadConfiguration(deviceBindPath, false);
-          this.deviceList.push(deviceBindFile+".json");
+          this.filterList[1] = deviceBindPath;
+          this.refreshFilterMap(true);
         } catch (err) {
           console.log(`<3> Something went wrong while loading bind: ${err}`);
         }
@@ -154,4 +176,70 @@ exports.ZynthoMidi = class {
     console.log(`<6> Midi: Connected to ${devicePort}.`);
   }
   
+  /**
+   * Refresh the static filter map. A static bind map is composed of
+   * default.json, the bind file for keyboard, and any custom performance
+   * files that are not instrument binds.
+   * This should be avoided for live perfomances as it is a bit time consuming,
+   * each filter list must be reloaded.
+   * @param force (default=false) if true, reloads the default bindings 
+   */
+  refreshFilterMap(force) {
+    force =  (force === undefined) ? false : force;
+    
+    let list = this.filterList.filter((item) => {return item != null});
+    
+    if (force) {
+      this.baseFilterMap = null;
+      let map;
+      for (let i = 0; i < list.length; i++){
+        
+        map  = new KnotFilters.FilterMap(JSON.parse(Fs.readFileSync(list[i])));
+        
+        this.baseFilterMap = (this.baseFilterMap == null)
+          ? map
+          : KnotFilters.FilterMap.merge(this.baseFilterMap, map);
+      }
+    }
+    
+    if (this.instrumentMap != null) {
+      this.knot.filterMap = KnotFilters.FilterMap.merge(this.baseFilterMap,this.instrumentMap);
+    } else {
+      this.knot.filterMap = this.baseFilterMap;
+    }
+    
+    console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
+  }
+  
+  /**
+   * Sets or clears the current instrument bind. this will change the
+   * current chain by applying the pre-generated static chain with the
+   * last filterMap.
+   * @param instrument instrument file name with full path
+   */
+  loadInstrumentBind(instrument) {
+    if (this.cartridgeDir == null)  return;
+    
+    //Instrument bind file must be exactly as the .xiz file
+    let bindFile = this.cartridgeDir+"/"
+          +instrument.match(/[^\/]+$/)[0].match(/[^\.]+/)[0]+".json";
+    
+    let fileExists = Fs.existsSync(bindFile);
+    
+    if ( (!fileExists && this.instrumentMap != null)
+        || (this.instrumentMap != null && instrument == null)) {
+      this.instrumentMap = null;
+    } else if (fileExists){
+      console.log(`Loading instrument bind ${bindFile}`);
+      try {
+        this.instrumentMap = new KnotFilters.FilterMap(JSON.parse(
+          Fs.readFileSync(bindFile) ));
+      } catch (err) {
+        this.instrumentMap = null;
+        console.log(`<3> ZynthoMidi: failed loading bindings ${bindFile}:${err}`);
+      }
+    }
+    
+    this.refreshFilterMap(false);
+  }
 }

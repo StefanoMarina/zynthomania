@@ -393,6 +393,7 @@ class ZynthoServer extends EventEmitter {
      });
      
      this.osc.send(load_xiz);
+     this.midiService.loadInstrumentBind(instrumentPath);
    }
    
   
