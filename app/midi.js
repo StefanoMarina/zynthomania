@@ -202,11 +202,12 @@ exports.ZynthoMidi = class {
       }
     }
     
-    if (this.instrumentMap != null) {
+    if (this.instrumentMap != null && this.baseFilterMap != null) {
       this.knot.filterMap = KnotFilters.FilterMap.merge(this.baseFilterMap,this.instrumentMap);
-    } else {
+    } else if (this.baseFilterMap != null) {
       this.knot.filterMap = this.baseFilterMap;
-    }
+    } else if (this.instrumentMap != null)
+      this.knot.filterMap = this.instrumentMap;
     
     console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
   }
