@@ -19,23 +19,15 @@ body, body * {font-family: Minecart}
   body, body * {  
     font-size: 16px 
   }
-  
-  #pnlBanks * { font-size: 12px }
-/*  .controlPanel * {
-    font-size: 10px 
-  }
-  */
 }
 
 @media only screen and (min-width: 768px) {
   body, body * {  
     font-size: 24px
-  }
-  
-  #pnlBanks * { font-size: 12px }
-  
+  }  
 }
 
+#pnlBanks * { font-size: 12px }
 
 /*
  * utilities for bordering
@@ -168,6 +160,7 @@ ul.select {
 }
 
 ul.select li {
+  font-size: 14px;
    padding: 2px 6px;
 }
 ul.select li:hover {
