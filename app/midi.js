@@ -17,22 +17,16 @@
 ***********************************************************************/
 
 const Osc = require('osc');
-
-const OSCParser = require ('./parser.js')
-
 const EventEmitter = require('events');
-
 const {execSync, exec} = require("child_process");
-
-const KNOT = require('./knot/knot.js');
-
+const Fs = require('fs');
 const MIDI = require('midi');
 
-const Cartridge = require('./cartridge.js');
-
-const Fs = require('fs');
-
 const KnotFilters = require('./knot/filter.js');
+const KNOT = require('./knot/knot.js');
+
+const ZynthoIO = require('./io.js');
+const OSCParser = require ('./parser.js')
 
 var exports = module.exports = {};
 
@@ -49,7 +43,7 @@ exports.ZynthoMidi = class {
     this.cartridgeDir = cartridge_dir + "/binds";
     
     if (Fs.existsSync(this.cartridgeDir + "/default.json")) {
-      this.filterList[0] = this.cartridgeDir + "/default.json";
+      this.filterList.push(this.cartridgeDir + "/default.json");
       this.basefilterMap = new KnotFilters.FilterMap(this.filterList[0]);
     }
   }
@@ -129,51 +123,72 @@ exports.ZynthoMidi = class {
       delete this.midiInputs[devicePort];
       
       console.log(`<6> Released midi connection from ${devicePort}.`);
-      return;
-    } 
-    
-    //create new connection
-    let deviceID = this.enumerateInputs().map( (e)=>{return e.port;})
-          .indexOf(devicePort);
-    if (deviceID < 0)
-      throw "Midi: invalid device";
-    
-    let newInput = new MIDI.Input();
-    newInput.on('message', (delta, msg) =>{
-        this.knot.midiCallback(delta, msg);
-    });
-    
-    this.midiInputs[devicePort] = newInput;
+    } else {    
+      //create new connection
+      let deviceID = this.enumerateInputs().map( (e)=>{return e.port;})
+            .indexOf(devicePort);
+      if (deviceID < 0)
+        throw "Midi: invalid device";
+      
+      let newInput = new MIDI.Input();
+      newInput.on('message', (delta, msg) =>{
+          this.knot.midiCallback(delta, msg);
+      });
+      
+      this.midiInputs[devicePort] = newInput;
+       try {
+        newInput.openPort(deviceID);
+      } catch (err) {
+        throw `<3> Midi: cannot connect to ${deviceID}`;
+      }
+      
+      console.log(`<6> Midi: Connected to ${devicePort}.`);
+    }
     
     if (this.cartridgeDir != null) {
-      //load binds. If deviceName has unsupported characters, replace
+      //load/unload binds. If deviceName has unsupported characters, replace
       //bad character with lower line "_".
       
       let deviceName = devicePort.match(/[^:]+:(.*) \d+:\d+.*/)[1];
       let deviceBindFile = deviceName.replace(/[<>:;,?"*|/]+$/g,"_"),
           deviceBindPath = this.cartridgeDir+`/${deviceBindFile}.json`;
       
-      console.log(deviceBindPath);
-      
-      if (Fs.existsSync(deviceBindPath)){
-        console.log("<6> Found bind file for device.");
-        
-        try {
-          this.filterList[1] = deviceBindPath;
-          this.refreshFilterMap(true);
-        } catch (err) {
-          console.log(`<3> Something went wrong while loading bind: ${err}`);
-        }
+      try {
+        if (status)
+          this.addBind(deviceBindPath);
+        else
+          this.removeBind(deviceBindPath);
+      } catch (err) {
+            console.log(`<3> Something went wrong while managing bind: ${err}`);
       }
     }
+  }
+  
+  /**
+   * adds a bind file and refresh current configuration.
+   * @param path full path to .json file.
+   * @return false if file does not exist or is already present in the queue.
+   */
+  addBind(path) {
+    if (!Fs.existsSync(path) || this.filterList.indexOf(path)>=0)
+      return false;
     
-    try {
-      newInput.openPort(deviceID);
-    } catch (err) {
-      throw `<3> Midi: cannot connect to ${deviceID}`;
-    }
-    
-    console.log(`<6> Midi: Connected to ${devicePort}.`);
+    this.filterList.push(path);
+    this.refreshFilterMap(true);
+    return true;
+  }
+  
+  /**
+   * removes a bind file from the static filter map.
+   * @param path full path to file
+   * @return false if file is not present
+   */
+  removeBind(path) {
+    let index = this.filterList.indexOf(path);
+    if (index == -1) return false;
+    this.filterList.splice(index,1);
+    this.refreshFilterMap(true);
+    return true;
   }
   
   /**
@@ -209,7 +224,7 @@ exports.ZynthoMidi = class {
     } else if (this.instrumentMap != null)
       this.knot.filterMap = this.instrumentMap;
     
-    console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
+   // console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
   }
   
   /**
