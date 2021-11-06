@@ -38,7 +38,7 @@
               <header class="d-flex flex-row tab-h">
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks"><a>Banks</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
-                <button class="tab-header" data-tab="controlPanel" id=""><a>OSC</a></button>
+                <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds"><a>Binds</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem"><a>System</a></button>
               </header>
@@ -114,6 +114,18 @@
                   </div>
                 </div> <!-- /fx content -->
               </div> <!-- /fx -->
+              
+              <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
+                <div class="col-4">
+                  <ul id="selBinds" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
+                  <button class="big-btn col-12" onclick="addBind(this);">Add</button>
+                </div>
+                <div id="pnlBindChain" class="col-8">
+                  <p style="text-align: center">Touch to remove</p>
+                  <div class="col-12" id="chainContainer">
+                  </div>
+                </div>
+              </div> <!-- /binds -->
               
               <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
                 <div class="col-10">
@@ -487,6 +499,46 @@
         });
       }
       
+      function addBind(source) {
+        let file = $('#selBinds').children('li.btn-selected').text();
+        //console.log(file);
+        if (file == "") return;
+        doAction('binds/add', {file: file}, (data) =>{
+          $(source).removeClass('btn-selected');
+          onBindPanelLoad();
+        });
+      }
+      
+      function onBindPanelLoad() {
+        doQuery("status/binds", null, (data) =>{
+          const ul=$('#selBinds');
+          $(ul).empty();
+          data.files.forEach( (item) => {
+            $(ul).append('<li>'+item+'</li>');
+          });
+          
+          const chain = $('#chainContainer');
+          $(chain).empty();
+          data.chain.forEach( (item) => {
+            $(chain).append('<button class="col-12">'+item+'</button>');
+          });
+          if (data.hasInstrument) {
+            $(chain).append('<button class="col-12" data-remove="instrument">Remove instrument bind</button>');
+          }
+          $(chain).children('button').on('click', (e) => {
+            let value = 
+             ($(e.target).attr('data-remove') !== undefined) 
+                ? "instrument"
+                : $(e.target).text();
+                
+            doAction('binds/remove', {file : value}, (data) =>{
+                  onBindPanelLoad();
+            });
+              
+          });
+        });
+      }
+      
       function onMIDIPanelLoad() {
         doQuery('status/midi', null, (data) => {
           
@@ -607,6 +659,8 @@
           /**
           Button actions
           */
+          $('#btnBinds').on('click', ()=>{onBindPanelLoad();});
+          
           $('#btnBanks').on('click', function() { queryBankList(); });
           $('#selBanks').on('click', 'li', function(e) {
             queryBank($(e.target).attr('data-bank'));
