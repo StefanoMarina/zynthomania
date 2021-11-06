@@ -266,17 +266,28 @@ class ZynthoServer extends EventEmitter {
    /**
     * Zynthoserver::getBanks
     * retrieve all banks name with path
-    * return array of object: { name | path}
+    * @return array of objects: {name | path}
     */
   getBanks() {
     var _this = this;
-    var bankList = ['Favorites', 'Custom'];
+    var bankList = ['Favorites'];
     var files = Fs.readdirSync (this.config.bank_dir)
                 .filter(function (file) {
                     return Fs.statSync(_this.config.bank_dir+'/'+file).isDirectory();
                 });
-  
+    
     files.forEach(file => { bankList.push(file); });
+    
+    const customSearchPath = this.config.cartridge_dir + "/banks";
+    
+    if (Fs.existsSync(customSearchPath)){
+      files = Fs.readdirSync (customSearchPath)
+                .filter( (file) => {
+                    return Fs.statSync(customSearchPath+'/'+file).isDirectory();
+                });
+      files.forEach(file => { bankList.push("$"+file); });
+    }
+    
     return bankList;
   }
   
@@ -289,31 +300,27 @@ class ZynthoServer extends EventEmitter {
       return this.favorites;
       
     let result = [];
-      
-    if ('Custom' == bank) {
-    /** TODO **/  
-    } else {
-      var fullpath = this.config.bank_dir + bank;  
-      var files = Fs.readdirSync (fullpath)
+    var fullpath = ("$" == bank[0])
+            ? this.config.cartridge_dir + "/banks/"+bank.substr(1)
+            : this.config.bank_dir + "/" + bank;
+    
+    console.log(fullpath);
+    
+    var files = Fs.readdirSync (fullpath)
                   .filter(function (file) {
                       return !Fs.statSync(fullpath+'/'+file).isDirectory();
-                  });
+                });
           
-      var regex = /\d*\-?([^\.]+)\.xiz/;
+    var regex = /\d*\-?([^\.]+)\.xiz/;
       
-      files.forEach(file => {
-         let match = regex.exec(file);
-         let name = "";
-         
-         if (match !== null)
-           name = match[1];
-         else
-           name = file;
-           
-        result.push ({"name": name, path: fullpath+'/'+file});
-      });
-    }
-    
+    files.forEach(file => {
+      let match = regex.exec(file);
+      let name = "";
+       
+      name = (match != null) ? match[1] : file;   
+      result.push ({"name": name, path: fullpath+'/'+file});
+    });
+      
     return result;
   }
   
@@ -354,7 +361,7 @@ class ZynthoServer extends EventEmitter {
   }
     
   /**
-   * ZynthoServer::addFavorite
+   * ZynthoServer::removeFavorite
    * adds a favorite
    * returns true if the favorite is removed, false if it was already set
    */
