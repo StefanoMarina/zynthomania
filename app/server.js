@@ -21,6 +21,7 @@ const EXPRESS = require('express');
 const Fs = require('fs');
 const Util = require ('util');
 const OSCParser = require ('./parser.js')
+const ZynthoIO = require ('./io.js');
 const ZynthoMania = require ('./zyntho.js');
 
 const app = EXPRESS();
@@ -67,7 +68,6 @@ app.get('/getInstruments', function (req, res, next) {
   
   res.json(app.zyntho.getInstruments(req.query.bank));
 });
-
 
 /**
  * loadInstrument
@@ -203,6 +203,29 @@ app.get('/status/part', function( req, res, next) {
   });
 });
 
+/**
+ * /status/binds
+ * GET return array with bind information
+ */
+app.get('/status/binds', function( req, res, next) {
+  console.log(`[GET] binds status query: ${JSON.stringify(req.query)}`);
+  
+  let result = {};
+  
+  let list = app.zyntho.midiService.filterList;
+  result.chain = list.map( item => item.match(/[^/]+$/)[0]);
+  result.hasInstrument = app.zyntho.midiService.instrumentMap != null;
+  
+  try {
+    result.files = ZynthoIO.listAllFiles(app.zyntho.config.cartridge_dir+"/"+"binds");
+   // console.log(JSON.stringify(result, null, 2));
+    res.json(result);
+  } catch (err) {
+    console.log(`Error on file parsing: ${err}`);
+    res.status(500).end();
+  }
+});
+ 
 /**
  * /fx/part/next_fx
  * POST
@@ -348,6 +371,61 @@ app.post('/status/midi/plug', function(req, res) {
     res.status(500).end();
   }
   
+});
+
+/**
+ * POST /binds/add
+ * add a new file to the bind chain.
+ * @body : {file}
+ */
+app.post('/binds/add', function(req, res) {
+  console.log(`[POST] bind_add request: ${JSON.stringify(req.body)}`);
+  if (req.body.file === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  try {
+    let path = app.zyntho.config.cartridge_dir + "/binds/" + req.body.file;
+    app.zyntho.midiService.addBind(path);
+    res.status(200).end();
+  } catch (err) {
+    console.log(err);
+    res.status(500).end();
+  }
+});
+
+/**
+ * POST /binds/add
+ * add a new file to the bind chain.
+ * @body : {file}
+ */
+app.post('/binds/remove', function(req, res) {
+  console.log(`[POST] bind_remove request: ${JSON.stringify(req.body)}`);
+  if (req.body.file === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  if (req.body.file == "instrument") {
+    try {
+      app.zyntho.midiService.instrumentMap = null;
+      app.zyntho.midiService.refreshFilterMap(false);
+      res.status(200).end();
+    } catch (err) {
+      console.log("<3> " +err);
+      res.status(500).end();
+    }
+  } else {  
+    try {
+      let path = app.zyntho.config.cartridge_dir + "/binds/" + req.body.file;
+      app.zyntho.midiService.addBind(path);
+      res.status(200).end();
+    } catch (err) {
+      console.log("<3> "+err);
+      res.status(500).end();
+    }
+  }
 });
 
 app.on('open', () => {
