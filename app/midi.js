@@ -22,33 +22,40 @@ const {execSync, exec} = require("child_process");
 const Fs = require('fs');
 const MIDI = require('midi');
 
-const KnotFilters = require('./knot/filter.js');
 const KNOT = require('./knot/knot.js');
-
 const ZynthoIO = require('./io.js');
-const OSCParser = require ('./parser.js')
+const {UADSR4, UASDR8} = require ('./uadsr.js');
 
 var exports = module.exports = {};
 
-exports.ZynthoMidi = class {
+class ZynthoMidi extends EventEmitter {
   
-  constructor(osc_server, cartridge_dir) {
+  constructor(config) {
+    super();
     this.midiInputs = {};
     this.midiOutput = null;
-    this.knot = new KNOT.Knot(osc_server);
+    this.knot = new KNOT.Knot(null);
+    this.knot.setEmitOnly(true);
     this.filterList = [];
     this.baseFilterMap = null;
     this.instrumentMap = null;
     
-    this.cartridgeDir = cartridge_dir + "/binds";
+    this.cartridgeDir = config.cartridge_dir + "/binds";
     
     if (Fs.existsSync(this.cartridgeDir + "/default.json")) {
       this.filterList.push(this.cartridgeDir + "/default.json");
-      this.basefilterMap = new KnotFilters.FilterMap(this.filterList[0]);
+      this.basefilterMap = new KNOT.FilterMap(this.filterList[0]);
     }
+    
+    this.oscParser = new KNOT.OSCParser();
+    this.uadsrConfig = config.uadsr;
+    this.midiInputRequests = config.plugged_devices;
+    
+    console.log (`ZMIDI: build ${JSON.stringify(this.uadsrConfig)}`);
   }
   
-  getMidiOutput(){
+  
+  getMidiOutput() {
     if (this.midiOutput == null)
       this.midiOutput = new MIDI.Output();
     
@@ -99,6 +106,24 @@ exports.ZynthoMidi = class {
       midi.openVirtualPort('Zynthomania');
       exec("aconnect 'RtMidi Output Client:Zynthomania' 'ZynAddSubFX'");
       this.knot.setMidiOut(midi);
+      
+      if (this.midiInputRequests != null) {
+        const inputs = this.enumerateInputs(); 
+        let mapName = inputs.map (obj => obj.name);
+        let index = -1;
+        
+        this.midiInputRequests.forEach( (req) => {
+          console.log(`<6> Attemping reconnection to midi device ${req}`);
+          index = mapName.indexOf(req);
+          if (index != -1) {
+            try {
+              this.setConnection(req, 1);
+            } catch (err) {
+              console.log(`<5> Failed to reconnect ${req} : ${err}`);
+            }
+          }
+        });
+      }
     }
   }
   
@@ -106,14 +131,27 @@ exports.ZynthoMidi = class {
    * Creates a new midi or deletes it for the selected keyboard.
    * If a new input is requested, the corresponding keyboard bind
    * is loaded.
-   * @param devicePort midi device port (as in enumerateInputs().port)
+   * @param devicePort either ALSA port name (x:y) or device name
    * @param status (default =true) if true, device is plugged in, and bind
    * loaded. Otherwise, it is discarded.
    * @throws if invalid device name/id
    */
   setConnection(devicePort, status) {
     status = (status === undefined) ? true : status;
-     
+    const inputs = this.enumerateInputs();
+    let deviceID = -1;
+    
+    if (devicePort.match(/ \d+:\d+\s*$/))
+      deviceID = inputs.map( (e)=>{return e.port;}).indexOf(devicePort);
+    else {
+      deviceID = inputs.map ( e => e.name).indexOf(devicePort);
+      if (deviceID > -1)
+        devicePort = inputs[deviceID].port;
+    }
+    
+    if (deviceID < 0)
+      throw `invalid device ${devicePort}`;
+        
     if (this.midiInputs[devicePort] !== undefined) {
       if (status) return;
     
@@ -122,20 +160,16 @@ exports.ZynthoMidi = class {
       this.midiInputs[devicePort] = undefined;
       delete this.midiInputs[devicePort];
       
+      this.emit('device-out', inputs[deviceID].name);
       console.log(`<6> Released midi connection from ${devicePort}.`);
-    } else {    
-      //create new connection
-      let deviceID = this.enumerateInputs().map( (e)=>{return e.port;})
-            .indexOf(devicePort);
-      if (deviceID < 0)
-        throw "Midi: invalid device";
-      
+    } else {
       let newInput = new MIDI.Input();
       newInput.on('message', (delta, msg) =>{
           this.knot.midiCallback(delta, msg);
       });
       
       this.midiInputs[devicePort] = newInput;
+      
        try {
         newInput.openPort(deviceID);
       } catch (err) {
@@ -143,6 +177,7 @@ exports.ZynthoMidi = class {
       }
       
       console.log(`<6> Midi: Connected to ${devicePort}.`);
+      this.emit('device-in', inputs[deviceID].name);
     }
     
     if (this.cartridgeDir != null) {
@@ -170,8 +205,10 @@ exports.ZynthoMidi = class {
    * @return false if file does not exist or is already present in the queue.
    */
   addBind(path) {
-    if (!Fs.existsSync(path) || this.filterList.indexOf(path)>=0)
+    if (!Fs.existsSync(path) || this.filterList.indexOf(path)>=0){
+      console.log(`<5> ZMidi::addBind: missing file or file already present ${path}`);
       return false;
+    }
     
     this.filterList.push(path);
     this.refreshFilterMap(true);
@@ -188,6 +225,7 @@ exports.ZynthoMidi = class {
     if (index == -1) return false;
     this.filterList.splice(index,1);
     this.refreshFilterMap(true);
+    console.log(`<6> Removed bind ${path}`);
     return true;
   }
   
@@ -200,26 +238,37 @@ exports.ZynthoMidi = class {
    * @param force (default=false) if true, reloads the default bindings 
    */
   refreshFilterMap(force) {
-    force =  (force === undefined) ? false : force;
+    force = (force === undefined) ? false : force;
     
     let list = this.filterList.filter((item) => {return item != null});
     
+    //default, keyboard and static binds are flushed only on request
     if (force) {
       this.baseFilterMap = null;
       let map;
       for (let i = 0; i < list.length; i++){
         
-        map  = new KnotFilters.FilterMap(JSON.parse(Fs.readFileSync(list[i])));
+        map  = new KNOT.FilterMap(JSON.parse(Fs.readFileSync(list[i])));
         
         this.baseFilterMap = (this.baseFilterMap == null)
           ? map
-          : KnotFilters.FilterMap.merge(this.baseFilterMap, map);
+          : KNOT.FilterMap.merge(this.baseFilterMap, map);
       }
     }
     
-    if (this.instrumentMap != null && this.baseFilterMap != null) {
-      this.knot.filterMap = KnotFilters.FilterMap.merge(this.baseFilterMap,this.instrumentMap);
-    } else if (this.baseFilterMap != null) {
+    let map = null;
+    
+    //if present, merge with uadsr map
+    if (this.uadsrConfig.mode != "none" && this._uadsr != null) {
+      map = KNOT.FilterMap.merge(this.baseFilterMap, 
+            this._uadsr.getFilterMap(this.uadsrConfig.mode));
+    } else {
+      map = this.baseFilterMap;
+    }
+    
+    if (this.instrumentMap != null && map != null) {
+      this.knot.filterMap = KNOT.FilterMap.merge(map,this.instrumentMap);
+    } else if (map != null) {
       this.knot.filterMap = this.baseFilterMap;
     } else if (this.instrumentMap != null)
       this.knot.filterMap = this.instrumentMap;
@@ -248,7 +297,7 @@ exports.ZynthoMidi = class {
     } else if (fileExists){
       console.log(`Loading instrument bind ${bindFile}`);
       try {
-        this.instrumentMap = new KnotFilters.FilterMap(JSON.parse(
+        this.instrumentMap = new KNOT.FilterMap(JSON.parse(
           Fs.readFileSync(bindFile) ));
       } catch (err) {
         this.instrumentMap = null;
@@ -258,4 +307,51 @@ exports.ZynthoMidi = class {
     
     this.refreshFilterMap(false);
   }
+  
+  /**
+   * loadUADSR
+   * Loads unified ASDR mode
+   * @param type adsr type (uadsr4 or uasdr8 or none)
+   * @param config configuration (optional)
+   * @throws if configuration is not defined in constructor and method.
+   */
+  loadUADSR(type, config) {
+    if (config === undefined)
+      config = this.uadsrConfig;
+    
+    if (this.uadsrConfig === undefined)
+      throw (`ZynthoMIDI: cannot configure UADSR with undefined config.`);
+      
+    if (type == config.type) {
+      console.log('<6> ZMIDI: Skipping uadsr load as the type is the same.');
+      return;
+    }
+    
+    switch (type) {
+      case "uadsr4" :
+        this._uadsr = new UADSR4();
+        this._uadsr.setBinds(config.uadsr4_binds);
+      break;
+      case "uadsr8" :
+        this._uadsr = new UADSR4();
+        this._uadsr.setBinds(config.uadsr8_binds);
+      break;
+      case "none" :
+      
+      break;
+    }
+
+    this.uadsrConfig.type = type;
+    this.refreshFilterMap();
+  }
+  
+  getUADSR() {
+    if (this._uadsr == null || this.uadsrConfig.type == 'none')
+      throw "UADSR is not loaded.\n";
+    else
+      return this._uadsr;
+  }
+  
 }
+
+exports.ZynthoMidi = ZynthoMidi;

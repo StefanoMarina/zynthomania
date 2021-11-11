@@ -18,12 +18,14 @@
 
 const Osc = require('osc');
 const Fs = require('fs');
-const OSCParser = require ('./knot/parser.js')
+const KNOT = require ('./knot/knot.js')
 const ZynthoMidi = require ('./midi.js');
 
 const EventEmitter = require('events');
 
 const {execSync, exec} = require("child_process");
+
+const {registerOSC} = require('./osc.js');
 
 var exports = module.exports = {};
 
@@ -32,7 +34,14 @@ class ZynthoServer extends EventEmitter {
     super()
     this.config = undefined;
     this.favorites = [];
-    this.parser = new OSCParser.OSCParser();
+    this.parser = new KNOT.OSCParser();
+    
+    /*
+     * OSC emitter is used to capture internal osc commands
+     * events are defined as the osc path
+     * arguments are the ZynthoServer object, parsed arguments
+     */
+    this.oscEmitter = new EventEmitter();
     
     /**
      * default 'done' query
@@ -53,6 +62,8 @@ class ZynthoServer extends EventEmitter {
   open(configFile) {
     if (configFile === undefined)
       throw "Missing configuration file";
+    
+    this.configurationPath = configFile;
     
     try {
       let data = Fs.readFileSync(configFile, 'utf-8');
@@ -89,13 +100,57 @@ class ZynthoServer extends EventEmitter {
     
     this.osc.on('ready', () => {
         console.log ("Opened OSC Server");
+        registerOSC(this);
         
-        this.midiService = new ZynthoMidi.ZynthoMidi(this.osc, this.config.cartridge_dir);
+        /* Init midi service */
+        this.midiService = new ZynthoMidi.ZynthoMidi(this.config);
         console.log ("Started midi service");
+        
+        this.midiService.on('device-in', (name) =>{
+          
+          if (this.config['plugged_devices'] == null)
+            this.config['plugged_devices'] = [];
+          
+          if (this.config['plugged_devices'].indexOf(name) == -1) {
+            this.config['plugged_devices'].push(name);
+            this.save();
+          }
+        });
+        this.midiService.on('device-out', (name) =>{
+          if (this.config['plugged_devices'] != null) {
+            let index = this.config['plugged_devices'].indexOf(name);
+            if (index != -1)
+              this.config['plugged_devices'].splice(index,1);
+            
+            this.save();
+          }
+        });
         
         try {
           this.midiService.connectToZyn();
           console.log("<6> Created zynthomania virtual port.");
+          
+          //Capture all /zmania/ osc messages from binds
+          //all other binds goes to regular osc
+          this.midiService.knot.on('osc', (packet) => {
+            if (!Array.isArray(packet))
+              packet = [packet];
+            
+            console.log(`midi osc : ${JSON.stringify(packet)}`);
+            
+            let zmaniaHandler = packet.filter( (path) => path.match(/^\/zmania/));
+            packet = (zmaniaHandler.length > 0)
+                ? packet.filter( (path) => (zmaniaHandler.indexOf(path)>-1))
+                : packet;
+            
+            this.osc.send(this.parser.translate(packet));
+            
+            //send internally osc messages
+            zmaniaHandler.forEach( (path) => {
+              let tPath = this.parser.translate(path);
+              this.oscEmitter.emit(tPath.address, this, tPath.args);
+            });
+          });
         } catch (err) {
           console.log("<3> Error on creating zynthomania virtual port");
         }
@@ -105,14 +160,18 @@ class ZynthoServer extends EventEmitter {
       throw `OSC ERROR: ${err}`;
     });
     
-    var _this = this;
-    this.osc.on("osc", function (oscMsg) {
-        if (oscMsg.address == _this.defaultDoneQuery.address) {
-          console.log("OSC query end.");
-          _this.emit('query-done', oscMsg);
+    //Main OSC parser
+    this.osc.on("osc", (oscMsg) => {
+        if (oscMsg.address == this.defaultDoneQuery.address) {
+          //console.log("OSC query end.");
+          this.emit('query-done', oscMsg);
+        } else if (oscMsg.address.match(/^\/zmania/i)){
+          console.log("zyntho message on osc");
+          let parsed = this.parser.translate(oscMsg.address);
+          this.oscEmitter.on(parsed.address, this, parsed.args);
         } else {
           console.log("OSC message: ", oscMsg);
-          _this.emit(oscMsg.address, oscMsg);
+          this.emit(oscMsg.address, oscMsg);
         }
     });
 
@@ -202,18 +261,18 @@ class ZynthoServer extends EventEmitter {
    */
    send(message, onDone) {
      
-     
      if (Object.prototype.toString.call(message)!=='[object Object]') {
        message = this.parser.translate(message);
      }
-     
      
      if (onDone !== undefined) {
        message = this.injectDone(message, onDone);
      }
      
-     
-     this.osc.send.call(this.osc, message);
+     if (message.address.match(/^\/zmania/)) {
+       this.oscEmitter.emit(message.address, this, message.args);
+     } else 
+      this.osc.send.call(this.osc, message);
    }
    
    
@@ -336,6 +395,12 @@ class ZynthoServer extends EventEmitter {
         console.log("Could not save favorites: "+ err);
         return false;
       }
+    }
+    //try to save config
+    try {
+      Fs.writeFileSync(this.configurationPath, JSON.stringify(this.config, null, 2));
+    } catch (err) {
+      console.log(`Could not save properties: ${err}`);
     }
   }
   
@@ -680,6 +745,24 @@ class ZynthoServer extends EventEmitter {
     } catch (err)
       { console.log (`::route: error on route send: ${err}`); }
       
+    });
+  }
+  
+  /**
+   * handleZynthoOSC
+   * routes and handles directly any osc message regarding zynthomania
+   * and not zynaddsubfx
+   * @param packets array or single string
+   */
+  handleZynthoOSC(packets) {
+    
+    if (!Array.isArray(packets)) {
+      packets = [packets];
+    }
+    
+    packets.forEach( (path) => {
+      if (path.match(/^\/zmania/))
+        this.oscEmitter.emit(path);
     });
   }
 }

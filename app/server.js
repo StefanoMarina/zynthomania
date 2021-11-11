@@ -419,7 +419,7 @@ app.post('/binds/remove', function(req, res) {
   } else {  
     try {
       let path = app.zyntho.config.cartridge_dir + "/binds/" + req.body.file;
-      app.zyntho.midiService.addBind(path);
+      app.zyntho.midiService.removeBind(path);
       res.status(200).end();
     } catch (err) {
       console.log("<3> "+err);

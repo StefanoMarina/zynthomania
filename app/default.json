@@ -5,5 +5,11 @@
   "custom_dir": "/home/pi/zynthomania/custom",
   "favorites": "/home/pi/zynthomania/favorites.json",
   "bank_dir": "/usr/local/share/zynaddsubfx/banks/",
+  "uadsr" : {
+    "type" : "none",
+    "mode" : "amp",
+    "uadsr4_binds" : [14,15,16,17,18],
+    "uadsr8_binds" : [14,15,16,17,18,19,20,21]
+  },
   "services" : { "user" : { "zyn_osc_port": 7777}}
 }
