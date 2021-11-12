@@ -46,23 +46,54 @@ module.exports.registerOSC = function (zynServer) {
   emitter.on('/zmania/uadsr/type',  function (zyn, args) {
     if (zyn.midiService != null)
       zyn.midiService.loadUADSR(args[0].value);
+      zyn.save();
   });
   
   emitter.on('/zmania/uadsr4/mode', function (zyn, args) {
     if (zyn.midiService != null) {
       zyn.midiService.uadsrConfig.mode = args[0].value;
       zyn.midiService.refreshFilterMap(false);
+      zyn.save();
     }
   });
   
   emitter.on('/zmania/uadsr4/bind', function (zyn, args) {
+    let values = args.map(arg => arg.value);
+    
     if (zyn.midiService != null) {
       try {
-        zyn.midiService.getUADSR().setBinds(args);
+        zyn.midiService.getUADSR().setBinds(values);
         zyn.midiService.refreshFilterMap();
+        zyn.config.uadsr['uadsr4_binds'] = 
+          zyn.midiService.uadsrConfig['uadsr4_binds'] = values;
+        zyn.save();
       } catch (err) {
         console.log(`<4> /zmania/uadsr4/bind: ${err}`);
       }
+    }
+  });
+  
+  emitter.on('/zmania/uadsr8/bind', function (zyn, args) {
+    let values = args.map(arg => arg.value);
+    if (zyn.midiService != null) {
+      try {
+      zyn.midiService.getUADSR().setBinds(values);
+      zyn.midiService.refreshFilterMap();
+      zyn.config.uadsr['uadsr4_binds'] = 
+          zyn.midiService.uadsrConfig['uadsr4_binds'] = values;
+      zyn.save();
+      } catch (err) {
+        console.log(`<4> /zmania/uadsr8/bind:${err}`);
+      }
+    }
+  });
+  
+  emitter.on('/zmania/binds/dump', function (zyn) {
+    if (zyn.midiService != null) {
+      console.log(JSON.stringify(zyn.midiService.knot.filterMap, null, 1));
+      if (zyn.midiService._uadsr != null)
+        console.log(JSON.stringify(
+          zyn.midiService._uadsr.filters[zyn.config.uadsr.mode]));
     }
   });
 }

@@ -70,9 +70,10 @@ class UADSR4 {
       throw `UADSR4: unrecognized mode ${mode}`;
       
     if (this.filters[mode] == null) {
+      let filtered = new KNOT.FilterMap(this.coreBind[mode]);
+      console.log(`UADSR4: New filter map: ${mode}`);
         this.filters[mode] = KNOT.FilterMap.merge(
-        new KNOT.FilterMap(this.coreBind[mode]),
-          this.filters['switcher']);
+        filtered, this.filters['switcher']);
     }
     
     return this.filters[mode];

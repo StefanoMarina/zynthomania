@@ -106,6 +106,7 @@ class ZynthoServer extends EventEmitter {
         this.midiService = new ZynthoMidi.ZynthoMidi(this.config);
         console.log ("Started midi service");
         
+        //MIDI Device update
         this.midiService.on('device-in', (name) =>{
           
           if (this.config['plugged_devices'] == null)
@@ -126,34 +127,45 @@ class ZynthoServer extends EventEmitter {
           }
         });
         
+        //MIDI connect to zyn && restore configs
         try {
           this.midiService.connectToZyn();
           console.log("<6> Created zynthomania virtual port.");
-          
-          //Capture all /zmania/ osc messages from binds
-          //all other binds goes to regular osc
-          this.midiService.knot.on('osc', (packet) => {
-            if (!Array.isArray(packet))
-              packet = [packet];
-            
-            console.log(`midi osc : ${JSON.stringify(packet)}`);
-            
-            let zmaniaHandler = packet.filter( (path) => path.match(/^\/zmania/));
-            packet = (zmaniaHandler.length > 0)
-                ? packet.filter( (path) => (zmaniaHandler.indexOf(path)>-1))
-                : packet;
-            
-            this.osc.send(this.parser.translate(packet));
-            
-            //send internally osc messages
-            zmaniaHandler.forEach( (path) => {
-              let tPath = this.parser.translate(path);
-              this.oscEmitter.emit(tPath.address, this, tPath.args);
-            });
-          });
         } catch (err) {
-          console.log("<3> Error on creating zynthomania virtual port");
+          console.log(`<3> Error on creating zynthomania virtual port: ${err}`);
         }
+        
+        if (this.config.uadsr != null && (this.config.uadsr.type != "none")) {
+          try {
+            this.midiService.loadUADSR(this.config.uadsr.type);
+            console.log("<6> UADSR loaded");
+          } catch (err) {
+            console.log(`<3> UADSR loading failed: ${err}`);
+          }
+        }
+          
+        //Capture all /zmania/ osc messages from binds
+        //all other binds goes to regular osc
+        this.midiService.knot.on('osc', (packet) => {
+          if (!Array.isArray(packet))
+            packet = [packet];
+          
+          console.log(`midi osc : ${JSON.stringify(packet)}`);
+          
+          let zmaniaHandler = packet.filter( (path) => path.match(/^\/zmania/));
+          packet = (zmaniaHandler.length > 0)
+              ? packet.filter( (path) => (zmaniaHandler.indexOf(path)>-1))
+              : packet;
+          
+          this.osc.send(this.parser.translate(packet));
+          
+          //send internally osc messages
+          zmaniaHandler.forEach( (path) => {
+            let tPath = this.parser.translate(path);
+            this.oscEmitter.emit(tPath.address, this, tPath.args);
+          });
+        });
+       
     });
     
     this.osc.on('error', (err) => {

@@ -24,7 +24,7 @@ const MIDI = require('midi');
 
 const KNOT = require('./knot/knot.js');
 const ZynthoIO = require('./io.js');
-const {UADSR4, UASDR8} = require ('./uadsr.js');
+const {UADSR4, UADSR8} = require ('./uadsr.js');
 
 var exports = module.exports = {};
 
@@ -51,7 +51,7 @@ class ZynthoMidi extends EventEmitter {
     this.uadsrConfig = config.uadsr;
     this.midiInputRequests = config.plugged_devices;
     
-    console.log (`ZMIDI: build ${JSON.stringify(this.uadsrConfig)}`);
+    //console.log (`ZMIDI: build ${JSON.stringify(this.uadsrConfig)}`); 
   }
   
   
@@ -259,7 +259,7 @@ class ZynthoMidi extends EventEmitter {
     let map = null;
     
     //if present, merge with uadsr map
-    if (this.uadsrConfig.mode != "none" && this._uadsr != null) {
+    if (this.uadsrConfig.type != "none" && this._uadsr != null) {
       map = KNOT.FilterMap.merge(this.baseFilterMap, 
             this._uadsr.getFilterMap(this.uadsrConfig.mode));
     } else {
@@ -269,7 +269,7 @@ class ZynthoMidi extends EventEmitter {
     if (this.instrumentMap != null && map != null) {
       this.knot.filterMap = KNOT.FilterMap.merge(map,this.instrumentMap);
     } else if (map != null) {
-      this.knot.filterMap = this.baseFilterMap;
+      this.knot.filterMap = map;
     } else if (this.instrumentMap != null)
       this.knot.filterMap = this.instrumentMap;
     
@@ -322,7 +322,7 @@ class ZynthoMidi extends EventEmitter {
     if (this.uadsrConfig === undefined)
       throw (`ZynthoMIDI: cannot configure UADSR with undefined config.`);
       
-    if (type == config.type) {
+    if (type == config.type && this._uadsr != null) {
       console.log('<6> ZMIDI: Skipping uadsr load as the type is the same.');
       return;
     }
@@ -333,7 +333,7 @@ class ZynthoMidi extends EventEmitter {
         this._uadsr.setBinds(config.uadsr4_binds);
       break;
       case "uadsr8" :
-        this._uadsr = new UADSR4();
+        this._uadsr = new UADSR8();
         this._uadsr.setBinds(config.uadsr8_binds);
       break;
       case "none" :
