@@ -53,7 +53,8 @@ module.exports.registerOSC = function (zynServer) {
     if (zyn.midiService != null) {
       zyn.midiService.uadsrConfig.mode = args[0].value;
       zyn.midiService.refreshFilterMap(false);
-      zyn.save();
+      //NOTE: do not save mode change, since save is blocking and mode could
+      //change a lot due to osc calls.
     }
   });
   

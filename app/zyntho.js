@@ -281,8 +281,14 @@ class ZynthoServer extends EventEmitter {
        message = this.injectDone(message, onDone);
      }
      
-     if (message.address.match(/^\/zmania/)) {
+     if (message.address != null && message.address.match(/^\/zmania/)) {
        this.oscEmitter.emit(message.address, this, message.args);
+     } else if (message.packets != null 
+            && message.packets[0].address.match(/^\/zmania/)){
+       //filter packages
+       message.packets.forEach( 
+        (packet) => this.oscEmitter.emit(packet.address, this, packet.args)
+        );
      } else 
       this.osc.send.call(this.osc, message);
    }
@@ -757,24 +763,6 @@ class ZynthoServer extends EventEmitter {
     } catch (err)
       { console.log (`::route: error on route send: ${err}`); }
       
-    });
-  }
-  
-  /**
-   * handleZynthoOSC
-   * routes and handles directly any osc message regarding zynthomania
-   * and not zynaddsubfx
-   * @param packets array or single string
-   */
-  handleZynthoOSC(packets) {
-    
-    if (!Array.isArray(packets)) {
-      packets = [packets];
-    }
-    
-    packets.forEach( (path) => {
-      if (path.match(/^\/zmania/))
-        this.oscEmitter.emit(path);
     });
   }
 }

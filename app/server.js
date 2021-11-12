@@ -170,7 +170,7 @@ app.get('/status/systemfx', function (req, res, next) {
  */
 app.get('/status/options', function (req, res, next) {
   console.log(`[GET] getoptions query: ${JSON.stringify(req.query)}`);
-  res.json(app.zyntho.preferences);
+  res.json(app.zyntho.config);
 });
 
 /**
@@ -183,6 +183,17 @@ app.get('/status/midi', function (req, res, next) {
   res.json(app.zyntho.midiService.enumerateInputs());
 });
  
+/**
+ * GET returns UADSR status
+ * query none
+ */
+app.get('/status/uadsr', function (req, res, next) {
+  console.log(`[GET] getUADSR query: ${JSON.stringify(req.query)}`);
+  if (app.zyntho.config.uadsr === undefined)
+    res.status(500).end();
+  else
+    res.json(app.zyntho.config.uadsr);
+});
 
 /**
  * /status/part
@@ -322,7 +333,7 @@ app.post('/fx/route', function(req, res) {
     return;
   }
   
-  app.zyntho.preferences.route = req.body.route;
+  app.zyntho.config.route = req.body.route;
   app.zyntho.save();
   
   app.zyntho.route(undefined, undefined, (msg) =>{
@@ -341,7 +352,7 @@ app.post('/fx/dry', function(req, res) {
     return;
   }
   
-  app.zyntho.preferences.dry = req.body.dry;
+  app.zyntho.config.dry = req.body.dry;
   app.zyntho.save();
   
   //force routing

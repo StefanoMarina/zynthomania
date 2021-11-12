@@ -71,6 +71,7 @@
                       </button>
                     </div>
                   </div>
+                  
                   <div id="pnlPart" class="panel fxPanel hidden row">
                     <div class="col-12">
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx0"></div>
@@ -127,26 +128,66 @@
                 </div>
               </div> <!-- /binds -->
               
-              <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
-                <div class="col-10">
-                  <label for="commandline">&gt;</label>
-                  <input id="commandLine" placeholder="Input parameter...">
+              <div id="pnlScript" class="tab controlPanel hidden container">
+                <div class="row">
+                  
+                    <textarea class="col-12" style="min-height: 200px !important" 
+                   id="commandLine" placeholder="Input parameter..."></textarea>
+           
                 </div>
-                <div class="col-2">
-                  <button onclick="onScriptSend();">Send</button>
+                <div class="row">
+                  <button class="col-12 big-btn" onclick="onScriptSend();">Send</button>
                 </div>
               </div>
               
               
               <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlMIDI" onclick="onMIDIPanelLoad();")>MIDI</button>
+                  <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onMIDIPanelLoad();">MIDI</button>
+                  <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onUADSRPanelLoad();">UADSR</button>
                 </header>
                 <div class="col-8"> <!-- fx content container -->
-                  <div id="pnlMIDI" class="panel hidden row">
+                  <div id="pnlMIDI" class="sysPanel panel hidden row">
                     <div class="col-12" id="sysMidiContainer">
                     </div>
                   </div>
+                  <div id="pnlUADSR" class="sysPanel panel hidden row">
+                    <div class="col-12 row no-gutters">
+                      <button class="btnUADSR col-4"  value="none" >Off</button>
+                      <button class="btnUADSR col-4"  value="uadsr4" >4</button>
+                      <button class="btnUADSR col-4"  value="uadsr8" >8</button>
+                    </div>
+                    <div id="u4config" class="uadsrControl hidden col-12 row">
+                      <p class="col-12 tc">ADSR</p>
+                      <div class="tc col-2 col-md-3">A</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4a"></div> 
+                      <div class="tc col-2 col-md-3">D</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4d"></div> 
+                      <div class="tc col-2 col-md-3">S</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4s"></div> 
+                      <div class="tc col-2 col-md-3">R</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4r"></div> 
+                    </div>
+                    <div id="u4switch" class="uadsrControl hidden col-12 row">
+                      <div class="col-4">Switch</div>
+                      <div class="col-8"><input class="itext col-12" type="number" id="iu4sw"></div>
+                    </div>
+                     <div id="u8config" class="uadsrControl hidden col-12 row">
+                      <p class="tc col-12">Filter</p>
+                      <div class="tc col-2 col-md-3">A</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8a"></div> 
+                      <div class="tc col-2 col-md-3">D</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8d"></div> 
+                      <div class="tc col-2 col-md-3">S</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8s"></div> 
+                      <div class="tc col-2 col-md-3">R</div>
+                      <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
+                    </div>
+                    <div class="col-12">
+                    <button id="uadsrApply" class="col-12 hidden uadsrControl">Apply  <i class="fa fa-level-down-alt"></i></button>
+                    </div>
+                  </div>
+                  
                 </div>
             </div> 
           </div> 
@@ -472,7 +513,7 @@
       
       function onDryPanelLoad() {
         doQuery('status/options', null, (data) => {
-          console.log(data);
+          //console.log(data);
           let fxes = data.dry;
           $('.btnDrySelection').removeClass('btn-selected');
           
@@ -573,6 +614,44 @@
                 onMIDIPanelLoad();
               });
           });
+        });
+      }
+      
+      function onUADSRPanelLoad(type) {
+        doQuery("status/options", null, (data) => {
+          let uadsr = data.uadsr;
+          
+          $('.uadsrControl').addClass('hidden');
+          
+          if (type === undefined) type = uadsr.type;
+          $(`#pnlUADSR button[value=${type}]`).addClass('btn-selected');
+          let query = null;
+          
+          switch (type) {
+            case "none": break;
+            case "uadsr4":
+              $('#u4config p').text('General ADSR');
+              $('#u4config, #u4switch, #uadsrApply').removeClass('hidden');
+              
+              query = $('#u4config input');
+              for (let i = 0; i < 4; i++)
+                query[i].value = uadsr['uadsr4_binds'][i];
+                
+              $('#u4switch input').val(uadsr['uadsr4_binds'][4]);
+            break;
+            case "uadsr8":
+              $('#u4config p').text('Amplitude');
+              $('#u4config, #u8config, #uadsrApply').removeClass('hidden');
+              
+              query = $('#u4config input');
+              for (let i = 0; i < 4; i++)
+                query[i].value = uadsr['uadsr8_binds'][i];
+                
+              query = $('#u8config input');
+              for (let i = 0; i < 4; i++)
+                query[i].value = uadsr['uadsr8_binds'][i+4];
+            break;
+          }
         });
       }
       
@@ -716,7 +795,41 @@
             
             doAction('fx/dry', {dry: dry});
           })
+      
+          /**
+          bind actions
+          */
+          $('.btnUADSR').on('click', (e) =>{
+            $('.btnUADSR').removeClass('btn-selected');
+            $(e.target).addClass('btn-selected');
+            doAction("script", {script: `/zmania/uadsr/type '${e.target.value}'`},
+              (data) =>{
+                onUADSRPanelLoad();
+            });
+          });
+          
+          $('#uadsrApply').on('click', (e)=>{
+            let type = $('.btnUADSR.btn-selected').val();
+            let array = $('#u4config input').map ( function() {return $(this).val()}).get();
             
+            switch (type) {
+              case "none" : return;
+              case "uadsr4": 
+                array.push($('#u4switch input').val());
+              break;
+              case "uadsr8":
+              array= array.concat(
+                $('#u8config input').map ( function() {return $(this).val()}).get()
+              );
+              break;
+              default: console.log(`Unknown type ${type} for uadsr`); return; break;
+            }
+            
+            doAction('script', {script: `/zmania/${type}/bind ${array.join(' ')}`},
+              () =>{
+                onUADSRPanelLoad();
+              });
+          });
           /**
           Init actions
           - get favorites

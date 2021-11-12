@@ -35,6 +35,8 @@ body, body * {font-family: Minecart}
 .bl {border-left: 2px dotted black;}
 .br {border-right: 2px dotted black;}
 
+
+.tc {text-align: center !important}
 /* blurry lines */
 /*
 body::after {
@@ -160,7 +162,7 @@ ul.select {
 }
 
 ul.select li {
-  font-size: 14px;
+  font-size: 12px;
    padding: 2px 6px;
 }
 ul.select li:hover {
@@ -188,6 +190,10 @@ input[type=checkbox] + label {
 input[type=checkbox] + label::before {content: '[ ] '; }
 input[type=checkbox][checked] + label::before { content: '[X]';}
 
+.itext {
+  background-color: transparent;
+  border: 2px dotted black;
+}
 .toggle {
   border-radius: 10px;
 }
