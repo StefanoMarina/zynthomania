@@ -1,0 +1,44 @@
+{
+  "all" : [
+    {
+      "fader" : "float",
+      "cc" : 14,
+      "min" : 0,
+      "max" : 1,
+      "osc" : [
+        "/part${ch}/kit0/adpars/FreqLfo/Pfreq",
+        "/part${ch}/kit0/padpars/FreqLfo/Pfreq",
+        "/part${ch}/kit0/subpars/FreqLfo/Pfreq"
+        ]
+    },
+    {
+      "fader" : "abs",
+      "cc" : 15,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FreqLfo/Pintensity",
+        "/part${ch}/kit0/padpars/FreqLfo/Pintensity",
+        "/part${ch}/kit0/subpars/FreqLfo/Pintensity"
+        ]
+    },{
+      "fader" : "abs",
+      "cc" : 16,
+      "min" : 0,
+      "max" : 16383,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/PDetune",
+        "/part${ch}/kit0/padpars/PDetune",
+        "/part${ch}/kit0/subpars/PDetune"
+        ]
+    },{
+      "cc" : 17,
+      "fader" : "int",
+      "min" : 0,
+      "max" : 7,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FreqLfo/PLFOtype",
+        "/part${ch}/kit0/padpars/GlobalPar/FreqLfo/PLFOtype",
+        "/part${ch}/kit0/sub/GlobalPar/FreqLfo/PLFOtype"
+      ]
+    }
+  ]
+}

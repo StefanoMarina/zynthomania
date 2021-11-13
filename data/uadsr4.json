@@ -1,0 +1,12 @@
+{
+	"all": [{
+		"cc": 20,
+		"switch": {
+			"0": "/zmania/uadsr4/mode 'amp'",
+			"32": "/zmania/uadsr4/mode 'filter'",
+			"64": "/zmania/uadsr4/mode 'filter2'",
+			"96": "/zmania/uadsr4/mode 'freq'",
+			"127": "/zmania/uadsr4/mode 'freq2'"
+		}
+	}]
+}

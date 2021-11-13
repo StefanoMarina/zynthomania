@@ -1,0 +1,38 @@
+{
+  "all" : [
+    {
+      "fader" : "abs",
+      "cc" : 14,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/AmpEnvelope/PA_dt",
+        "/part${ch}/kit0/padpars/AmpEnvelope/PA_dt",
+        "/part${ch}/kit0/subpars/AmpEnvelope/PA_dt"
+        ]
+    },
+    {
+      "fader" : "abs",
+      "cc" : 15,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/AmpEnvelope/PD_dt",
+        "/part${ch}/kit0/padpars/AmpEnvelope/PD_dt",
+        "/part${ch}/kit0/subpars/AmpEnvelope/PD_dt"
+        ]
+    },{
+      "fader" : "abs",
+      "cc" : 16,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/AmpEnvelope/PS_val",
+        "/part${ch}/kit0/padpars/AmpEnvelope/PS_val",
+        "/part${ch}/kit0/subpars/AmpEnvelope/PS_val"
+        ]
+    },{
+      "fader" : "abs",
+      "cc" : 17,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/AmpEnvelope/PR_dt",
+        "/part${ch}/kit0/padpars/AmpEnvelope/PR_dt",
+        "/part${ch}/kit0/subpars/AmpEnvelope/PR_dt"
+        ]
+    }
+  ]
+}

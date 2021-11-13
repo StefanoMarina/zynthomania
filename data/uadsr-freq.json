@@ -1,0 +1,39 @@
+{
+  "all" : [
+    {
+      "fader" : "abs",
+      "cc" : 14,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FreqEnvelope/PA_dt",
+        "/part${ch}/kit0/padpars/FreqEnvelope/PA_dt",
+        "/part${ch}/kit0/subpars/FreqEnvelope/PA_dt"
+        ]
+    },
+    {
+      "fader" : "abs",
+      "cc" : 15,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FreqEnvelope/PA_val",
+        "/part${ch}/kit0/padpars/FreqEnvelope/PA_val",
+        "/part${ch}/kit0/subpars/FreqEnvelope/PA_val"
+        ]
+    },
+    {
+      "fader" : "abs",
+      "cc" : 16,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FreqEnvelope/PR_dt",
+        "/part${ch}/kit0/padpars/FreqEnvelope/PR_dt",
+        "/part${ch}/kit0/subpars/FreqEnvelope/PR_dt"
+        ]
+    },{
+      "fader" : "abs",
+      "cc" : 17,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FreqEnvelope/PR_val",
+        "/part${ch}/kit0/padpars/FreqEnvelope/PR_val",
+        "/part${ch}/kit0/subpars/FreqEnvelope/PR_val"
+        ]
+    }
+  ]
+}

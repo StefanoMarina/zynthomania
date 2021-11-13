@@ -1,0 +1,38 @@
+{
+  "all" : [
+    {
+      "fader" : "abs",
+      "cc" : 14,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FilterEnvelope/PA_dt",
+        "/part${ch}/kit0/padpars/FilterEnvelope/PA_dt",
+        "/part${ch}/kit0/subpars/FilterEnvelope/PA_dt"
+        ]
+    },
+    {
+      "fader" : "abs",
+      "cc" : 15,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FilterEnvelope/PD_dt",
+        "/part${ch}/kit0/padpars/FilterEnvelope/PD_dt",
+        "/part${ch}/kit0/subpars/FilterEnvelope/PD_dt"
+        ]
+    },{
+      "fader" : "abs",
+      "cc" : 16,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FilterEnvelope/Pfreq",
+        "/part${ch}/kit0/padpars/FilterEnvelope/Pfreq",
+        "/part${ch}/kit0/subpars/FilterEnvelope/Pfreq"
+        ]
+    },{
+      "fader" : "abs",
+      "cc" : 17,
+      "osc" : [
+        "/part${ch}/kit0/adpars/GlobalPar/FilterEnvelope/PR_dt",
+        "/part${ch}/kit0/padpars/FilterEnvelope/PR_dt",
+        "/part${ch}/kit0/subpars/FilterEnvelope/PR_dt"
+        ]
+    }
+  ]
+}
