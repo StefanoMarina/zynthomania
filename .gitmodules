@@ -1,0 +1,3 @@
+[submodule "app/knot"]
+	path = app/knot
+	url = https://StefanoMarina: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@github.com/StefanoMarina/knot

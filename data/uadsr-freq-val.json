@@ -20,7 +20,7 @@
         "/part${ch}/kit0/subpars/FreqLfo/Pintensity"
         ]
     },{
-      "fader" : "abs",
+      "fader" : "int",
       "cc" : 16,
       "min" : 0,
       "max" : 16383,

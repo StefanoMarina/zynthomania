@@ -97,5 +97,17 @@ module.exports.registerOSC = function (zynServer) {
           zyn.midiService._uadsr.filters[zyn.config.uadsr.mode]));
     }
   });
+  
+  /*
+   * IO calls
+   */
+   emitter.on('/zmania/load_xiz', function (zyn, args) {
+     let arguments = args.map ( (arg) => arg.value);
+     zyn.loadInstrument(arguments[0], arguments[1]);
+   });
+   
+   emitter.on('/zmania/run_script', function (zyn, args) {
+     zyn.runScript(args[0].value);
+   });
 }
 

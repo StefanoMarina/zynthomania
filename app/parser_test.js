@@ -1,8 +1,8 @@
-const OSCParser = require ('./parser.js')
+const OSCParser = require ('./knot/parser.js')
 const Util = require ('util')
 
 let parser = new OSCParser.OSCParser();
-let teststring = '/sysefx0/efftype 2 3.5';
+let teststring = "/zmania/binds/load 'bindtest.json'";
 
 
 try {

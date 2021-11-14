@@ -16,16 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 
-const Osc = require('osc');
 const Fs = require('fs');
-const KNOT = require ('./knot/knot.js')
-const ZynthoMidi = require ('./midi.js');
-
 const EventEmitter = require('events');
-
 const {execSync, exec} = require("child_process");
 
+const Osc = require('osc');
+const KNOT = require ('./knot/knot.js')
+const ZynthoMidi = require ('./midi.js');
 const {registerOSC} = require('./osc.js');
+const OSCFile = require('./oscfile.js');
 
 var exports = module.exports = {};
 
@@ -157,7 +156,7 @@ class ZynthoServer extends EventEmitter {
               ? packet.filter( (path) => (zmaniaHandler.indexOf(path)>-1))
               : packet;
           
-          this.osc.send(this.parser.translate(packet));
+          this.osc.send.call(this.osc, this.parser.translate(packet));
           
           //send internally osc messages
           zmaniaHandler.forEach( (path) => {
@@ -765,6 +764,37 @@ class ZynthoServer extends EventEmitter {
       
     });
   }
+  
+  runScript(scriptFile) {
+    let scriptPath = this.config.cartridge_dir+"/scripts/"+scriptFile;
+    if (!Fs.existsSync(scriptPath))
+      throw `<4> ${scriptPath} does not exists.`;
+    
+    OSCFile.load(scriptPath, (err, data) => {
+      if (err)
+        console.error(`<4> Script error on ${scriptFile}: ${err}`);
+      else {
+       this.sendOSC(data);
+      }
+    });
+  }
+  
+  /**
+   * sendOSC
+   * filters zynthomania osc packets and handles them
+   * @param packet single osc message or bundle
+   */
+  sendOSC(packet) {
+    console.log(packet);
+    if (packet.address === undefined) { //bundle
+      if (packet.packets[0].address.match(/^\/zmania/i))
+        packet.packets.forEach( (p) => {this.oscEmitter.emit(p.address, this, p.args)} );
+    } else if (packet.address.match(/^\/zmania/i))
+      this.oscEmitter.emit(packet.address, this, packet.args)
+    else
+      this.osc.send.call(this.osc, packet);
+  }
+  
 }
 
 exports.ZynthoServer = ZynthoServer;

@@ -124,9 +124,18 @@ button, .btn, .fx-btn {
 }
 
 .fx-btn button { border: none !important}
-
 .fx-btn .text::before {content : "< "}
 .fx-btn .text::after {content : " >"}
+
+.send-btn::after {
+  font-family: "Font Awesome 5 Free";
+  content: "  \f3be";
+  display: inline-block;
+  padding-right: 3px;
+  /*vertical-align: middle;*/
+  font-weight: 900;
+}
+
 /**
  * head tab headers look and feel
  */
@@ -144,7 +153,7 @@ button, .btn, .fx-btn {
   border-width: 0px 0px 2px 0px;
  }
 
-button:hover, .btn-selected, .btn-selected *, button:hover *, .fx-btn:hover, .fx-btn:hover * {
+button:hover, .send-btn, .btn-selected, .btn-selected *, button:hover *, .fx-btn:hover, .fx-btn:hover * {
   background-color: black !important;
   color: rgba(204, 204, 0) !important;
 }
@@ -161,7 +170,7 @@ ul.select {
    width: 350px;
 }
 
-ul.select li {
+ul.select li, .smallEntry {
   font-size: 12px;
    padding: 2px 6px;
 }

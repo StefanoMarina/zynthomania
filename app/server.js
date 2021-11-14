@@ -50,7 +50,7 @@ app.get('/', function(req, res,next) {
  * getBanks
  * GET request to retrieve all bank folder
  */
-app.get('/getBanks', function (req, res, next) {
+app.get('/files/banks', function (req, res, next) {
   console.log(`[GET] getBanks query: ${JSON.stringify(req.query)}`);
   res.json (app.zyntho.getBanks());
 });
@@ -59,7 +59,7 @@ app.get('/getBanks', function (req, res, next) {
  * getInstruments
  * GET request to retrieve all .xiz file inside a folder
  */
-app.get('/getInstruments', function (req, res, next) {
+app.get('/files/banks/xiz', function (req, res, next) {
   console.log(`[GET] getInstruments query: ${JSON.stringify(req.query)}`);
   
   if (req.query.bank === undefined) {
@@ -67,6 +67,16 @@ app.get('/getInstruments', function (req, res, next) {
   }
   
   res.json(app.zyntho.getInstruments(req.query.bank));
+});
+
+app.get('/files/scripts', function (req, res, next) {
+  console.log(`[GET] /files/scripts query: ${JSON.stringify(req.query)}`);
+  let dir = app.zyntho.config.cartridge_dir + "/scripts";
+  let files = [];
+  if (Fs.existsSync(dir)){
+    files = Fs.readdirSync (dir);
+  }
+  res.json(files);
 });
 
 /**
@@ -84,17 +94,7 @@ app.post('/loadInstrument', function (req, res) {
   app.zyntho.loadInstrument(req.body.id, req.body.instrument.path, function() {
     res.status(200).end();
   })
-  /*
-  app.zyntho.once('/damage', (msg) => {
-        let score =RegExp("part(\\d+)","gm").exec(msg.args[0].value);
-        if (score != null && score[1] == req.body.id) {
-          console.log('done');
-          res.status(200).end();
-        }
-  });
-    
-  app.zyntho.send(`/load_xiz ${req.body.id} "${req.body.instrument.path}"`);
-  */
+  
 });
 
   
@@ -164,7 +164,7 @@ app.get('/status/systemfx', function (req, res, next) {
 
 
 /**
- * GET returns all zynthomania static options
+ * GET returns all zynthomania options
  * query: none
  * return : json
  */
@@ -182,18 +182,7 @@ app.get('/status/midi', function (req, res, next) {
   console.log(`[GET] getMIDI query: ${JSON.stringify(req.query)}`);
   res.json(app.zyntho.midiService.enumerateInputs());
 });
- 
-/**
- * GET returns UADSR status
- * query none
- */
-app.get('/status/uadsr', function (req, res, next) {
-  console.log(`[GET] getUADSR query: ${JSON.stringify(req.query)}`);
-  if (app.zyntho.config.uadsr === undefined)
-    res.status(500).end();
-  else
-    res.json(app.zyntho.config.uadsr);
-});
+
 
 /**
  * /status/part

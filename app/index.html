@@ -44,7 +44,7 @@
               </header>
             
             <!--panels-->
-              <div id="pnlBanks" class="row controlPanel no-gutters hidden">
+              <div id="pnlBanks" class="tab row controlPanel no-gutters hidden">
                   <ul id="selBanks" class="select col-6 col-xs-6"></ul>
                   <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
               </div>
@@ -67,8 +67,7 @@
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">EQ</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">DynamicFilter</button></div>
                     <div class="col-12 col-md-6">
-                      <button class="col-12 big-btn btn-selected" id="applyDry">Dry <i class="fa fa-level-down-alt"></i>
-                      </button>
+                      <button class="col-12 big-btn btn-selected send-btn" id="applyDry">Dry</button>
                     </div>
                   </div>
                   
@@ -78,12 +77,13 @@
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
                     </div>
-                    <div class="row col-12">
-                      <div class="col-3 col-md-2"><button class="knob" id="kss0"></button></div>
-                      <div class="col-3 col-md-2"><button class="knob" id="kss1"></button></div>
-                      <div class="col-3 col-md-2"><button class="knob" id="kss2"></button></div>
-                      <div class="col-3 col-md-2"><button class="knob" id="kss3"></button></div>
-                      <div class="col-12 col-sm-2"><button onclick="actionMaximizeSend()">Send &gt; </button></div>
+                     <div class="row col-12">
+                      <div class="col-12"><p>Part OSC &gt;&gt; Sys FX</p></div>
+                      <div class="col-3 col-lg-2"><button class="knob" id="kss0"></button></div>
+                      <div class="col-3 col-lg-2"><button class="knob" id="kss1"></button></div>
+                      <div class="col-3 col-lg-2"><button class="knob" id="kss2"></button></div>
+                      <div class="col-3 col-lg-2"><button class="knob" id="kss3"></button></div>
+                      <div class="col-12 col-lg-2"><button class="send-btn" onclick="actionMaximizeSend()"><span class="d-lg-none">Send all to </span>Max</button></div>
                     </div>
                   </div>
                   <div id="pnlSystemFX" class="panel fxPanel hidden row">
@@ -95,11 +95,8 @@
                     </div>
                   </div>         
                   <div id="pnlRoute" class="panel fxPanel hidden row">
-                    <div class="col-6 col-md-8 align:center"><h3 style="text-align:center">Send to master</h3></div>
-                    <div class="col-6 col-md-4"><button class="col-12 knob" id="routeSend"></button></div>
-                    <div class="col-12">
-                      <h3 class="check" data-check="0">Send to all</h3>
-                    </div>
+                    <div class="col-8 align:center"><h4 style="text-align:center">To system FX </h4></div>
+                    <div class="col-4 "><button class="knob" id="routeSend"></button></div>
                     
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Reverb</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Echo</button></div>
@@ -109,35 +106,40 @@
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">EQ</button></div>
                     <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">DynamicFilter</button></div>
                     <div class="col-12 col-md-6">
-                      <button class="col-12 big-btn btn-selected" id="applyRoute">Apply <i class="fa fa-level-down-alt"></i>
-                      </button>
+                      <button class="col-12 big-btn send-btn btn-selected" id="applyRoute">Apply</button>
                     </div>
                   </div>
                 </div> <!-- /fx content -->
               </div> <!-- /fx -->
               
               <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
-                <div class="col-4">
+                <div class="col-6">
                   <ul id="selBinds" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
-                  <button class="big-btn col-12" onclick="addBind(this);">Add</button>
+                  <button class="big-btn send-btn col-12" onclick="addBind(this);">Add </button>
                 </div>
-                <div id="pnlBindChain" class="col-8">
+                <div id="pnlBindChain" class="col-6">
                   <p style="text-align: center">Touch to remove</p>
                   <div class="col-12" id="chainContainer">
                   </div>
                 </div>
               </div> <!-- /binds -->
               
-              <div id="pnlScript" class="tab controlPanel hidden container">
-                <div class="row">
-                  
+              <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
+                <header class="col-4 tab-v br">
+                  <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScriptFileLoad()">File</button>
+                  <button class="tab-header" data-tab="scrPanel" data-open="pnlConsole">Console</button>
+                </header>
+                <div class="col-8">
+                  <div id="pnlConsole" class="scrPanel panel hidden">
                     <textarea class="col-12" style="min-height: 200px !important" 
-                   id="commandLine" placeholder="Input parameter..."></textarea>
-           
-                </div>
-                <div class="row">
-                  <button class="col-12 big-btn" onclick="onScriptSend();">Send</button>
-                </div>
+                        id="commandLine" placeholder="Input parameter..."></textarea>
+                    <button class="send-btn col-12 big-btn" onclick="onScriptSend();">Send</button>
+                  </div>
+                  <div id="pnlFile" class="scrPanel panel hidden">
+                    <ul id="selScripts" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
+                    <button id="scriptSend" class="big-btn send-btn col-12">Launch</button>
+                  </div>
+                </div><!-- /scripts -->
               </div>
               
               
@@ -184,7 +186,7 @@
                       <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
                     </div>
                     <div class="col-12">
-                    <button id="uadsrApply" class="col-12 hidden uadsrControl">Apply  <i class="fa fa-level-down-alt"></i></button>
+                    <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
                     </div>
                   </div>
                   
@@ -389,7 +391,7 @@
         
         //Banks preloading
         if (Object.keys(window.zsession.banks).length <= 1) {
-          doQuery('getBanks', null, (data) => {
+          doQuery('files/banks', null, (data) => {
             data.forEach( (item) => {
               window.zsession.banks[item] = [];
             });
@@ -423,7 +425,7 @@
       function queryBank(selectedBank) {
         
         if (window.zsession.banks[selectedBank].length == 0) {
-          doQuery('getInstruments', {bank: selectedBank}, (data) => {
+          doQuery('files/banks/xiz', {bank: selectedBank}, (data) => {
             window.zsession.banks[selectedBank] = data;
             
             if (data.length == 0) {
@@ -561,10 +563,10 @@
           const chain = $('#chainContainer');
           $(chain).empty();
           data.chain.forEach( (item) => {
-            $(chain).append('<button class="col-12">'+item+'</button>');
+            $(chain).append('<div class="col-12 panel"><button class="col-12 smallEntry">'+item+'</button></div>');
           });
           if (data.hasInstrument) {
-            $(chain).append('<button class="col-12" data-remove="instrument">Remove instrument bind</button>');
+            $(chain).append('<button class="col-12 smallEntry" data-remove="instrument">Remove instrument bind</button>');
           }
           $(chain).children('button').on('click', (e) => {
             let value = 
@@ -655,6 +657,16 @@
         });
       }
       
+      function onScriptFileLoad() {
+        doQuery("files/scripts", null, (data) =>{
+          console.log(data);
+         const ul=$('#selScripts');
+          $(ul).empty();
+          data.forEach( (item) => {
+            $(ul).append('<li>'+item+'</li>');
+          });
+        });
+      }
       /**
        Init 
        */
@@ -830,12 +842,22 @@
                 onUADSRPanelLoad();
               });
           });
+          
+          $('#scriptSend').on('click', (e)=>{
+            let value = $('#selScripts').children('li.btn-selected').text();
+            if (value == "" || value == null)
+              return;
+            doAction('script', {script: `/zmania/run_script '${value}'`},
+                (done) =>{
+                $('#instrumentName').text(`Run ${value}`);
+            });
+          });
           /**
           Init actions
           - get favorites
           - update part names
           */
-          doQuery('getInstruments', {bank: 'Favorites'}, 
+          doQuery('files/banks/xiz', {bank: 'Favorites'}, 
             function(data) {
               window.zsession.banks['Favorites'] = data;
               //$('#instrumentName').text('Welcome to Zynthomania!');
