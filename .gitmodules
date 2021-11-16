@@ -1,6 +1,4 @@
 [submodule "app/knot"]
 	path = app/knot
 	url = https://github.com/StefanoMarina/knot
-[submodule "sysjack"]
-	path = sysjack
-	url = https://github.com/StefanoMarina/sysjack
+
