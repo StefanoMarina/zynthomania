@@ -9,5 +9,12 @@ ExecStart=COMMAND_LINE
 CPUSchedulingPolicy=rr
 CPUSchedulingPriority={user/sub_priority}
 
+Restart=on-failure
+RestartSec=2
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=Zynthomania
+
 [Install]
 WantedBy=multi-user.target
