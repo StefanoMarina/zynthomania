@@ -1,0 +1,13 @@
+[Unit]
+Description=Zynthomania launcher
+After=sound.target jackd.service zynaddsubfx.service
+
+[Service]
+User=USERNAME
+Group=audio
+ExecStart=COMMAND_LINE
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority={user/sub_priority}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=ZynAddSubFX launcher
+After=sound.target jackd.service
+
+[Service]
+User=USERNAME
+Group=audio
+ExecStart=COMMAND_LINE
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority={user/sub_priority}
+
+[Install]
+WantedBy=multi-user.target

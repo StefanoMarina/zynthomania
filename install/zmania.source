@@ -1,0 +1,32 @@
+zyn-configure-jack() 
+{
+  if [[ $1 == "" ]]; then
+    CONFIG_FILE="${HOME}/.zmania/config.json"
+  else
+    CONFIG_FILE=$1
+  fi
+
+  if [[ "$CONFIG_FILE" != /* ]]; then
+    CONFIG_FILE=`pwd`/$CONFIG_FILE
+  fi
+
+  echo "Configuring $CONFIG_FILE..."
+  (cd $ZYNTHO_DIR/sysjack; ./configure.pl config=$CONFIG_FILE key=services user=$USER)
+}
+
+zyn-update-services()
+{
+  if [[ $1 == "" ]]; then
+    CONFIG_FILE="${HOME}/.zmania/config.json"
+  else
+    CONFIG_FILE=$1
+  fi
+
+  if [[ "$CONFIG_FILE" != /* ]]; then
+    CONFIG_FILE=`pwd`/$CONFIG_FILE
+  fi
+
+  (cd $ZYNTHO_DIR/sysjack; ./install.pl config=$CONFIG_FILE key=services user=$USER -y jackd)
+  (cd $ZYNTHO_DIR/sysjack; ./install.pl config=$CONFIG_FILE key=services user=$USER -y zynaddsubfx)
+  (cd $ZYNTHO_DIR/sysjack; ./install.pl config=$CONFIG_FILE key=services user=$USER -y zynthomania)
+}
