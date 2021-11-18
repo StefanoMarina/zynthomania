@@ -8,20 +8,22 @@
   },
   "keywords": [
     "node",
+    "synth",
+    "pi",
     "zynaddsubfx"
   ],
   "author": "Stefano Marina",
   "license": "MIT",
   "dependencies": {
-    "body-parser": "^1.19.0",
-    "events": "^3.3.0",
-    "express": "^4.17.1",
-    "jquery": "^3.6.0",
-    "node-gyp": "^8.3.0",
+    "body-parser": "^1.19",
+    "events": "^3.3",
+    "express": "^4.17",
+    "jquery": "^3.6",
+    "node-gyp": "^8.3",
     "osc": "^2.4",
     "midi": "^2",
     "simple-text-parser": "2.1.1",
-    "util": "^0.12.4",
-    "ws": "^7.5.1"
+    "util": "^0.12",
+    "ws": "^7.5"
   }
 }
