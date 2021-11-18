@@ -1,5 +1,5 @@
 /*********************************************************************
- * Zynthomania Server
+ * Custo OSC File reader and emitter
  * Copyright (C) 2021 Stefano Marina
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 
 const FS = require ('fs');
 const KNOT = require ('./knot/knot.js');
+const Buffer = require ('buffer');
 
 function _onFileRead(data, loadCallback) {
     const lines = data.toString().replace(/\r\n/g,'\n').split('\n');
@@ -67,6 +68,13 @@ function _onFileRead(data, loadCallback) {
 
 module.exports = {};
 
+/**
+ * OSCFile.load
+ * loads an OSC file non-blocking
+ * @param file file to be loaded, full path
+ * @param loadCallback callback to call for each osc line. params
+ * are (error, osc_data).
+ */
 module.exports.load = function (file, loadCallback) {
     FS.readFile(file, 'utf8', (err, data) =>{
       if (err)
@@ -75,7 +83,10 @@ module.exports.load = function (file, loadCallback) {
         _onFileRead(data, loadCallback);
     });
   }
-  
+/**
+ * OSCFile.loadSync
+ * blocking version of OSCFile.load
+ */
 module.exports.loadSync = function (file, loadCallback) {
     let data = null;
     try {
@@ -87,3 +98,38 @@ module.exports.loadSync = function (file, loadCallback) {
     _onFileRead(data, loadCallback);
 }
 
+
+module.exports.reverseOSC = function(message) {
+  let packets = (Array.isArray(message))
+    ? message.packets
+    : [message];
+  
+  let result = [];
+  let strPath = "";
+  packets.forEach((msg)=>{
+    strPath = msg.address;
+    msg.args.forEach( (arg) => {
+      switch (arg.type) {
+        case 's': 
+          strPath = strPath.concat(
+            ` '${arg.value.replaceAll("'","\"")}'`);
+          break;
+        case 'b': 
+          strPath = strPath.concat(
+            ` 'base64;${Buffer.from(arg.value).toString('base64')}'`
+          );
+        break;
+        case 'i': case 'f': 
+          strPath = strPath.concat(` ${String(arg.value)}`);
+        break;
+        case 'T': case 'F': 
+          strPath = strPath.concat(` ${arg.type}`); 
+        break;
+        default: throw `reverseOSC: Unsupported arg type ${arg.type}`;
+      }
+    });
+    result.push (strPath);  
+  });
+  
+  return result;
+}

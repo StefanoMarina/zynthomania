@@ -18,6 +18,11 @@
 
 const EventEmitter = require('events');
 
+/**
+ * OSCWorker creates a promise upon multiple osc requests.
+ * It is an eventemitter on its own. when all OSC requests are fulfilled,
+ * the promise created with listen() will be triggered.
+ */
 class OSCWorker extends EventEmitter {
   
   constructor(emitter) {
@@ -27,10 +32,20 @@ class OSCWorker extends EventEmitter {
     this.emitter = emitter;
   }
   
+  /**
+   * adds an osc address to the stack. the address is bound through
+   * .once() on the emitter, and it is then popped out from the osc stack.
+   * When the stack gets empty, a 'done' message is sent internally to free
+   * listen().
+   */
   push(address, callback) {
     this.stack.push(address);
-    this.emitter.once(address, (args) => {
-      this.outcome[address] = callback(address, args);
+    this.emitter.once(address, (packet) => {
+      if (undefined !== packet.args)
+        this.outcome[address] = callback(address, packet.args);
+      else
+        this.outcome[address] = callback(address, packet);
+        
       this.stack.splice(this.stack.indexOf(address),1);
       
       if (this.stack.length==0)
@@ -38,9 +53,17 @@ class OSCWorker extends EventEmitter {
     });
   }
   
-  
+  /**
+   * creates a promise bound on the 'done' internal event
+   * @returns a Promise that will be triggered when the last osc call
+   * is made
+   * @throws if called with an empty stack
+   */
   listen() {
     return new Promise( (resolve) => {
+      if (this.stack.length==0)
+        resolve();
+      else
         this.once('done', resolve);
     });
   }

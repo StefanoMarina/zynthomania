@@ -325,7 +325,7 @@ app.post('/fx/route', function(req, res) {
   app.zyntho.config.route = req.body.route;
   app.zyntho.save();
   
-  app.zyntho.route(undefined, undefined, (msg) =>{
+  app.zyntho.route(undefined, undefined, () =>{
     res.status(200).end();
   });
 });

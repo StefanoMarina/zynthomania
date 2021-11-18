@@ -21,10 +21,11 @@ const EventEmitter = require('events');
 const {execSync, exec} = require("child_process");
 
 const Osc = require('osc');
-const KNOT = require ('./knot/knot.js')
+const KNOT = require ('./knot/knot.js');
 const ZynthoMidi = require ('./midi.js');
 const {registerOSC} = require('./osc.js');
 const OSCFile = require('./oscfile.js');
+const OSCWorker = require('./oscworker.js').OSCWorker;
 
 var exports = module.exports = {};
 
@@ -143,13 +144,15 @@ class ZynthoServer extends EventEmitter {
           }
         }
           
-        //Capture all /zmania/ osc messages from binds
-        //all other binds goes to regular osc
+        /*
+         * Capture all /zmania/ osc messages from binds
+         * all other binds goes to regular osc
+        */
         this.midiService.knot.on('osc', (packet) => {
           if (!Array.isArray(packet))
             packet = [packet];
           
-          console.log(`midi osc : ${JSON.stringify(packet)}`);
+          //console.log(`midi osc : ${JSON.stringify(packet)}`);
           
           let zmaniaHandler = packet.filter( (path) => path.match(/^\/zmania/));
           packet = (zmaniaHandler.length > 0)
@@ -171,7 +174,12 @@ class ZynthoServer extends EventEmitter {
       throw `OSC ERROR: ${err}`;
     });
     
-    //Main OSC parser
+    /*
+     * Main osc event handler
+     * translates osc messages to osc events on ZynthoServer
+     * if the event is a zynthomania event, the oscEmitter is
+     * triggered before to handle the message.
+     */
     this.osc.on("osc", (oscMsg) => {
         if (oscMsg.address == this.defaultDoneQuery.address) {
           //console.log("OSC query end.");
@@ -182,12 +190,12 @@ class ZynthoServer extends EventEmitter {
           this.oscEmitter.on(parsed.address, this, parsed.args);
         } else {
           console.log("OSC message: ", oscMsg);
-          this.emit(oscMsg.address, oscMsg);
         }
+        this.emit(oscMsg.address, oscMsg);
     });
 
     this.on("error", (err) => {
-      console.log(`OSC EVENT ERROR: ${err}`);
+      console.log(`<2> Zynthomania Event error: ${err}`);
     });
 
     this.osc.open();
@@ -246,7 +254,7 @@ class ZynthoServer extends EventEmitter {
     * are handled one at time, but no order is guaranteed on bundles.
     */
     
-    injectDone(message, onDone) {
+   injectDone(message, onDone) {
       if (Object.prototype.toString.call(message)!=='[object Object]') {
          message = this.parser.translate(message);
       }
@@ -497,66 +505,89 @@ class ZynthoServer extends EventEmitter {
    const returnObject = {
       efx : [{},{},{}]
     };
+    const worker = new OSCWorker(this);
     
     let fxQuery = this.parser.emptyBundle();
     
+    //Effect type
     let query = this.parser.translate(`/part${part}/partefx[0-2]/efftype`);
-    const nameCallback = function(msg) {
-      let efftype = msg.args[0].value;
-      let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(msg.address)[1]);
+    const nameCallback = (add, args) => {
+      let efftype = args[0].value;
+      let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(add)[1]);
       let name = exports.typeToString(efftype);
       returnObject.efx[id].name = name;
     }
-    this.bundleBind(query, (msg) => {nameCallback(msg)});
+    
+    query.packets.forEach( (pack) =>{
+      worker.push(pack.address, nameCallback);
+    });
+    
     fxQuery.packets = query.packets;
     
     //Bypass
     query = this.parser.translate(`/part${part}/Pefxbypass[0-2]`);
-    const bypassCallback = function(msg) {
-      let bypass = msg.args[0].value;
-      let id = parseInt(RegExp(`\/part${part}\/Pefxbypass(\\d)`).exec(msg.address)[1]);
-      returnObject.efx[id].bypass = bypass;
+    
+    const bypassCallback = (add, args)=> {
+      let bypass = args[0].value;
+      try {
+        let id = parseInt(add.match(/Pefxbypass(\d)/)[1]);
+        returnObject.efx[id].bypass = bypass;
+      } catch (err) {
+        console.log(`${add}: ${err} - ${id}`);
+      }
     };
-    this.bundleBind(query, (msg) => {bypassCallback(msg)});
+    
+    query.packets.forEach ((pack) =>{
+      worker.push(pack.address, bypassCallback);
+    });
+    
     fxQuery.packets = fxQuery.packets.concat(query.packets);
     
     //System send is handled as part
     query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
-    const sendCallback = function (msg) {
-      let regexp = RegExp('\/Psysefxvol(\\d)').exec(msg.address);
-      
+    const sendCallback = (add,args) => {  
       if (returnObject.send === undefined)
         returnObject.send = new Array(4);
         
-      returnObject.send[parseInt(regexp[1])] = msg.args[0].value;
+      let id = parseInt(add.match(/Psysefxvol(\d)/)[1]);
+      returnObject.send[id] = args[0].value;
     }
-    this.bundleBind(query, (msg) => {sendCallback(msg)});
-    fxQuery.packets = fxQuery.packets.concat(query.packets);
     
-    //Preset - generic
-    let presetsQuery = this.parser.emptyBundle();
-    for (let type = 1; type < 8; type++) {
-      let name = exports.typeToString(type);
-      let query = this.parser.translate(`/part${part}/partefx[0-2]/${name}/preset`);
-      presetsQuery.packets = presetsQuery.packets.concat(query.packets);
-    }
-    const presetCallback = function(msg) {
-      let regexp = RegExp(`\/part${part}\/partefx(\\d)\/(\\w+)`).exec(msg.address);
-      let id = parseInt(regexp[1]);
-      let name = regexp[2];
-      
-      //if OSC 1.0 is respected, this should be already ready
-      if (name == returnObject.efx[id].name)
-        returnObject.efx[id].preset = msg.args[0].value;
-    };
-    this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
-    fxQuery.packets = fxQuery.packets.concat(presetsQuery);
-    
-    fxQuery = this.injectDone(fxQuery, (done) => {
-      onDone(returnObject);
+    query.packets.forEach ( (pack) =>{
+      worker.push(pack.address, sendCallback);
     });
     
+    fxQuery.packets = fxQuery.packets.concat(query.packets);
+    
+    //run before testing preset name
     this.osc.send(fxQuery);
+    worker.listen().then( () =>{
+      
+      //check out presets
+      let queries = [];
+      returnObject.efx.forEach( (obj) =>{
+        if (obj.name != 'None') {
+          queries.push(`/part${part}/partefx${returnObject.efx.indexOf(obj)}/${obj.name}/preset`);
+        } else
+          obj.preset = 0;
+      });
+      
+      query = this.parser.translate(queries);
+      const presetCallback = function(add, args) {
+        let regexp = RegExp(`\/part${part}\/partefx(\\d)\/(\\w+)`).exec(add);
+        let id = parseInt(regexp[1]);
+        let name = regexp[2];
+        
+        //if OSC 1.0 is respected, this should be already ready
+        if (name == returnObject.efx[id].name)
+          returnObject.efx[id].preset = args[0].value;
+      };
+      query.packets.forEach( (pack) => {
+        worker.push(pack.address, presetCallback);
+      });
+      this.osc.send(query);
+      return worker.listen();
+    }).then ( ()=>{onDone(returnObject)});
   }
 
   /**
@@ -604,65 +635,57 @@ class ZynthoServer extends EventEmitter {
   * Those are effectively 3 bundled queries
   * partID: part to query
   * onDone: query to call when all is done
+  * 
+  * TODO: Rewrite with OSCWorker
   */
   querySystemFX(onDone) {
    const returnObject = {
-      efx : [{},{},{}, {}]
+      efx : [{},{},{},{}]
     };
     
-    let fxQuery = this.parser.emptyBundle();
+    let fxQuery = this.parser.translate(`/sysefx[0-3]/efftype`);
+    const worker = new OSCWorker(this);
     
-    let query = this.parser.translate(`/sysefx[0-3]/efftype`);
-    const nameCallback = function(msg) {
-      let efftype = msg.args[0].value;
-      let id = parseInt(/sysefx(\d)/.exec(msg.address)[1]);
+    const nameCallback = (add, args) => {
+      console.log(`${add} : ${JSON.stringify(args)}`)
+      let efftype = args[0].value;
+      let id = parseInt(add.match(/sysefx(\d)/)[1]);
       let name = exports.typeToString(efftype);
       returnObject.efx[id].name = name;
     }
-    this.bundleBind(query, (msg) => {nameCallback(msg)});
-    fxQuery.packets = query.packets;
     
-    //Preset - generic
-    let presetsQuery = this.parser.emptyBundle();
-    for (let type = 1; type < 8; type++) {
-      let name = exports.typeToString(type);
-      let query = this.parser.translate(`/sysefx[0-2]/${name}/preset`);
-      presetsQuery.packets = presetsQuery.packets.concat(query.packets);
-    }
-    const presetCallback = function(msg) {
-      let regexp = /sysefx(\d)\/(\w+)/.exec(msg.address);
-      let id = parseInt(regexp[1]);
-      let name = regexp[2];
-      
-      //if OSC 1.0 is respected, this should be already ready
-      if (name == returnObject.efx[id].name)
-        returnObject.efx[id].preset = msg.args[0].value;
-    };
-    this.bundleBind(presetsQuery, (msg) => {presetCallback(msg)});
-    fxQuery.packets = fxQuery.packets.concat(presetsQuery);
-    
-    fxQuery = this.injectDone(fxQuery, (done) => {
-      onDone(returnObject);
-    });
+    for (let i = 0; i < 4; i++)
+      worker.push(`/sysefx${i}/efftype`, nameCallback);
     
     this.osc.send(fxQuery);
+    worker.listen().then(()=>{
+      let queries = [];
+      
+      const presetCallback = (add, args) => {
+        let regexp = /sysefx(\d)\/(\w+)/.exec(add);
+        let id = parseInt(regexp[1]);
+        let name = regexp[2];
+        
+        //if OSC 1.0 is respected, this should be already ready
+        if (name == returnObject.efx[id].name)
+          returnObject.efx[id].preset = args[0].value;
+      };
+      
+      for (let i = 0; i < 4; i++) {
+        if (returnObject.efx[i].name != 'None') {
+          let query = `/sysefx${i}/${returnObject.efx[i].name}/preset`;
+          queries.push(query);
+          worker.push(query,presetCallback);
+        } else
+          returnObject.efx[i].preset = 0;
+      }
+      
+      fxQuery = this.parser.translateLines(queries);
+      this.osc.send(fxQuery);
+      return worker.listen();
+      
+    }).then(()=>{onDone(returnObject)});
   }
-
-  /**
-  * dry
-  * automatically set bypass to true on each selected fx in
-  * all parts.
-  * Dry is automatically used by route() to re-route part fx.
-  * partID: can be integer or query [x-y] [x,y]
-  * fxName: if set, will look for that single FX. Otherwise it will
-  * parse all preferences.dry names.
-  * 
-  * Note that removing a dry state will NOT remove the fx bypass.
-  */
-  dry(partID, fxName) {
-   
-  }
-     
       
   /**
   * route
@@ -671,8 +694,12 @@ class ZynthoServer extends EventEmitter {
   * partID: integer or query []. undefined will find all enabled parts.
   * fxName: fx or array to Parse, if undefined, the preferences.route.fx array will be used.
   * onDone: callback quando si è finito
+  * 
+  * TODO: rewrite with OSCWorker
   */
   route (partID, fxName, onDone) {
+    const worker = new OSCWorker(this);
+    
     let partPath = (partID === undefined)
           ? '/part[0-15]/partefx[0-2]'
           : `/part${partID}/partefx[0-2]`;
@@ -692,79 +719,92 @@ class ZynthoServer extends EventEmitter {
     
     /* Query della situazione fx master */
     let masterQuery = this.parser.translate('/sysefx[0-2]/efftype');
-    this.bundleBind(masterQuery, function (msg) {
-      let masterType = msg.args[0].value;
-      let masterChan = parseInt(/sysefx(\d)/.exec(msg.address)[1]);
+    
+    const sysQuery = (add,args)=> {
+      let masterType = args[0].value;
+      let masterChan = parseInt(/sysefx(\d)/.exec(add)[1]);
       resultObject.sys[masterChan] = masterType;
+    };
+    
+    masterQuery.packets.forEach( (pack) =>{
+        worker.push(pack.address, sysQuery);
     });
     
     let query = this.parser.translate(`${partPath}/efftype`);
     
-    const onPathMessage = function (msg) {
-      //console.log(`::route:onPathMessage: ${JSON.stringify(msg)}`);
-      
-      let partID = parseInt(/\/part(\d+)/.exec(msg.address)[1]);
-      let fxChanID =parseInt(/\/partefx(\d)/.exec(msg.address)[1]);
-      
-    //  console.log(`::route:onPathMessage: part ${partID} chan ${fxChanID} status ${JSON.stringify(resultObject.part[partID])}`);
+    const onPathMessage = (add, args) => {
+      let partID = parseInt(/\/part(\d+)/.exec(add)[1]);
+      let fxChanID =parseInt(/\/partefx(\d)/.exec(add)[1]);
       
       if (resultObject.part[partID] === undefined)
         resultObject.part[partID] = new Array(3);
       
-      
-      resultObject.part[partID][fxChanID] = msg.args[0].value;
+      resultObject.part[partID][fxChanID] = args[0].value;
     }
-    this.bundleBind(query, onPathMessage);
+    //this.bundleBind(query, onPathMessage);
     
-    //console.log(`::route: part fx bundle ${JSON.stringify(query)}`);  
+    query.packets.forEach( (pack) =>{
+        worker.push(pack.address, onPathMessage);
+    });
     
     //merge two queries
     query = this.merge(masterQuery, query);
     
-    this.query(query, undefined, function () {
-      let bundle = _this.parser.emptyBundle();
+    this.osc.send(query);
+    worker.listen().then(()=>{
+      var bundle = [];
       
       try {
-      for (let sysID = 0; sysID < 4; sysID++) {
-        let masterType = resultObject.sys[sysID];
-         
-        if (masterType == 0)
-          continue;
-        
-        for (let partID = 0; partID < 16; partID++) {
-          if (resultObject.part[partID] === undefined)
+        let masterType = 0;
+        let pefxType = 0;
+        for (let sysID = 0; sysID < 4; sysID++) {
+          masterType = resultObject.sys[sysID];
+           
+          if (masterType == 0)
             continue;
           
-          for (let fxChanID = 0; fxChanID < 3; fxChanID++) {
-            let pefxType = resultObject.part[partID][fxChanID];
-            if ( pefxType == masterType) {  
-              console.log(`ZynthoServer: routing part ${partID} fx {$fxChanID} to system fx ${sysID}`);
-              bundle.packets.push ( _this.parser.translate (`/part${partID}/Pefxbypass${fxChanID} T`));
-              bundle.packets.push ( _this.parser.translate (`/Psysefxvol${sysID}/part${partID} ${_route.send}`));
-            } else if (_dry.indexOf(pefxType) > -1) {
-              console.log(`ZynthoServer: drying  part ${partID} of fx {$fxChanID}`);
-              bundle.packets.push ( _this.parser.translate (`/part${partID}/Pefxbypass${fxChanID} T`));
+          for (let partID = 0; partID < 16; partID++) {
+            if (resultObject.part[partID] === undefined)
+              continue;
+            
+            for (let fxChanID = 0; fxChanID < 3; fxChanID++) {
+              pefxType = resultObject.part[partID][fxChanID];
+              if ( pefxType == masterType) {  
+                console.log(`ZynthoServer: routing part ${partID} fx ${fxChanID} to system fx ${sysID}`);
+                bundle.push ( `/part${partID}/Pefxbypass${fxChanID} T`);
+                bundle.push ( `/Psysefxvol${sysID}/part${partID} ${_route.send}`);
+              } else if (_dry.indexOf(pefxType) > -1) {
+                console.log(`ZynthoServer: drying  part ${partID} of fx ${fxChanID}`);
+                bundle.push ( `/part${partID}/Pefxbypass${fxChanID} T`);
+              }
             }
           }
         }
+      } catch (err) {
+        console.log (`<3> ::route: error on executing query: ${err}`)
+      }
+    
+      if (bundle.length > 0) {
+        const empty = ()=>{};
+        bundle = this.parser.translateLines(bundle);
+        bundle.packets.forEach ( (pack) =>{
+          worker.push(pack.address, empty);
+        });
+        
+        this.osc.send(bundle);
       }
       
-    } catch (err) { console.log (`::route: error on executing query: ${err}`)}
-    try {
-      
-      console.log (`::route: packets ${JSON.stringify(bundle)}`);
-      
+      return worker.listen();
+    }).then( ()=>{
       if (onDone !== undefined)
-      _this.send.call(_this, bundle, onDone);
-     else
-      _this.send(bundle);
-      
-    } catch (err)
-      { console.log (`::route: error on route send: ${err}`); }
-      
+        onDone();
     });
   }
   
+  /**
+   * runs an osc file
+   * @param scriptFile script file. cartridge path is appended.
+   */
   runScript(scriptFile) {
     let scriptPath = this.config.cartridge_dir+"/scripts/"+scriptFile;
     if (!Fs.existsSync(scriptPath))
@@ -785,7 +825,6 @@ class ZynthoServer extends EventEmitter {
    * @param packet single osc message or bundle
    */
   sendOSC(packet) {
-    console.log(packet);
     if (packet.address === undefined) { //bundle
       if (packet.packets[0].address.match(/^\/zmania/i))
         packet.packets.forEach( (p) => {this.oscEmitter.emit(p.address, this, p.args)} );
@@ -795,10 +834,38 @@ class ZynthoServer extends EventEmitter {
       this.osc.send.call(this.osc, packet);
   }
   
+  snap(fileName) {
+    let worker = new OSCWorker(this);
+    
+    let pEnabled = this.parser.translate("/part[0-15]/Penabled");
+    const enabledParts = [];
+    var messageStack = [];
+    
+    //gather all
+    for (let i = 0; i < 16; i++) {
+      worker.push(`/part${i}/Penabled`, (add, args) =>{
+        if (args.type=='T') {
+          enabledParts.push(add.match(/^\/part(\d+)/)[0]);
+        }
+        
+        messageStack.push(add + ` ${args[0].type}`);
+      });
+    }
+    
+    this.osc.send(pEnabled);
+    worker.listen().then(()=>{
+      
+    });
+  }
 }
 
 exports.ZynthoServer = ZynthoServer;
 
+/**
+ * Converts an fx id to a fx Name.
+ * @param type number from 0 to 8
+ * @returns a string with fx name
+ */
 exports.typeToString = function(type) {
   switch (type) {
      case 0: return 'None'; break;
@@ -814,6 +881,11 @@ exports.typeToString = function(type) {
   }
 }
 
+/**
+ * Converts a fx name to an fx id
+ * @param name a string formatted with Capital first letter
+ * @returns an id
+ */
 exports.nameToType = function(name) {
   switch( name ) {
     case 'None': return 0;
@@ -828,14 +900,3 @@ exports.nameToType = function(name) {
     default: return -1;
   }
 }
-
-/**
- * checks if a file exists
- */
-async function fileExists(path) {
-  if (path == null) return false;
-  try { await Fs.access(path); return true;}
-  catch {return false;}
-}
-
-
