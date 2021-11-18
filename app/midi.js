@@ -259,7 +259,8 @@ class ZynthoMidi extends EventEmitter {
     let map = null;
     
     //if present, merge with uadsr map
-    if (this.uadsrConfig.type != "none" && this._uadsr != null) {
+    if (this.baseFilterMap != null &&
+          this.uadsrConfig.type != "none" && this._uadsr != null) {
       map = KNOT.FilterMap.merge(this.baseFilterMap, 
             this._uadsr.getFilterMap(this.uadsrConfig.mode));
     } else {
@@ -313,9 +314,11 @@ class ZynthoMidi extends EventEmitter {
    * Loads unified ASDR mode
    * @param type adsr type (uadsr4 or uasdr8 or none)
    * @param config configuration (optional)
-   * @throws if configuration is not defined in constructor and method.
+   * @throws if configuration is not defined in constructor and method, or
+   * if no midi device is opened.
    */
   loadUADSR(type, config) {
+
     if (config === undefined)
       config = this.uadsrConfig;
     
