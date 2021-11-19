@@ -20,6 +20,8 @@ const Fs = require('fs');
 const EventEmitter = require('events');
 const {execSync, exec} = require("child_process");
 
+const ZynthoIO = require('./io.js');
+
 const Osc = require('osc');
 const KNOT = require ('./knot/knot.js');
 const ZynthoMidi = require ('./midi.js');
@@ -58,25 +60,46 @@ class ZynthoServer extends EventEmitter {
   /**
    * ZynthoServer::open
    * open preferences file and OSC connection
+   * @param frameworkPath path to configuration file
+   * @throws error on configuration loading
    */
-  open(configFile) {
-    if (configFile === undefined)
+  open(frameworkPath) {
+    if (frameworkPath === undefined || !Fs.existsSync(`${frameworkPath}/config.json`))
       throw "Missing configuration file";
     
-    this.configurationPath = configFile;
-    
+    let defaultConfig;
     try {
-      let data = Fs.readFileSync(configFile, 'utf-8');
-      this.config = JSON.parse(data);
+      defaultConfig = JSON.parse(Fs.readFileSync(`${frameworkPath}/config.json`);
     } catch (err) {
-      throw `Error while reading ${configFile}: ${err}. Aborting`;
+      throw `Failure in loading path configuration: ${err}`;
     }
+    
+    //throws if configuration is not available
+    this.IO = ZynthoIO.createIOConfig(defaultConfig);
+    
+    /*
+     * if a configuration file is present on the currentDir, override the
+     * default configuration. this will NOT take into account cartridge_dir.
+     */
+    if (this.IO.currentDir.toLowerCase() != frameworkPath.toLowerCase()) {
+      console.log('<5> Reading new configuration file.');
+      try {
+        let data = Fs.readFileSync(`${this.IO.currentDir}/config.json`, 'utf-8');
+        this.config = JSON.parse(data);
+      } catch (err) {
+        throw `Error while reading cartridge configuration: ${err}. Aborting`;
+      }  
+    } else 
+      this.config = defaultConfig;
+      
+    let favFile = `${this.IO.currentDir}/favorites.json`;
+    let configFile = `${this.IO.currentDir}/config.json`;
     
     console.log("opening client on port " + this.config.services.user.zyn_osc_port + "...");
   
     //if favorites.json exists, try to read it
-    if (this.config.favorites != null && fileExists(this.config.favorites)) {
-      console.log('reading favorites...');
+    if (Fs.existsSync(favFile)) {
+      console.log('<6> reading favorites...');
       try {
         let data = Fs.readFileSync(this.config.favorites);
         this.favorites = JSON.parse(data);
@@ -84,9 +107,8 @@ class ZynthoServer extends EventEmitter {
         console.log (`Cannot read favorites: ${err}`);
         this.favorites = [];
       }
-    } else {
+    } else
       this.favorites = [];
-    }
     
     //Init osc, bind to custom emitter, try to open
     this.osc = new Osc.UDPPort({
@@ -103,7 +125,8 @@ class ZynthoServer extends EventEmitter {
         registerOSC(this);
         
         /* Init midi service */
-        this.midiService = new ZynthoMidi.ZynthoMidi(this.config);
+        this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.currentDir,
+              this.config);
         console.log ("Started midi service");
         
         //MIDI Device update
@@ -195,7 +218,7 @@ class ZynthoServer extends EventEmitter {
     });
 
     this.on("error", (err) => {
-      console.log(`<2> Zynthomania Event error: ${err}`);
+      console.log(`<3> Zynthomania Event error: ${err}`);
     });
 
     this.osc.open();
@@ -362,7 +385,7 @@ class ZynthoServer extends EventEmitter {
     
     files.forEach(file => { bankList.push(file); });
     
-    const customSearchPath = this.config.cartridge_dir + "/banks";
+    const customSearchPath = this.IO.currentDir + "/banks";
     
     if (Fs.existsSync(customSearchPath)){
       files = Fs.readdirSync (customSearchPath)
@@ -385,7 +408,7 @@ class ZynthoServer extends EventEmitter {
       
     let result = [];
     var fullpath = ("$" == bank[0])
-            ? this.config.cartridge_dir + "/banks/"+bank.substr(1)
+            ? this.IO.currentDir + "/banks/"+bank.substr(1)
             : this.config.bank_dir + "/" + bank;
     
     console.log(fullpath);
@@ -412,18 +435,22 @@ class ZynthoServer extends EventEmitter {
    * Save preferences and favorites
    */
   save() {
-    //try to save favorites
-    if (this.config.favorites !== undefined) {
-      try {
-        Fs.writeFileSync(this.config.favorites, JSON.stringify(this.favorites));
-      } catch (err) {
-        console.log("Could not save favorites: "+ err);
-        return false;
-      }
+    if (this.IO.readOnlyMode) {
+      console.log('<5> aborting disk write request.');
+      return;
     }
+    
+    //try to save favorites
+    try {
+      Fs.writeFileSync(`${this.IO.currentDir}/favorites.json`, JSON.stringify(this.favorites));
+    } catch (err) {
+      console.log("Could not save favorites: "+ err);
+      return false;
+    }
+    
     //try to save config
     try {
-      Fs.writeFileSync(this.configurationPath, JSON.stringify(this.config, null, 2));
+      Fs.writeFileSync(`${this.IO.currentDir}/config.json`, JSON.stringify(this.config, null, 2));
     } catch (err) {
       console.log(`Could not save properties: ${err}`);
     }
@@ -494,12 +521,76 @@ class ZynthoServer extends EventEmitter {
    }
    
   
+
+  /**
+  * changeFX
+  * Changes the current part FX, queries new preset, sends done
+  * part: part id
+  * fxid : efx id
+  * number: new fx (0-8)
+  */
+  changeFX(part, fxid, efftype, onDone) {
+    efftype = (efftype < 0) ? 8 : efftype % 8;
+    const newEffName = exports.typeToString(efftype);
+    
+    const nameQueryString = (part === undefined)
+        ? `/sysefx${fxid}` : `/part${part}/partefx${fxid}`;
+    
+        
+    let bundle = this.parser.emptyBundle();
+    
+    bundle.packets.push(
+      this.parser.translate(`${nameQueryString}/efftype ${efftype}`)
+    );
+    
+    /*
+     * TODO
+     * change to OSCWorker
+     */
+    if (efftype != 0 && efftype != 7) {
+      let presetQuery = `${nameQueryString}/${newEffName}/preset`;
+      bundle.packets.push(this.parser.translate(presetQuery));
+      
+      this.once(presetQuery, (msg) =>{
+      //  console.log("called onDone");
+        onDone({name : newEffName, preset: msg.args[0].value});
+      })
+    } else {
+      bundle = this.injectDone(bundle, (msg) =>{
+        onDone({name : newEffName, preset: -1});
+      })
+    }
+    
+    //console.log(JSON.stringify(bundle.packets));
+    this.osc.send(bundle);
+  } 
+  
+  /**
+  * Prepare a worker with a request for enabled parts, then send
+  * the OSC bundle request.
+  * @return a worker ready to listen. The worker's availableParts array
+  * property will contain the results.
+  */
+  _getEnabledPartsWorker() {
+    const worker = new OSCWorker(this);
+    worker.availableParts = [];
+    
+    const bundle = this.parser.translate('/part[0-15]/Penabled');
+    worker.pushPacket(bundle, (add, args) => {
+      if (args[0].value)
+        worker.availableParts.push(add.match(/^\/part(\d+)/)[1]);
+    });
+    
+    this.osc.send(bundle);
+    return worker;
+  }
+  
   /**
   * queryPartFX
   * queries part fx info, such as effect name, bypass status and preset
   * Those are effectively 3 bundled queries
-  * partID: part to query
-  * onDone: query to call when all is done
+  * @param partID part to query
+  * @param onDone query to call when all is done
   */
   queryPartFX(part, onDone) {
    const returnObject = {
@@ -511,23 +602,18 @@ class ZynthoServer extends EventEmitter {
     
     //Effect type
     let query = this.parser.translate(`/part${part}/partefx[0-2]/efftype`);
-    const nameCallback = (add, args) => {
+    worker.pushPacket(query.packets, (add, args) => {
       let efftype = args[0].value;
       let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(add)[1]);
       let name = exports.typeToString(efftype);
       returnObject.efx[id].name = name;
-    }
-    
-    query.packets.forEach( (pack) =>{
-      worker.push(pack.address, nameCallback);
     });
     
     fxQuery.packets = query.packets;
     
     //Bypass
     query = this.parser.translate(`/part${part}/Pefxbypass[0-2]`);
-    
-    const bypassCallback = (add, args)=> {
+    worker.pushPacket(query.packets, (add, args)=> {
       let bypass = args[0].value;
       try {
         let id = parseInt(add.match(/Pefxbypass(\d)/)[1]);
@@ -535,28 +621,19 @@ class ZynthoServer extends EventEmitter {
       } catch (err) {
         console.log(`${add}: ${err} - ${id}`);
       }
-    };
-    
-    query.packets.forEach ((pack) =>{
-      worker.push(pack.address, bypassCallback);
     });
     
     fxQuery.packets = fxQuery.packets.concat(query.packets);
     
     //System send is handled as part
     query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
-    const sendCallback = (add,args) => {  
+    worker.pushPacket(query.packets, (add,args) => {  
       if (returnObject.send === undefined)
         returnObject.send = new Array(4);
         
       let id = parseInt(add.match(/Psysefxvol(\d)/)[1]);
       returnObject.send[id] = args[0].value;
-    }
-    
-    query.packets.forEach ( (pack) =>{
-      worker.push(pack.address, sendCallback);
     });
-    
     fxQuery.packets = fxQuery.packets.concat(query.packets);
     
     //run before testing preset name
@@ -589,46 +666,7 @@ class ZynthoServer extends EventEmitter {
       return worker.listen();
     }).then ( ()=>{onDone(returnObject)});
   }
-
-  /**
-  * changeFX
-  * Changes the current part FX, queries new preset, sends done
-  * part: part id
-  * fxid : efx id
-  * number: new fx (0-8)
-  */
-  changeFX(part, fxid, efftype, onDone) {
-    efftype = (efftype < 0) ? 8 : efftype % 8;
-    const newEffName = exports.typeToString(efftype);
-    
-    const nameQueryString = (part === undefined)
-        ? `/sysefx${fxid}` : `/part${part}/partefx${fxid}`;
-    
-        
-    let bundle = this.parser.emptyBundle();
-    
-    bundle.packets.push(
-      this.parser.translate(`${nameQueryString}/efftype ${efftype}`)
-    );
-    
-    if (efftype != 0 && efftype != 7) {
-      let presetQuery = `${nameQueryString}/${newEffName}/preset`;
-      bundle.packets.push(this.parser.translate(presetQuery));
-      
-      this.once(presetQuery, (msg) =>{
-      //  console.log("called onDone");
-        onDone({name : newEffName, preset: msg.args[0].value});
-      })
-    } else {
-      bundle = this.injectDone(bundle, (msg) =>{
-        onDone({name : newEffName, preset: -1});
-      })
-    }
-    
-    //console.log(JSON.stringify(bundle.packets));
-    this.osc.send(bundle);
-  } 
-      
+  
   /**
   * querySystemFX
   * queries part fx info, such as effect name, bypass status and preset
@@ -806,7 +844,7 @@ class ZynthoServer extends EventEmitter {
    * @param scriptFile script file. cartridge path is appended.
    */
   runScript(scriptFile) {
-    let scriptPath = this.config.cartridge_dir+"/scripts/"+scriptFile;
+    let scriptPath = this.IO.currentDir+"/scripts/"+scriptFile;
     if (!Fs.existsSync(scriptPath))
       throw `<4> ${scriptPath} does not exists.`;
     
@@ -834,28 +872,68 @@ class ZynthoServer extends EventEmitter {
       this.osc.send.call(this.osc, packet);
   }
   
-  snap(fileName) {
-    let worker = new OSCWorker(this);
+  /**
+   * loads an xmz file from the sessions directory
+   * @param file if undefined, default.xmz is loaded
+   */
+  sessionLoad(file) {
+    if (file === undefined)
+      file = 'default.xmz';
     
-    let pEnabled = this.parser.translate("/part[0-15]/Penabled");
-    const enabledParts = [];
-    var messageStack = [];
-    
-    //gather all
-    for (let i = 0; i < 16; i++) {
-      worker.push(`/part${i}/Penabled`, (add, args) =>{
-        if (args.type=='T') {
-          enabledParts.push(add.match(/^\/part(\d+)/)[0]);
-        }
-        
-        messageStack.push(add + ` ${args[0].type}`);
-      });
+    let sessionPath = `${this.IO.currentDir}/sessions/${file}`;
+    if (!Fs.existsSync(sessionPath)) {
+      console.log(`<4> cannot find session ${sessionPath}.`);
+      return;
     }
     
-    this.osc.send(pEnabled);
-    worker.listen().then(()=>{
-      
+    //remove previous session bind if present
+    if (this.lastSession !== undefined && "default.xmz" != this.lastSession) {
+      let lastBindFile = this.lastSession.replaceAll('.xmz', '.json');
+      this.midiService.removeBind(`${this.IO.currentDir}/binds/${lastBindFile}`);
+    }
+    
+    //load any non default bind, as default bind is already loaded
+    if (file != 'default.xmz') {
+      let bindPath = `${this.IO.currentDir}/binds/${file.replaceAll('.xmz','.json')}`;
+      if (Fs.existsSync(bindPath)) {
+        console.log('<6> found session bind file.');
+        try {
+          this.midiService.addBind(bindPath);
+        } catch (err) {
+          console.log(`<3> Cannot add bind session file: ${err}`);
+        }
+      }
+    }
+    
+    try {
+      this.midiService.refreshFilterMap(true);
+    } catch (err) {
+      console.log(`<3> Cannot refresh filter map upon session load.`);
+    }
+    
+    this.lastSession = file;
+    this.once(`/damage`, () =>{
+      //see if you need to apply route
+      if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
+         this.route(partID, undefined);
+       }
     });
+    
+    this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));
+  }
+  
+  /**
+   * Save a session file.
+   * @param file filename without path. if undefined, default.xmz is used.
+   */
+  sessionSave(file) {
+    if (this.IO.readOnlyMode) {
+      console.log('<5> Session save aborted due to read only mode.');
+      return;
+    }
+    
+    file = (file === undefined) ? 'default.xmz' : file;
+    this.osc.send(`/save_xmz ${this.IO.currentDir}/sessions/${file}`);
   }
 }
 

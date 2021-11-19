@@ -67,3 +67,31 @@ exports.listAllFiles = function (path, ignoreDir, mode) {
     
   return result;
 }
+
+module.exports.createIOConfig = function (configFile) {
+  let IO = {};
+  
+  if (config.cartridge_dir !== undefined &&
+        Fs.existsSync(config.cartridge_dir)
+        && Fs.existsSync(config.cartridge_dir+'/config.json')) 
+  {
+      console.log('<6> Using cartridge.');
+      IO.workingDir = config.cartridge_dir;
+  } else if (Fs.existsSync(config.fallback_dir)
+      && Fs.existsSync(config.fallback_dir+'/config.json')) {
+      console.log('<6> Missing cartridge. Using fallback dir.');
+      IO.workingDir = config.fallback_dir;
+  } else {
+    throw 'There is no valid directory or configuration available.';
+  }
+  
+  try {
+    Fs.accessSync(IO.workingDir+'/config.json', Fs.W_OK);
+    IO.readOnlyMode = false;
+  } catch (err) {
+    console.log('<6> Access is read only.');
+    IO.readOnlyMode = true;
+  }
+  
+  return IO;
+}
