@@ -109,5 +109,21 @@ module.exports.registerOSC = function (zynServer) {
    emitter.on('/zmania/run_script', function (zyn, args) {
      zyn.runScript(args[0].value);
    });
+   
+   emitter.on('/zmania/load_xmz', function (zyn, args) {
+     try {
+       zyn.sessionLoad(args[0].value);
+     } catch (err) {
+       console.log(`<3> session load error: ${err}`);
+     }
+   });
+   
+   emitter.on('/zmania/save_xmz', function (zyn, args) {
+     try {
+       zyn.sessionSave(args[0].value);
+     } catch (err) {
+       console.log(`<3> session load error: ${err}`);
+     }
+   });
 }
 
