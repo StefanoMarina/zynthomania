@@ -19,6 +19,7 @@
 const BodyParser = require('body-parser');
 const EXPRESS = require('express');
 const Fs = require('fs');
+const OS = require('os'); 
 const Util = require ('util');
 const OSCParser = require ('./parser.js')
 const ZynthoIO = require ('./io.js');
@@ -71,7 +72,7 @@ app.get('/files/banks/xiz', function (req, res, next) {
 
 app.get('/files/scripts', function (req, res, next) {
   console.log(`[GET] /files/scripts query: ${JSON.stringify(req.query)}`);
-  let dir = app.zyntho.config.cartridge_dir + "/scripts";
+  let dir = app.zyntho.IO.currentDir + "/scripts";
   let files = [];
   if (Fs.existsSync(dir)){
     files = Fs.readdirSync (dir);
@@ -217,7 +218,7 @@ app.get('/status/binds', function( req, res, next) {
   result.hasInstrument = app.zyntho.midiService.instrumentMap != null;
   
   try {
-    result.files = ZynthoIO.listAllFiles(app.zyntho.config.cartridge_dir+"/"+"binds");
+    result.files = ZynthoIO.listAllFiles(app.zyntho.IO.currentDir+"/"+"binds");
    // console.log(JSON.stringify(result, null, 2));
     res.json(result);
   } catch (err) {
@@ -386,7 +387,7 @@ app.post('/binds/add', function(req, res) {
   }
   
   try {
-    let path = app.zyntho.config.cartridge_dir + "/binds/" + req.body.file;
+    let path = app.zyntho.IO.currentDir + "/binds/" + req.body.file;
     app.zyntho.midiService.addBind(path);
     res.status(200).end();
   } catch (err) {
@@ -418,7 +419,7 @@ app.post('/binds/remove', function(req, res) {
     }
   } else {  
     try {
-      let path = app.zyntho.config.cartridge_dir + "/binds/" + req.body.file;
+      let path = app.zyntho.IO.currentDir + "/binds/" + req.body.file;
       app.zyntho.midiService.removeBind(path);
       res.status(200).end();
     } catch (err) {
@@ -437,10 +438,17 @@ app.on('data', (data) =>{
 });
 
 var myArgv = process.argv.slice(2);
-if (myArgv.length > 0)
-  app.zyntho.open(myArgv[0]);
-else
-  app.zyntho.open("./default.json");
+
+try {
+  if (myArgv.length > 0)
+    app.zyntho.open(myArgv[0]);
+  else {
+    app.zyntho.open(`${OS.homedir()}/.zmania`);
+  }
+} catch (err) {
+  console.error(`<1> ${err}`);
+  return;
+}
 
 const server = require('http').createServer(app);
 server.listen(7000);

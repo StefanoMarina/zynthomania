@@ -28,31 +28,8 @@ class OSCWorker extends EventEmitter {
   constructor(emitter) {
     super();
     this.stack = [];
-    this.outcome = {};
     this.emitter = emitter;
   }
-  
-  /**
-   * adds an osc address to the stack. the address is bound through
-   * .once() on the emitter, and it is then popped out from the osc stack.
-   * When the stack gets empty, a 'done' message is sent internally to free
-   * listen().
-   */
-  push(address, callback) {
-    this.stack.push(address);
-    this.emitter.once(address, (packet) => {
-      if (undefined !== packet.args)
-        this.outcome[address] = callback(address, packet.args);
-      else
-        this.outcome[address] = callback(address, packet);
-        
-      this.stack.splice(this.stack.indexOf(address),1);
-      
-      if (this.stack.length==0)
-        this.emit('done', this.outcome);
-    });
-  }
-  
   /**
    * creates a promise bound on the 'done' internal event
    * @returns a Promise that will be triggered when the last osc call
@@ -67,6 +44,43 @@ class OSCWorker extends EventEmitter {
         this.once('done', resolve);
     });
   }
+  /**
+   * adds an osc address to the stack. the address is bound through
+   * .once() on the emitter, and it is then popped out from the osc stack.
+   * When the stack gets empty, a 'done' message is sent internally to free
+   * listen().
+   * @param address address to be received
+   * @param callback (optional) callback to resolve.
+   */
+  push(address, callback) {
+    this.stack.push(address);
+    this.emitter.once(address, (packet) => {
+      
+      if (callback !== undefined) {
+        callback(address, (undefined !== packet.args) 
+                            ? packet.args : packet);
+      }
+      
+      this.stack.splice(this.stack.indexOf(address),1);
+      
+      if (this.stack.length==0)
+        this.emit('done', this.outcome);
+    });
+  }
+  
+  /**
+   * utility to push a packet/bundle
+   * @param packet a OSC packet / bundle
+   * @param callback callback to call
+   */
+  pushPacket(packet, callback) {
+    let packets = (undefined === packet.packets)
+      ? [packet] : packet.packets;
+      
+    packets.forEach( pack => this.push(pack.address, callback) );
+  }
+  
+  
 }
 
 module.exports.OSCWorker = OSCWorker;

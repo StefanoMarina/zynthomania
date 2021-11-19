@@ -69,7 +69,7 @@ class ZynthoServer extends EventEmitter {
     
     let defaultConfig;
     try {
-      defaultConfig = JSON.parse(Fs.readFileSync(`${frameworkPath}/config.json`);
+      defaultConfig = JSON.parse(Fs.readFileSync(`${frameworkPath}/config.json`));
     } catch (err) {
       throw `Failure in loading path configuration: ${err}`;
     }

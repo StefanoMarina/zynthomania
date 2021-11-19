@@ -30,7 +30,7 @@ var exports = module.exports = {};
 
 class ZynthoMidi extends EventEmitter {
   
-  constructor(config) {
+  constructor(IODir, config) {
     super();
     this.midiInputs = {};
     this.midiOutput = null;
@@ -40,7 +40,7 @@ class ZynthoMidi extends EventEmitter {
     this.baseFilterMap = null;
     this.instrumentMap = null;
     
-    this.cartridgeDir = config.cartridge_dir + "/binds";
+    this.cartridgeDir = IODir + "/binds";
     
     if (Fs.existsSync(this.cartridgeDir + "/default.json")) {
       this.filterList.push(this.cartridgeDir + "/default.json");
@@ -54,38 +54,23 @@ class ZynthoMidi extends EventEmitter {
     //console.log (`ZMIDI: build ${JSON.stringify(this.uadsrConfig)}`); 
   }
   
-  
-  getMidiOutput() {
-    if (this.midiOutput == null)
-      this.midiOutput = new MIDI.Output();
-    
-    return this.midiOutput;
-  }
-  
-  /**
-   * Get a list of available input devices, and their actual connection
-   * with zynthomania or zynaddsubfx
-   * @returns an array of midi devices
-  */
-  enumerateInputs() {
-    let midi = new MIDI.Input();
-    let q = midi.getPortCount();
-    var result = [];
-    let connectedInputs = Object.keys(this.midiInputs);
-    let portName = "", displayName;
-    let status = false;
-    
-    for (let i = 0; i < q; i++) {
-      portName = midi.getPortName(i);
-      if (portName.match(/Zynthomania/g))
-        continue;
-      displayName = portName.match(/[^:]+:(.*) \d+:\d+.*/)[1];
-      status = (connectedInputs.indexOf(portName)>-1);
-      result.push({name : displayName, port: portName, connected: status});
+   /**
+   * adds a bind file and refresh current configuration.
+   * @param path full path to .json file.
+   * @return false if file does not exist or is already present in the queue.
+   */
+  addBind(path) {
+    if (!Fs.existsSync(path) || this.filterList.indexOf(path)>=0){
+      console.log(`<5> ZMidi::addBind: missing file or file already present ${path}`);
+      return false;
     }
     
-    return result;
+    this.filterList.push(path);
+    this.refreshFilterMap(true);
+    return true;
   }
+  
+  
   
   /**
    * Creates a virtual port called 'Zynthomania' and connects it to
@@ -127,154 +112,44 @@ class ZynthoMidi extends EventEmitter {
     }
   }
   
-  /**
-   * Creates a new midi or deletes it for the selected keyboard.
-   * If a new input is requested, the corresponding keyboard bind
-   * is loaded.
-   * @param devicePort either ALSA port name (x:y) or device name
-   * @param status (default =true) if true, device is plugged in, and bind
-   * loaded. Otherwise, it is discarded.
-   * @throws if invalid device name/id
-   */
-  setConnection(devicePort, status) {
-    status = (status === undefined) ? true : status;
-    const inputs = this.enumerateInputs();
-    let deviceID = -1;
+  
+   /**
+   * Get a list of available input devices, and their actual connection
+   * with zynthomania or zynaddsubfx
+   * @returns an array of midi devices
+  */
+  enumerateInputs() {
+    let midi = new MIDI.Input();
+    let q = midi.getPortCount();
+    var result = [];
+    let connectedInputs = Object.keys(this.midiInputs);
+    let portName = "", displayName;
+    let status = false;
     
-    if (devicePort.match(/ \d+:\d+\s*$/))
-      deviceID = inputs.map( (e)=>{return e.port;}).indexOf(devicePort);
-    else {
-      deviceID = inputs.map ( e => e.name).indexOf(devicePort);
-      if (deviceID > -1)
-        devicePort = inputs[deviceID].port;
+    for (let i = 0; i < q; i++) {
+      portName = midi.getPortName(i);
+      if (portName.match(/Zynthomania/g))
+        continue;
+      displayName = portName.match(/[^:]+:(.*) \d+:\d+.*/)[1];
+      status = (connectedInputs.indexOf(portName)>-1);
+      result.push({name : displayName, port: portName, connected: status});
     }
     
-    if (deviceID < 0)
-      throw `invalid device ${devicePort}`;
-        
-    if (this.midiInputs[devicePort] !== undefined) {
-      if (status) return;
-    
-      //remove connection
-      this.midiInputs[devicePort].closePort();
-      this.midiInputs[devicePort] = undefined;
-      delete this.midiInputs[devicePort];
-      
-      this.emit('device-out', inputs[deviceID].name);
-      console.log(`<6> Released midi connection from ${devicePort}.`);
-    } else {
-      let newInput = new MIDI.Input();
-      newInput.on('message', (delta, msg) =>{
-          this.knot.midiCallback(delta, msg);
-      });
-      
-      this.midiInputs[devicePort] = newInput;
-      
-       try {
-        newInput.openPort(deviceID);
-      } catch (err) {
-        throw `<3> Midi: cannot connect to ${deviceID}`;
-      }
-      
-      console.log(`<6> Midi: Connected to ${devicePort}.`);
-      this.emit('device-in', inputs[deviceID].name);
-    }
-    
-    if (this.cartridgeDir != null) {
-      //load/unload binds. If deviceName has unsupported characters, replace
-      //bad character with lower line "_".
-      
-      let deviceName = devicePort.match(/[^:]+:(.*) \d+:\d+.*/)[1];
-      let deviceBindFile = deviceName.replace(/[<>:;,?"*|/]+$/g,"_"),
-          deviceBindPath = this.cartridgeDir+`/${deviceBindFile}.json`;
-      
-      try {
-        if (status)
-          this.addBind(deviceBindPath);
-        else
-          this.removeBind(deviceBindPath);
-      } catch (err) {
-            console.log(`<3> Something went wrong while managing bind: ${err}`);
-      }
-    }
+    return result;
   }
   
-  /**
-   * adds a bind file and refresh current configuration.
-   * @param path full path to .json file.
-   * @return false if file does not exist or is already present in the queue.
-   */
-  addBind(path) {
-    if (!Fs.existsSync(path) || this.filterList.indexOf(path)>=0){
-      console.log(`<5> ZMidi::addBind: missing file or file already present ${path}`);
-      return false;
-    }
+  getMidiOutput() {
+    if (this.midiOutput == null)
+      this.midiOutput = new MIDI.Output();
     
-    this.filterList.push(path);
-    this.refreshFilterMap(true);
-    return true;
+    return this.midiOutput;
   }
   
-  /**
-   * removes a bind file from the static filter map.
-   * @param path full path to file
-   * @return false if file is not present
-   */
-  removeBind(path) {
-    let index = this.filterList.indexOf(path);
-    if (index == -1) return false;
-    this.filterList.splice(index,1);
-    this.refreshFilterMap(true);
-    console.log(`<6> Removed bind ${path}`);
-    return true;
-  }
-  
-  /**
-   * Refresh the static filter map. A static bind map is composed of
-   * default.json, the bind file for keyboard, and any custom performance
-   * files that are not instrument binds.
-   * This should be avoided for live perfomances as it is a bit time consuming,
-   * each filter list must be reloaded.
-   * @param force (default=false) if true, reloads the default bindings 
-   */
-  refreshFilterMap(force) {
-    force = (force === undefined) ? false : force;
-    
-    let list = this.filterList.filter((item) => {return item != null});
-    
-    //default, keyboard and static binds are flushed only on request
-    if (force) {
-      this.baseFilterMap = null;
-      let map;
-      for (let i = 0; i < list.length; i++){
-        
-        map  = new KNOT.FilterMap(JSON.parse(Fs.readFileSync(list[i])));
-        
-        this.baseFilterMap = (this.baseFilterMap == null)
-          ? map
-          : KNOT.FilterMap.merge(this.baseFilterMap, map);
-      }
-    }
-    
-    let map = null;
-    
-    //if present, merge with uadsr map
-    if (this.baseFilterMap != null &&
-          this.uadsrConfig.type != "none" && this._uadsr != null) {
-      map = KNOT.FilterMap.merge(this.baseFilterMap, 
-            this._uadsr.getFilterMap(this.uadsrConfig.mode));
-    } else {
-      map = this.baseFilterMap;
-    }
-    
-    if (this.instrumentMap != null && map != null) {
-      this.knot.filterMap = KNOT.FilterMap.merge(map,this.instrumentMap);
-    } else if (map != null) {
-      this.knot.filterMap = map;
-    } else if (this.instrumentMap != null)
-      this.knot.filterMap = this.instrumentMap;
-    
-   // console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
+  getUADSR() {
+    if (this._uadsr == null || this.uadsrConfig.type == 'none')
+      throw "UADSR is not loaded.\n";
+    else
+      return this._uadsr;
   }
   
   /**
@@ -348,12 +223,141 @@ class ZynthoMidi extends EventEmitter {
     this.refreshFilterMap();
   }
   
-  getUADSR() {
-    if (this._uadsr == null || this.uadsrConfig.type == 'none')
-      throw "UADSR is not loaded.\n";
-    else
-      return this._uadsr;
+ 
+  /**
+   * removes a bind file from the static filter map.
+   * @param path full path to file
+   * @return false if file is not present
+   */
+  removeBind(path) {
+    let index = this.filterList.indexOf(path);
+    if (index == -1) return false;
+    this.filterList.splice(index,1);
+    this.refreshFilterMap(true);
+    console.log(`<6> Removed bind ${path}`);
+    return true;
   }
+  
+  /**
+   * Refresh the static filter map. A static bind map is composed of
+   * default.json, the bind file for keyboard, and any custom performance
+   * files that are not instrument binds.
+   * This should be avoided for live perfomances as it is a bit time consuming,
+   * each filter list must be reloaded.
+   * @param force (default=false) if true, reloads the default bindings 
+   */
+  refreshFilterMap(force) {
+    force = (force === undefined) ? false : force;
+    
+    let list = this.filterList.filter((item) => {return item != null});
+    
+    //default, keyboard and static binds are flushed only on request
+    if (force) {
+      this.baseFilterMap = null;
+      let map;
+      for (let i = 0; i < list.length; i++){
+        
+        map  = new KNOT.FilterMap(JSON.parse(Fs.readFileSync(list[i])));
+        
+        this.baseFilterMap = (this.baseFilterMap == null)
+          ? map
+          : KNOT.FilterMap.merge(this.baseFilterMap, map);
+      }
+    }
+    
+    let map = null;
+    
+    //if present, merge with uadsr map
+    if (this.baseFilterMap != null &&
+          this.uadsrConfig.type != "none" && this._uadsr != null) {
+      map = KNOT.FilterMap.merge(this.baseFilterMap, 
+            this._uadsr.getFilterMap(this.uadsrConfig.mode));
+    } else {
+      map = this.baseFilterMap;
+    }
+    
+    if (this.instrumentMap != null && map != null) {
+      this.knot.filterMap = KNOT.FilterMap.merge(map,this.instrumentMap);
+    } else if (map != null) {
+      this.knot.filterMap = map;
+    } else if (this.instrumentMap != null)
+      this.knot.filterMap = this.instrumentMap;
+    
+   // console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
+  }
+  
+ /**
+   * Creates a new midi or deletes it for the selected keyboard.
+   * If a new input is requested, the corresponding keyboard bind
+   * is loaded.
+   * @param devicePort either ALSA port name (x:y) or device name
+   * @param status (default =true) if true, device is plugged in, and bind
+   * loaded. Otherwise, it is discarded.
+   * @throws if invalid device name/id
+   */
+  setConnection(devicePort, status) {
+    status = (status === undefined) ? true : status;
+    const inputs = this.enumerateInputs();
+    let deviceID = -1;
+    
+    if (devicePort.match(/ \d+:\d+\s*$/))
+      deviceID = inputs.map( (e)=>{return e.port;}).indexOf(devicePort);
+    else {
+      deviceID = inputs.map ( e => e.name).indexOf(devicePort);
+      if (deviceID > -1)
+        devicePort = inputs[deviceID].port;
+    }
+    
+    if (deviceID < 0)
+      throw `invalid device ${devicePort}`;
+        
+    if (this.midiInputs[devicePort] !== undefined) {
+      if (status) return;
+    
+      //remove connection
+      this.midiInputs[devicePort].closePort();
+      this.midiInputs[devicePort] = undefined;
+      delete this.midiInputs[devicePort];
+      
+      this.emit('device-out', inputs[deviceID].name);
+      console.log(`<6> Released midi connection from ${devicePort}.`);
+    } else {
+      let newInput = new MIDI.Input();
+      newInput.on('message', (delta, msg) =>{
+          this.knot.midiCallback(delta, msg);
+      });
+      
+      this.midiInputs[devicePort] = newInput;
+      
+       try {
+        newInput.openPort(deviceID);
+      } catch (err) {
+        throw `<3> Midi: cannot connect to ${deviceID}`;
+      }
+      
+      console.log(`<6> Midi: Connected to ${devicePort}.`);
+      this.emit('device-in', inputs[deviceID].name);
+    }
+    
+    if (this.cartridgeDir != null) {
+      //load/unload binds. If deviceName has unsupported characters, replace
+      //bad character with lower line "_".
+      
+      let deviceName = devicePort.match(/[^:]+:(.*) \d+:\d+.*/)[1];
+      let deviceBindFile = deviceName.replace(/[<>:;,?"*|/]+$/g,"_"),
+          deviceBindPath = this.cartridgeDir+`/${deviceBindFile}.json`;
+      
+      try {
+        if (status)
+          this.addBind(deviceBindPath);
+        else
+          this.removeBind(deviceBindPath);
+      } catch (err) {
+            console.log(`<3> Something went wrong while managing bind: ${err}`);
+      }
+    }
+  }
+  
   
 }
 
