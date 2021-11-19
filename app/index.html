@@ -25,9 +25,9 @@
           <table class="col-12 toolbar">
             <tr>
               <td><button id="btnDoFavorite"><i class="far fa-star big-icon"></i></button></td>
-              <td><button onclick="onChangePart(-1)" class="big-btn">&lt;</button></td>
+              <td><button onclick="onToolbarChangePart(-1)" class="big-btn">&lt;</button></td>
               <td><span id="currentPart" class="big-btn">1</span></td>
-              <td><button onclick="onChangePart(1)" class="big-btn">&gt;</button></td>
+              <td><button onclick="onToolbarChangePart(1)" class="big-btn">&gt;</button></td>
             </tr>
           </table>
         
@@ -51,10 +51,10 @@
               
               <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onDryPanelLoad()")>Dry</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="queryPartFX()">Part</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onRoutePanelLoad()">Route</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="querySystemFX()">System</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()")>Dry</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="onFxPart()">Part</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onFxRoute()">Route</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="onFxSystem()">System</button>
                 </header>
                 <div class="col-8"> <!-- fx content container -->
                   
@@ -115,7 +115,7 @@
               <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
                 <div class="col-6">
                   <ul id="selBinds" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
-                  <button class="big-btn send-btn col-12" onclick="addBind(this);">Add </button>
+                  <button class="big-btn send-btn col-12" onclick="onBindsAddClick(this);">Add </button>
                 </div>
                 <div id="pnlBindChain" class="col-6">
                   <p style="text-align: center">Touch to remove</p>
@@ -126,14 +126,14 @@
               
               <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 tab-v br">
-                  <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScriptFileLoad()">File</button>
+                  <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScript()">File</button>
                   <button class="tab-header" data-tab="scrPanel" data-open="pnlConsole">Console</button>
                 </header>
                 <div class="col-8">
                   <div id="pnlConsole" class="scrPanel panel hidden">
                     <textarea class="col-12" style="min-height: 200px !important" 
                         id="commandLine" placeholder="Input parameter..."></textarea>
-                    <button class="send-btn col-12 big-btn" onclick="onScriptSend();">Send</button>
+                    <button class="send-btn col-12 big-btn" onclick="onScriptSendClick();">Send</button>
                   </div>
                   <div id="pnlFile" class="scrPanel panel hidden">
                     <ul id="selScripts" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
@@ -145,8 +145,8 @@
               
               <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onMIDIPanelLoad();">MIDI</button>
-                  <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onUADSRPanelLoad();">UADSR</button>
+                  <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
+                  <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
                 </header>
                 <div class="col-8"> <!-- fx content container -->
                   <div id="pnlMIDI" class="sysPanel panel hidden row">
@@ -196,6 +196,7 @@
         </div> <!--col-10 -->        
       </div><!-- main row -->
     </div> <!--container-->
+    <script src="events.js"></script>
     <script type="text/javascript">
       
       window.zsession = {
@@ -325,56 +326,8 @@
         });
       }
       
-      function onChangePart(index) {
-        if (window.zsession.partID+index < 0)
-          window.zsession.partID = 15;
-        else if (window.zsession.partID+index > 15)
-          window.zsession.partID = 0;
-        else
-          window.zsession.partID += index;
-        $('#currentPart').text( ('0'+window.zsession.partID).substr(-2) );
-        
-        //retrieve part info
-        doQuery('status/part', {id: window.zsession.partID}, (data) => {
-          console.log(data);
-          if (data.name == '') data.name = 'Unloaded';
-          $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
-        });
-        
-        //any active panel must be re-triggered
-        $('.controlPanel tab-header.btn-selected').trigger('click');
-      }
-      
-      /** loads part fx */
-      function queryPartFX() {
-        doQuery('status/partfx', {id: window.zsession.partID}, function(data){
-          console.log(data);
-            window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
-            //onFXLoad('btnpfx', data);
-            
-            for (let i = 0; i < 3; i++)
-              window.buttons[`btnpfx${i}`].setFX(data.efx[i]);
-            
-            //update send
-            for (let i = 0; i < 4; i++) {
-                let id = `kss${i}`;
-                console.log(data.send[i]);
-                window.knobs[id].setValue(data.send[i]);
-            }
-            
-        });
-      }
   
-      function querySystemFX() {
-         doQuery('status/systemfx', undefined, function(data){
-          console.log(data);
-            //window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
-            //onFXLoad('btnpfx', data);
-            
-            for (let i = 0; i < 4; i++)
-              window.buttons[`btnsfx${i}`].setFX(data.efx[i]);
-        });
-      }
+      
      
      function actionMaximizeSend() {
        let script = `/Psysefxvol[0-3]/part${window.zsession.partID} 127`;
@@ -387,97 +340,13 @@
      }
       
       /* Bank button load */
-      function queryBankList() {
-        
-        //Banks preloading
-        if (Object.keys(window.zsession.banks).length <= 1) {
-          doQuery('files/banks', null, (data) => {
-            data.forEach( (item) => {
-              window.zsession.banks[item] = [];
-            });
-            queryBankList(-1);
-            return;
-          })
-          
-          return;
-        }
-        
-        let banks = window.zsession.banks;
-        let entry = '';
-        let selectObject = $('#selBanks');
-        selectObject.empty();
-            
-        Object.keys(banks).forEach( (key) => {
-          selectObject.append('<li data-bank="'+key+'">'+key+'</li>');
       
-        });
-             
-         $('.controlPanel').addClass('hidden');
-         $('#pnlBanks').removeClass('hidden');
-      }
       
-      function onPartSendChange(id) {
-        console.log('called!')
-        let newValue = window.knobs[`kss${id}`].getValue();
-        doAction('script', {script : `/Psysefxvol${id}/part${window.zsession.partID} ${newValue}` });
-      }
-      
-      function queryBank(selectedBank) {
-        
-        if (window.zsession.banks[selectedBank].length == 0) {
-          doQuery('files/banks/xiz', {bank: selectedBank}, (data) => {
-            window.zsession.banks[selectedBank] = data;
-            
-            if (data.length == 0) {
-              $('#instrumentName').text('Empty!');
-              return;
-            }
-            
-            queryBank(selectedBank);
-            return;
-          });
-          return;
-        }
 
-        window.zsession.bank = selectedBank;
-        
-        let instruments = window.zsession.banks[selectedBank];
-        let entry = '';
-        let selectObject = $('#selInstruments');
-        selectObject.empty();
-        
-        instruments.forEach( (value, index, array) => {
-          let entry = `<li data-instrument="${value.path}">${value.name}`;
-                
-          if (isFavorite(value))
-            entry += '<span style="float:right"><i class="fas fa-star"></i></span>';
-            
-           selectObject.append(entry+"</li>");
-           selectObject.removeClass('hidden');
-        });
-      }
       
-      function onInstrumentSelection(instrument) {
-        doAction("loadInstrument", {'instrument': instrument, 
-          'id': window.zsession.partID}, (data) => {
-            console.log('done');
-//             $('#instrumentName').text(instrument.name);
-              window.zsession.instrument = instrument;    
-              $('#btnDoFavorite i').removeClass('far fas');
-              $('#btnDoFavorite i').addClass( (isFavorite(instrument)) 
-                                        ? 'fas' : 'far');
-              onChangePart(0);
-          })
-        }
+      
+      
 
-      function onScriptSend() {
-        let data = $('#commandLine').val();
-        doAjax({method:'post', url: window.location.href+"script",
-                data: JSON.stringify({script: data}), 
-                contentType: 'application/json; charset=utf-8'},
-                function(){
-        });
-      }
       function setFavorite (instrument, value) {
         let action = (value) ? 'set' : 'unset';
         
@@ -513,160 +382,11 @@
       }
       
       
-      function onDryPanelLoad() {
-        doQuery('status/options', null, (data) => {
-          //console.log(data);
-          let fxes = data.dry;
-          $('.btnDrySelection').removeClass('btn-selected');
-          
-          fxes.forEach( (fx) => {
-              $(`.btnDrySelection:contains(${fx})`).addClass('btn-selected');
-          })
-        });
-      }
+
       
-      function onRoutePanelLoad() {
-        doQuery('status/options', null, (data) => {
-          console.log(data);
-          let route = data.route;
-          
-          let fxes = route.fx;
-          
-          $('.btnRouteSelection').removeClass('btn-selected');
-          
-          fxes.forEach( (fx) => {
-              $(`.btnRouteSelection:contains(${fx})`).addClass('btn-selected');
-          })
-          
-          window.knobs['routeSend'].setValue(route.send);
-        });
-      }
       
-      function addBind(source) {
-        let file = $('#selBinds').children('li.btn-selected').text();
-        //console.log(file);
-        if (file == "") return;
-        doAction('binds/add', {file: file}, (data) =>{
-          $(source).removeClass('btn-selected');
-          onBindPanelLoad();
-        });
-      }
       
-      function onBindPanelLoad() {
-        doQuery("status/binds", null, (data) =>{
-          const ul=$('#selBinds');
-          $(ul).empty();
-          data.files.forEach( (item) => {
-            $(ul).append('<li>'+item+'</li>');
-          });
-          
-          const chain = $('#chainContainer');
-          $(chain).empty();
-          data.chain.forEach( (item) => {
-            $(chain).append('<div class="col-12 panel"><button class="col-12 smallEntry">'+item+'</button></div>');
-          });
-          if (data.hasInstrument) {
-            $(chain).append('<button class="col-12 smallEntry" data-remove="instrument">Remove instrument bind</button>');
-          }
-          $(chain).children('button').on('click', (e) => {
-            let value = 
-             ($(e.target).attr('data-remove') !== undefined) 
-                ? "instrument"
-                : $(e.target).text();
-                
-            doAction('binds/remove', {file : value}, (data) =>{
-                  onBindPanelLoad();
-            });
-              
-          });
-        });
-      }
       
-      function onMIDIPanelLoad() {
-        doQuery('status/midi', null, (data) => {
-          
-//          data = JSON.parse(data);
-          if (Object.prototype.toString.call(data) !== '[object Array]') {
-            console.log("Error: data is not array.");
-            console.log(data);
-            return;
-          }
-          
-          //data is array
-          let midiCont = $('#sysMidiContainer');
-          $(midiCont).empty();
-          
-          
-          data.forEach( (item) => {
-            
-            let plugged = (item.connections !== undefined && 
-                      item.connections.indexOf(zynConnection.plug) > -1);
-            let selClass = (item.connected) ? "btn-selected" : "";
-            
-            let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.port}">${item.name}`+"</button>";
-            $(midiCont).append(content);
-          });
-          
-          $(midiCont).children('button').on('click', (e) => {
-            let target = $(e.target);
-            let plugged = $(target).hasClass('btn-selected');
-            
-            doAction('status/midi/plug', 
-              {'name': $(target).val(), 'status': !plugged}, (data) =>{
-                onMIDIPanelLoad();
-              });
-          });
-        });
-      }
-      
-      function onUADSRPanelLoad(type) {
-        doQuery("status/options", null, (data) => {
-          let uadsr = data.uadsr;
-          
-          $('.uadsrControl').addClass('hidden');
-          
-          if (type === undefined) type = uadsr.type;
-          $(`#pnlUADSR button[value=${type}]`).addClass('btn-selected');
-          let query = null;
-          
-          switch (type) {
-            case "none": break;
-            case "uadsr4":
-              $('#u4config p').text('General ADSR');
-              $('#u4config, #u4switch, #uadsrApply').removeClass('hidden');
-              
-              query = $('#u4config input');
-              for (let i = 0; i < 4; i++)
-                query[i].value = uadsr['uadsr4_binds'][i];
-                
-              $('#u4switch input').val(uadsr['uadsr4_binds'][4]);
-            break;
-            case "uadsr8":
-              $('#u4config p').text('Amplitude');
-              $('#u4config, #u8config, #uadsrApply').removeClass('hidden');
-              
-              query = $('#u4config input');
-              for (let i = 0; i < 4; i++)
-                query[i].value = uadsr['uadsr8_binds'][i];
-                
-              query = $('#u8config input');
-              for (let i = 0; i < 4; i++)
-                query[i].value = uadsr['uadsr8_binds'][i+4];
-            break;
-          }
-        });
-      }
-      
-      function onScriptFileLoad() {
-        doQuery("files/scripts", null, (data) =>{
-          console.log(data);
-         const ul=$('#selScripts');
-          $(ul).empty();
-          data.forEach( (item) => {
-            $(ul).append('<li>'+item+'</li>');
-          });
-        });
-      }
       /**
        Init 
        */
@@ -694,7 +414,7 @@
         })
         
         $('#kss0, #kss1, #kss2, #kss3').on('knob-change', (e) => {
-          onPartSendChange(/kss(\d)/.exec(e.id)[1]);
+          onFxPartSystemKnobChange(/kss(\d)/.exec(e.id)[1]);
         });
         
         /**
@@ -750,11 +470,11 @@
           /**
           Button actions
           */
-          $('#btnBinds').on('click', ()=>{onBindPanelLoad();});
+          $('#btnBinds').on('click', ()=>{onBind();});
           
-          $('#btnBanks').on('click', function() { queryBankList(); });
+          $('#btnBanks').on('click', function() { onBanks(); });
           $('#selBanks').on('click', 'li', function(e) {
-            queryBank($(e.target).attr('data-bank'));
+            onBanksBankSelect($(e.target).attr('data-bank'));
           });
           $('#selInstruments').on('click', 'li', function(e) {
             
@@ -764,7 +484,7 @@
               let instrument = listToInstrument($(e.target).closest('li'));
               setFavorite(instrument, false);
             } else
-              onInstrumentSelection(listToInstrument($(e.target)));
+              onBanksInstrumentClick(listToInstrument($(e.target)));
           });
           
           $('#btnDoFavorite').on('click', function(){
@@ -816,7 +536,7 @@
             $(e.target).addClass('btn-selected');
             doAction("script", {script: `/zmania/uadsr/type '${e.target.value}'`},
               (data) =>{
-                onUADSRPanelLoad();
+                onSystemUADSR();
             });
           });
           
@@ -839,7 +559,7 @@
             
             doAction('script', {script: `/zmania/${type}/bind ${array.join(' ')}`},
               () =>{
-                onUADSRPanelLoad();
+                onSystemUADSR();
               });
           });
           
@@ -861,7 +581,7 @@
             function(data) {
               window.zsession.banks['Favorites'] = data;
               //$('#instrumentName').text('Welcome to Zynthomania!');
-              onChangePart(0);
+              onToolbarChangePart(0);
           });
           
        
