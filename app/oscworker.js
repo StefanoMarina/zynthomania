@@ -37,13 +37,14 @@ class OSCWorker extends EventEmitter {
    * @throws if called with an empty stack
    */
   listen() {
+    if (this.stack.length == 0)
+      throw "OscWorker required to listen with an empty stack";
+      
     return new Promise( (resolve) => {
-      if (this.stack.length==0)
-        resolve();
-      else
         this.once('done', resolve);
     });
   }
+  
   /**
    * adds an osc address to the stack. the address is bound through
    * .once() on the emitter, and it is then popped out from the osc stack.
@@ -53,6 +54,9 @@ class OSCWorker extends EventEmitter {
    * @param callback (optional) callback to resolve.
    */
   push(address, callback) {
+    if (address === undefined)
+      throw "OscWorker push request with undefined address";
+    
     this.stack.push(address);
     this.emitter.once(address, (packet) => {
       
@@ -63,8 +67,9 @@ class OSCWorker extends EventEmitter {
       
       this.stack.splice(this.stack.indexOf(address),1);
       
-      if (this.stack.length==0)
-        this.emit('done', this.outcome);
+      if (this.stack.length==0) {
+        this.emit('done');
+      }
     });
   }
   
@@ -76,8 +81,10 @@ class OSCWorker extends EventEmitter {
   pushPacket(packet, callback) {
     let packets = (undefined === packet.packets)
       ? [packet] : packet.packets;
-      
-    packets.forEach( pack => this.push(pack.address, callback) );
+    
+    packets.forEach( (pack) => {  
+        this.push(pack.address, callback)
+    } );
   }
   
   

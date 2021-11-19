@@ -78,13 +78,13 @@ class ZynthoServer extends EventEmitter {
     this.IO = ZynthoIO.createIOConfig(defaultConfig);
     
     /*
-     * if a configuration file is present on the currentDir, override the
+     * if a configuration file is present on the workingDir, override the
      * default configuration. this will NOT take into account cartridge_dir.
      */
-    if (this.IO.currentDir.toLowerCase() != frameworkPath.toLowerCase()) {
+    if (this.IO.workingDir.toLowerCase() != frameworkPath.toLowerCase()) {
       console.log('<5> Reading new configuration file.');
       try {
-        let data = Fs.readFileSync(`${this.IO.currentDir}/config.json`, 'utf-8');
+        let data = Fs.readFileSync(`${this.IO.workingDir}/config.json`, 'utf-8');
         this.config = JSON.parse(data);
       } catch (err) {
         throw `Error while reading cartridge configuration: ${err}. Aborting`;
@@ -92,8 +92,8 @@ class ZynthoServer extends EventEmitter {
     } else 
       this.config = defaultConfig;
       
-    let favFile = `${this.IO.currentDir}/favorites.json`;
-    let configFile = `${this.IO.currentDir}/config.json`;
+    let favFile = `${this.IO.workingDir}/favorites.json`;
+    let configFile = `${this.IO.workingDir}/config.json`;
     
     console.log("opening client on port " + this.config.services.user.zyn_osc_port + "...");
   
@@ -101,7 +101,7 @@ class ZynthoServer extends EventEmitter {
     if (Fs.existsSync(favFile)) {
       console.log('<6> reading favorites...');
       try {
-        let data = Fs.readFileSync(this.config.favorites);
+        let data = Fs.readFileSync(favFile);
         this.favorites = JSON.parse(data);
       } catch (err) {
         console.log (`Cannot read favorites: ${err}`);
@@ -125,7 +125,7 @@ class ZynthoServer extends EventEmitter {
         registerOSC(this);
         
         /* Init midi service */
-        this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.currentDir,
+        this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.workingDir,
               this.config);
         console.log ("Started midi service");
         
@@ -385,7 +385,7 @@ class ZynthoServer extends EventEmitter {
     
     files.forEach(file => { bankList.push(file); });
     
-    const customSearchPath = this.IO.currentDir + "/banks";
+    const customSearchPath = this.IO.workingDir + "/banks";
     
     if (Fs.existsSync(customSearchPath)){
       files = Fs.readdirSync (customSearchPath)
@@ -408,7 +408,7 @@ class ZynthoServer extends EventEmitter {
       
     let result = [];
     var fullpath = ("$" == bank[0])
-            ? this.IO.currentDir + "/banks/"+bank.substr(1)
+            ? this.IO.workingDir + "/banks/"+bank.substr(1)
             : this.config.bank_dir + "/" + bank;
     
     console.log(fullpath);
@@ -442,7 +442,7 @@ class ZynthoServer extends EventEmitter {
     
     //try to save favorites
     try {
-      Fs.writeFileSync(`${this.IO.currentDir}/favorites.json`, JSON.stringify(this.favorites));
+      Fs.writeFileSync(`${this.IO.workingDir}/favorites.json`, JSON.stringify(this.favorites));
     } catch (err) {
       console.log("Could not save favorites: "+ err);
       return false;
@@ -450,7 +450,7 @@ class ZynthoServer extends EventEmitter {
     
     //try to save config
     try {
-      Fs.writeFileSync(`${this.IO.currentDir}/config.json`, JSON.stringify(this.config, null, 2));
+      Fs.writeFileSync(`${this.IO.workingDir}/config.json`, JSON.stringify(this.config, null, 2));
     } catch (err) {
       console.log(`Could not save properties: ${err}`);
     }
@@ -602,7 +602,7 @@ class ZynthoServer extends EventEmitter {
     
     //Effect type
     let query = this.parser.translate(`/part${part}/partefx[0-2]/efftype`);
-    worker.pushPacket(query.packets, (add, args) => {
+    worker.pushPacket(query, (add, args) => {
       let efftype = args[0].value;
       let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(add)[1]);
       let name = exports.typeToString(efftype);
@@ -613,7 +613,7 @@ class ZynthoServer extends EventEmitter {
     
     //Bypass
     query = this.parser.translate(`/part${part}/Pefxbypass[0-2]`);
-    worker.pushPacket(query.packets, (add, args)=> {
+    worker.pushPacket(query, (add, args)=> {
       let bypass = args[0].value;
       try {
         let id = parseInt(add.match(/Pefxbypass(\d)/)[1]);
@@ -627,7 +627,7 @@ class ZynthoServer extends EventEmitter {
     
     //System send is handled as part
     query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
-    worker.pushPacket(query.packets, (add,args) => {  
+    worker.pushPacket(query, (add,args) => {  
       if (returnObject.send === undefined)
         returnObject.send = new Array(4);
         
@@ -639,7 +639,7 @@ class ZynthoServer extends EventEmitter {
     //run before testing preset name
     this.osc.send(fxQuery);
     worker.listen().then( () =>{
-      
+          
       //check out presets
       let queries = [];
       returnObject.efx.forEach( (obj) =>{
@@ -649,22 +649,26 @@ class ZynthoServer extends EventEmitter {
           obj.preset = 0;
       });
       
-      query = this.parser.translate(queries);
-      const presetCallback = function(add, args) {
-        let regexp = RegExp(`\/part${part}\/partefx(\\d)\/(\\w+)`).exec(add);
-        let id = parseInt(regexp[1]);
-        let name = regexp[2];
+      if (queries.length > 0) {
+        query = this.parser.translate(queries);
+        worker.pushPacket(query, (add, args) => {
+          let regexp = RegExp(`\/part${part}\/partefx(\\d)\/(\\w+)`).exec(add);
+          let id = parseInt(regexp[1]);
+          let name = regexp[2];
+          
+          //if OSC 1.0 is respected, this should be already ready
+          if (name == returnObject.efx[id].name)
+            returnObject.efx[id].preset = args[0].value;
+        });
         
-        //if OSC 1.0 is respected, this should be already ready
-        if (name == returnObject.efx[id].name)
-          returnObject.efx[id].preset = args[0].value;
-      };
-      query.packets.forEach( (pack) => {
-        worker.push(pack.address, presetCallback);
-      });
-      this.osc.send(query);
-      return worker.listen();
-    }).then ( ()=>{onDone(returnObject)});
+        this.osc.send(query);
+        return worker.listen();
+      }
+    
+    }).then ( ()=>{
+    
+        onDone(returnObject)
+    });
   }
   
   /**
@@ -684,16 +688,13 @@ class ZynthoServer extends EventEmitter {
     let fxQuery = this.parser.translate(`/sysefx[0-3]/efftype`);
     const worker = new OSCWorker(this);
     
-    const nameCallback = (add, args) => {
+    worker.pushPacket(fxQuery, (add, args) => {
       console.log(`${add} : ${JSON.stringify(args)}`)
       let efftype = args[0].value;
       let id = parseInt(add.match(/sysefx(\d)/)[1]);
       let name = exports.typeToString(efftype);
       returnObject.efx[id].name = name;
-    }
-    
-    for (let i = 0; i < 4; i++)
-      worker.push(`/sysefx${i}/efftype`, nameCallback);
+    });
     
     this.osc.send(fxQuery);
     worker.listen().then(()=>{
@@ -718,10 +719,11 @@ class ZynthoServer extends EventEmitter {
           returnObject.efx[i].preset = 0;
       }
       
-      fxQuery = this.parser.translateLines(queries);
-      this.osc.send(fxQuery);
-      return worker.listen();
-      
+      if (queries.length > 0) {
+        fxQuery = this.parser.translateLines(queries);
+        this.osc.send(fxQuery);
+        return worker.listen();
+      }
     }).then(()=>{onDone(returnObject)});
   }
       
@@ -830,9 +832,8 @@ class ZynthoServer extends EventEmitter {
         });
         
         this.osc.send(bundle);
+        return worker.listen();
       }
-      
-      return worker.listen();
     }).then( ()=>{
       if (onDone !== undefined)
         onDone();
@@ -844,7 +845,7 @@ class ZynthoServer extends EventEmitter {
    * @param scriptFile script file. cartridge path is appended.
    */
   runScript(scriptFile) {
-    let scriptPath = this.IO.currentDir+"/scripts/"+scriptFile;
+    let scriptPath = this.IO.workingDir+"/scripts/"+scriptFile;
     if (!Fs.existsSync(scriptPath))
       throw `<4> ${scriptPath} does not exists.`;
     
@@ -880,7 +881,7 @@ class ZynthoServer extends EventEmitter {
     if (file === undefined)
       file = 'default.xmz';
     
-    let sessionPath = `${this.IO.currentDir}/sessions/${file}`;
+    let sessionPath = `${this.IO.workingDir}/sessions/${file}`;
     if (!Fs.existsSync(sessionPath)) {
       console.log(`<4> cannot find session ${sessionPath}.`);
       return;
@@ -889,12 +890,12 @@ class ZynthoServer extends EventEmitter {
     //remove previous session bind if present
     if (this.lastSession !== undefined && "default.xmz" != this.lastSession) {
       let lastBindFile = this.lastSession.replaceAll('.xmz', '.json');
-      this.midiService.removeBind(`${this.IO.currentDir}/binds/${lastBindFile}`);
+      this.midiService.removeBind(`${this.IO.workingDir}/binds/${lastBindFile}`);
     }
     
     //load any non default bind, as default bind is already loaded
     if (file != 'default.xmz') {
-      let bindPath = `${this.IO.currentDir}/binds/${file.replaceAll('.xmz','.json')}`;
+      let bindPath = `${this.IO.workingDir}/binds/${file.replaceAll('.xmz','.json')}`;
       if (Fs.existsSync(bindPath)) {
         console.log('<6> found session bind file.');
         try {
@@ -933,7 +934,7 @@ class ZynthoServer extends EventEmitter {
     }
     
     file = (file === undefined) ? 'default.xmz' : file;
-    this.osc.send(`/save_xmz ${this.IO.currentDir}/sessions/${file}`);
+    this.osc.send(`/save_xmz ${this.IO.workingDir}/sessions/${file}`);
   }
 }
 

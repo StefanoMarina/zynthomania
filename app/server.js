@@ -72,7 +72,7 @@ app.get('/files/banks/xiz', function (req, res, next) {
 
 app.get('/files/scripts', function (req, res, next) {
   console.log(`[GET] /files/scripts query: ${JSON.stringify(req.query)}`);
-  let dir = app.zyntho.IO.currentDir + "/scripts";
+  let dir = app.zyntho.IO.workingDir + "/scripts";
   let files = [];
   if (Fs.existsSync(dir)){
     files = Fs.readdirSync (dir);
@@ -218,7 +218,7 @@ app.get('/status/binds', function( req, res, next) {
   result.hasInstrument = app.zyntho.midiService.instrumentMap != null;
   
   try {
-    result.files = ZynthoIO.listAllFiles(app.zyntho.IO.currentDir+"/"+"binds");
+    result.files = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"binds");
    // console.log(JSON.stringify(result, null, 2));
     res.json(result);
   } catch (err) {
@@ -387,7 +387,7 @@ app.post('/binds/add', function(req, res) {
   }
   
   try {
-    let path = app.zyntho.IO.currentDir + "/binds/" + req.body.file;
+    let path = app.zyntho.IO.workingDir + "/binds/" + req.body.file;
     app.zyntho.midiService.addBind(path);
     res.status(200).end();
   } catch (err) {
@@ -419,7 +419,7 @@ app.post('/binds/remove', function(req, res) {
     }
   } else {  
     try {
-      let path = app.zyntho.IO.currentDir + "/binds/" + req.body.file;
+      let path = app.zyntho.IO.workingDir + "/binds/" + req.body.file;
       app.zyntho.midiService.removeBind(path);
       res.status(200).end();
     } catch (err) {

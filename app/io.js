@@ -68,7 +68,7 @@ exports.listAllFiles = function (path, ignoreDir, mode) {
   return result;
 }
 
-module.exports.createIOConfig = function (configFile) {
+module.exports.createIOConfig = function (config) {
   let IO = {};
   
   if (config.cartridge_dir !== undefined &&
