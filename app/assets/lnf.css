@@ -34,7 +34,8 @@ body, body * {font-family: Minecart}
  *  */
 .bl {border-left: 2px dotted black;}
 .br {border-right: 2px dotted black;}
-
+.bb {border-bottom: 2px dotted black;}
+.bt {border-top: 2px dotted black;}
 
 .tc {text-align: center !important}
 /* blurry lines */
@@ -99,6 +100,7 @@ body::after {
    
    .tab-header, .big-btn, .big-btn * {font-size: 16px !important;}
    .big-icon { font-size: 20 px !important}
+   small {font-size: 8px}
 }
 
 @media only screen and (min-width: 768px) { 
@@ -112,6 +114,7 @@ body::after {
    .tab-header, .big-btn, .big-btn * {font-size: 24px !important;}
    
   .big-icon {font-size: 32px !important;}
+  small {font-size: 12px}
 }
 
 button, select, .btn, .fx-btn {
@@ -160,26 +163,36 @@ button:hover, .send-btn, .btn-selected, .btn-selected *, button:hover *, .fx-btn
 
 select {border: none; min-width: 45%}
 
-ul.select {
+ul, .select {
    list-style: none;
    margin:  0;
    padding: 2px;
    border: 1px solid grey;
    overflow: auto;
+}
+
+.select {
    height: 300px !important;
    width: 350px;
 }
 
-ul.select li, .smallEntry {
+ul li, .select li, .smallEntry {
   font-size: 12px;
    padding: 2px 6px;
 }
-ul.select li:hover {
+ul li:hover, .select li:hover {
    cursor: pointer;
 }
-ul.select li.selected {
+
+ul li.selected, .select li.selected {
    background-color: black;
    color: white;
+}
+
+.h-ul li {
+  display: inline;
+  height: default !important;
+  width: default !important;
 }
 
 .knob {
@@ -202,6 +215,7 @@ input[type=checkbox][checked] + label::before { content: '[X]';}
 .itext {
   background-color: transparent;
   border: 2px dotted black;
+  padding-right: 0 !important;
 }
 .toggle {
   border-radius: 10px;

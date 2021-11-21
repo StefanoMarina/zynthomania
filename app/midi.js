@@ -224,6 +224,30 @@ class ZynthoMidi extends EventEmitter {
   }
   
  
+ /**
+  * triggers a midi learn event, as in, the next midi message will be
+  * fired as a 'learn' message. This is triggered on all inputs. 
+  * when a midi message is received, 'learn' is emitted.
+  * @param onlyNotesAndCc 'true' will force noteon/cc.
+  */
+  midiLearn(onlyNotesAndCc) {
+    onlyNotesAndCc = (onlyNotesAndCc === undefined) ? true :onlyNotesAndCc;
+    
+    const learnCallback = (delta, msg) => {
+      if (onlyNotesAndCc) {
+        let evType = (msg[0] >> 4);
+        if (evType != 9 && evType != 11)
+          return;
+      }
+        
+      this.emit('learn', msg);
+    }
+    
+    for (let input in this.midiInputs) {
+      this.midiInputs[input].once('message', learnCallback);
+    }
+  }
+  
   /**
    * removes a bind file from the static filter map.
    * @param path full path to file
@@ -357,7 +381,6 @@ class ZynthoMidi extends EventEmitter {
       }
     }
   }
-  
   
 }
 

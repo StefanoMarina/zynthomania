@@ -79,15 +79,6 @@ function onBanksBankSelect(selectedBank) {
   });
 }
 
-function onBindsAddClick(source) {
-  let file = $('#selBinds').children('li.btn-selected').text();
-  //console.log(file);
-  if (file == "") return;
-  doAction('binds/add', {file: file}, (data) =>{
-    $(source).removeClass('btn-selected');
-    onBind();
-  });
-}
 
 function onBanksInstrumentClick(instrument) {
   doAction("loadInstrument", {'instrument': instrument, 
@@ -101,6 +92,218 @@ function onBanksInstrumentClick(instrument) {
         onToolbarChangePart(0);
     })
   }
+
+function onBindEdit() {
+  if (window.zsession.bind.current == null) {
+    window.zsession.bind.current = {
+      "type" : "trigger",
+      "cc" : 0,
+      "trigger" : 64,
+      "osc" : []
+    };
+  }
+  
+  let bind = window.zsession.bind;
+  
+  if (bind.info == null) {
+    bind.info = {source : 'cc', channel: 1}
+  }
+  
+  let item = $('#bindEditChannel');
+  
+  if ($(item).find('option').length == 0) {
+    $(item).append('<option value="all">All</option>');
+    for (let i = 1; i < 17; i++)
+      $(item).append(`<option value="${i}">${i}</option>`);
+  }
+  
+  $(item).val(bind.info.channel);
+  let current = bind.current;
+  let source = bind.info.source;
+  $('#bindEditSource').val(source);
+  $('#bindEditData1').val(current[source]);
+  $('#bindEditType').val(current.type);
+  $('#bindEditType').trigger('change');
+  
+  //refresh switch list
+  if (current['switch'] !== undefined) {
+    let switchSource = $('#bindEditSwitch');
+    $(switchSource).empty();
+    for (let key in current['switch']) {
+      $(switchSource).append(`<li>${key}</li>`);
+    }
+    
+    $(switchSource).find('li').on('click', onBindEditSwitchTableListClick);
+    
+  } else if (current['trigger'] !== undefined)
+    $('#bindEditData2').val(current['trigger']);
+  
+  
+  if (current['osc'] !== undefined)
+    bindTranslateOSC(current['osc']);
+  
+  if (bind.info.isEditing){}
+    //refresh instead of add
+}
+
+function onBindEditChange(e) {
+  let current = window.zsession.bind.current;
+  let newMode = $(e.target).val();
+  $('.bindSubEditor').addClass('hidden');
+  
+  switch (newMode) {
+    case 'trigger' :
+    $('#bindEditTrigger').removeClass('hidden');
+    $('#bindEditOSC').removeClass('hidden');
+    if (undefined === current[newMode]) {
+      if (current.fader) delete current.fader;
+      if (current.switch) delete current.switch;
+      current.trigger = 127;
+      $('#bindEditOSC').val('');
+    } else {
+      bindTranslateOSC(current['osc']);
+    }
+    
+    break;
+    case 'switch':
+    current.type = 'switch';
+     $('#bindEditSwitch').removeClass('hidden');
+     if (undefined === current[newMode]){
+       if (current.fader) delete current.fader;
+       if (current.trigger) delete current.trigger;
+       current.switch = {};
+       if(current.osc) delete current.osc;
+    }
+    break;
+    default :
+    current.type = 'fader';
+    $('#bindEditOSC').removeClass('hidden');
+    if (undefined === current[newMode]){ 
+      if (current.trigger) delete current.trigger;
+      if (current.switch) delete current.switch;
+      current.fader = newMode;
+    } else {
+      bindTranslateOSC(current['osc']);
+    }
+    break;
+  }
+  
+}
+
+function onBindEditMidilearn() {
+  doQuery('midilearn', null, (data)=>{
+    let dataType = (data[0] >> 4);
+    
+    if (dataType != 9 && dataType != 11) {
+      $('#instrumentName').text('Only CC or Note events');
+      return;
+    }
+    window.zsession.bind.info.channel = (data[0] & 0xf)+1;
+    
+    let current = window.zsession.bind.current;
+    if (dataType == 9) {
+      window.zsession.bind.info.source = 'noteon';
+      current.noteon = data[1];
+      if (current.cc) delete current.cc;
+    } else {
+      window.zsession.bind.info.source = 'cc';
+      current.cc = data[1];
+      if (current.noteon) delete current.noteon;
+    }
+    
+    if (current.trigger)
+      current.trigger = data[2];
+    else if (current['switch'] && undefined === current['switch'][data[2]])
+      current['switch'][data[2]] = "";
+      
+    onBindEdit();
+  });
+}
+
+function onBindEditSwitchListClick(e) {
+  let value = $(e.target).text();
+  window.zsession.bind.selectedSwitch = value;
+  let source = window.zsession.bind.current['switch'];
+  
+  $('#bindEditData2').val(value);
+  $('#bindEditTrigger').removeClass('hidden');
+  bindTranslateOSC(source[value]);
+  $('#bindEditOSC').removeClass('hidden');
+  $('#bindEditUpdate').removeClass('hidden');
+}
+
+function bindSaveCurrentEdit() {
+  const current = window.zsession.bind.current;
+  const switchTable = $('#bindEditSwitchTable');
+  
+   //check if there is a current edit, save
+  let selection = $(switchTable).find('li.btn-selected');
+  
+  if (selection.length != 0) {
+    let switchValue = $(selection).text();
+    let editValue = $('#bindEditData2').val();
+    
+    if (editValue != switchValue) {
+      delete current['switch'][switchValue];
+      current['switch'][editValue] = $('#bindEditOSC').val().split(/[\n\r]+/);
+    } else
+      current['switch'][switchValue] = $('#bindEditOSC').val().split(/[\n\r]+/);
+  }
+}
+
+function bindTranslateOSC(osc) {
+  $('#bindEditOSC'). val ( (Array.isArray(osc))
+      ? osc.join("\n") : osc );
+}
+
+function onBindEditSwitchAddClick() {
+  let current = window.zsession.bind.current;
+  let keys = Object.keys(current['switch']);
+  if (keys.length >= 127)
+    return; //what?
+    
+  bindSaveCurrentEdit();
+  
+  //new entry, randomic
+  let number = 64;
+  do {
+    number = Math.floor(Math.random()*128);
+  } while (keys.indexOf(number) != -1);
+  
+  number = String(number);
+  
+  current['switch'][number] = [];
+  
+  const switchTable = $('#bindEditSwitchTable');
+  $(switchTable).append(`<li>${number}</li>`);
+  let list = $(switchTable).find('li');
+  $(list[list.length-1]).on('click', onBindEditSwitchListClick);
+}
+
+function onBindEditSwitchDeleteClick() {
+  let element = $('#bindEditSwitchTable li.btn-selected');
+  if (element.length == 0)
+    return;
+  let value = $(element).text();
+  delete window.zsession.bind.current['switch'][value];
+  $(element).remove();
+  if ( $('#bindEditSwitchTable').find('li').length == 0) {
+    $('#bindEditTrigger').addClass('hidden');
+    $('#bindEditOSC').addClass('hidden');
+    $('#bindEditUpdate').addClass('hidden');
+  }
+}
+
+function onBindFileAddClick(source) {
+  let file = $('#selBinds').children('li.btn-selected').text();
+  //console.log(file);
+  if (file == "") return;
+  doAction('binds/add', {file: file}, (data) =>{
+    $(source).removeClass('btn-selected');
+    onBind();
+  });
+}
+
 
 function onScriptSendClick() {
   let data = $('#commandLine').val();

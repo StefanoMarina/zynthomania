@@ -228,6 +228,26 @@ app.get('/status/binds', function( req, res, next) {
 });
 
 /**
+ * /midilearn
+ * GET request a midi learn event
+ * Will wait for an event for 3 seconds, then sends error
+ */
+app.get('/midilearn', function(rq, res) {
+  app.zyntho.midiService.on('learn', (msg) => {
+    if (!res._headerSent)
+      res.json(msg);
+  });
+  
+  app.zyntho.midiService.midiLearn(true);
+  setInterval( ()=> {
+    if (!res._headerSent) {
+      res.statusMessage='Midi learn timeout';
+      res.status(408).end();
+    }
+  }, 3000);
+  
+});
+/**
  * /status/session
  * GET returns session info
  */

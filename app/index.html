@@ -78,13 +78,14 @@
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
                       <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
                     </div>
+                    <div class="col-12"><p>Part System FX send</p></div>
                      <div class="row col-12">
-                      <div class="col-12"><p>Part OSC &gt;&gt; Sys FX</p></div>
                       <div class="col-3 col-lg-2"><button class="knob" id="kss0"></button></div>
                       <div class="col-3 col-lg-2"><button class="knob" id="kss1"></button></div>
                       <div class="col-3 col-lg-2"><button class="knob" id="kss2"></button></div>
                       <div class="col-3 col-lg-2"><button class="knob" id="kss3"></button></div>
-                      <div class="col-12 col-lg-2"><button class="send-btn" onclick="actionMaximizeSend()"><span class="d-lg-none">Send all to </span>Max</button></div>
+                      <div class="col-12 col-lg-3">
+                        <button class="send-btn col-12" onclick="actionMaximizeSend()"><span class="d-lg-none">Send all to </span>Max</button></div>
                     </div>
                   </div>
                   <div id="pnlSystemFX" class="panel fxPanel hidden row">
@@ -113,14 +114,75 @@
                 </div> <!-- /fx content -->
               </div> <!-- /fx -->
               
+              <!-- BINDS -->
               <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
-                <div class="col-6">
-                  <ul id="selBinds" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
-                  <button class="big-btn send-btn col-12" onclick="onBindsAddClick(this);">Add </button>
-                </div>
-                <div id="pnlBindChain" class="col-6">
-                  <p style="text-align: center">Touch to remove</p>
-                  <div class="col-12" id="chainContainer">
+                <header class="col-4 tab-v br">
+                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain">Chain</button>
+                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindLoadSave()">File</button>
+                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindEdit" onclick="onBindEdit()">Edit</button>
+                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindSession" onclick="onBindSession()">Session</button>
+                </header>
+                <div class="col-8">
+                  <div id="pnlBindIO" class="bindPanel panel row hidden">
+                    <ul id="selBinds" class="select col-12" style="width: 100% !important; height:280 !important"></ul>
+                    <button class="big-btn send-btn col-12" onclick="onBindIOAddClick(this);">Add </button>
+                  </div>
+                  <div id="pnlBindChain" class="bindPanel panel hidden">
+                    <p style="text-align: center">Touch to remove</p>
+                    <div class="col-12" id="chainContainer">
+                    </div>
+                  </div>
+                  <div id="pnlBindEdit" class="bindPanel panel container hidden">
+                    <div class="row">
+                      <div class="col-6">Channel</div>
+                      <div class="col-6">
+                          <select id="bindEditChannel" value="0">
+                          </select>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="hidden d-md-inline col-md-4">Event</div>
+                      <div class="col-6 col-md-4">
+                        <select id="bindEditSource" class="btn-selected col-12" style="text-align: center; border-radius:2em" value="CC">
+                          <option value="cc">CC</option>
+                          <option value="noteon">noteon</option>
+                        </select>
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <input id="bindEditData1" type="number" class="itext col-12" value="0">
+                      </div>
+                    </div>
+                    <div class="row bb">
+                      <div class="col-2"><p>Type:</p></div>
+                      <div class="col-10"><select class="col-12" id="bindEditType">
+                        <option value="trigger">Trigger</option>
+                        <option value="switch">Switch</option>
+                        <option value="abs">Fader/Absolute</option>
+                        <option value="int">Fader/Integer</option>
+                        <option value="float">Fader/Float</option>
+                        <option value="boolean">Fader/Bool</option>
+                      </select></div>
+                    </div>
+                    <div class="row no-gutters hidden bindSubEditor" id="bindEditSwitch">
+                      <div class="col-8">
+                        <ul id="bindEditSwitchTable" class="h-ul col-12">
+                        </ul>
+                      </div>
+                      <div class="col-2"><button class="col-12 tc btn" onclick="onBindEditSwitchAddClick()"><i class="fa fa-plus"></i></button></div>
+                      <div class="col-2"><button class="col-12 tc btn" onclick="onBindEditSwitchDeleteClick()"><i class="fa fa-trash-alt"></i></button></div>
+                    </div>
+                    
+                    <div class="row hidden no-gutters bindSubEditor" id="bindEditTrigger">
+                      <div class="col-6">Value:</div>
+                      <div class="col-6"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
+                    </div>
+                    <div class="row" id="oscParameters">
+                      <div class="col-12 col-md-2">OSC <span class="d-md-none">parameters:</span></div>
+                      <p class="col-12"><small>Separate with new line for bundle</small></p>
+                      <div class="col-12 col-md-10"><textarea id="bindEditOSC" class="col-12 bindSubEditor"></textarea></div>
+                    </div>
+                    <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
+                    <button class="send-btn col-12" onclick="onBindEditMidilearn()">Midi Learn</button>
                   </div>
                 </div>
               </div> <!-- /binds -->
@@ -212,18 +274,12 @@
         "partID": 0, //current part id
         "partefx" : new Array(15), //last part efx query
          fx : { path : ''}, //fx panel data
-         banks : {} //banks panel data
+         banks : {}, //banks panel data
+         bind : {
+           current : null,
+           info : { channel : 1, source: 'cc'}
+           } //bind editor data
       };
-      
-      /*window.zsession.getPart = function(id) {
-        if (id === undefined)
-          id = window.zsession.partID;
-        
-        if (window.zsession.parts[id] === undefined)
-          window.zsession.parts[id] == { partefx : []}
-        
-        return window.zsession.parts[id];
-      }*/
       
       window.zsession.sanitize = function (path) {
         if (path.search('part/') > 0)
@@ -333,9 +389,6 @@
         });
       }
       
-  
-      
-     
      function actionMaximizeSend() {
        let script = `/Psysefxvol[0-3]/part${window.zsession.partID} 127`;
        doAction('script', {script: script}, (data) => {
@@ -347,13 +400,7 @@
      }
       
       /* Bank button load */
-      
-      
-
-      
-      
-      
-
+ 
       function setFavorite (instrument, value) {
         let action = (value) ? 'set' : 'unset';
         
@@ -387,14 +434,7 @@
           }
         });
       }
-      
-      
-
-      
-      
-      
-      
-      /**
+     /**
        Init 
        */
            
@@ -464,9 +504,11 @@
             }
           });
           
-          
+          /*
+          Unordered lists
+          */
           //Double filter is necessary or new elements won't be looked up
-          $('ul.select').on('click', 'li', function(e){
+          $('ul, .select').on('click', 'li', function(e){
             var item = $(e.target);
             item.addClass('btn-selected');
             item.siblings().removeClass('btn-selected');
@@ -504,25 +546,7 @@
             let instrument = window.zsession.instrument;
             setFavorite(instrument, (!isFavorite(instrument)));
           });
-         
-        
-          $('.check').on('click', function() {
-            $(this).attr('data-check', $(this).attr('data-check') == 'true' ? 'false' : 'true');
-            console.log('check!');
-          });
-          
-          $('.toggle').on('click', function() {
-            if( $(this).hasClass('btn-selected'))
-              $(this).removeClass('btn-selected');
-            else {
-              let group = $(this).attr('data-group');
-              if ( group !== undefined)
-                $(`.toggle[data-group=${group}]`).removeClass('btn-selected');
-              $(this).addClass('btn-selected');
-            }
-          })
-        
-          
+             
           $('#applyRoute').on('click', function() {
             const route = {};
             route.send = window.knobs['routeSend'].getValue();
@@ -541,8 +565,42 @@
             doAction('fx/dry', {dry: dry});
           })
       
+      
+          $('#scriptSend').on('click', (e)=>{
+            let value = $('#selScripts').children('li.btn-selected').text();
+            if (value == "" || value == null)
+              return;
+            doAction('script', {script: `/zmania/run_script '${value}'`},
+                (done) =>{
+                $('#instrumentName').text(`Run ${value}`);
+            });
+          });
+          
+        /*
+        * Check
+        TODO: still needed?
+        */
+          $('.check').on('click', function() {
+            $(this).attr('data-check', $(this).attr('data-check') == 'true' ? 'false' : 'true');
+            console.log('check!');
+          });
+          
+          /*
+          Toggle buttons
+          */
+          $('.toggle').on('click', function() {
+            if( $(this).hasClass('btn-selected'))
+              $(this).removeClass('btn-selected');
+            else {
+              let group = $(this).attr('data-group');
+              if ( group !== undefined)
+                $(`.toggle[data-group=${group}]`).removeClass('btn-selected');
+              $(this).addClass('btn-selected');
+            }
+          })
+          
           /**
-          bind actions
+         UADSR bind actions
           */
           $('.btnUADSR').on('click', (e) =>{
             $('.btnUADSR').removeClass('btn-selected');
@@ -576,15 +634,13 @@
               });
           });
           
-          $('#scriptSend').on('click', (e)=>{
-            let value = $('#selScripts').children('li.btn-selected').text();
-            if (value == "" || value == null)
-              return;
-            doAction('script', {script: `/zmania/run_script '${value}'`},
-                (done) =>{
-                $('#instrumentName').text(`Run ${value}`);
-            });
-          });
+          
+          /*
+          Bind editor
+          */
+          
+          $('#bindEditType').on('change', onBindEditChange);
+          
           /**
           Init actions
           - get favorites
