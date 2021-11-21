@@ -82,6 +82,8 @@ class ZynthoServer extends EventEmitter {
      * default configuration. this will NOT take into account cartridge_dir.
      */
     if (this.IO.workingDir.toLowerCase() != frameworkPath.toLowerCase()) {
+      console.log(`<6> New working path: ${this.IO.workingDir}`);
+      
       console.log('<5> Reading new configuration file.');
       try {
         let data = Fs.readFileSync(`${this.IO.workingDir}/config.json`, 'utf-8');
@@ -191,6 +193,14 @@ class ZynthoServer extends EventEmitter {
           });
         });
        
+       /*
+        * See if the default session is present
+        */
+        let defSes = `${this.IO.workingDir}/sessions/default.xmz`;
+        if (Fs.existsSync(defSes)) {
+          console.log('<6> Loading default session.');
+          this.sessionLoad('default.xmz');
+        }
     });
     
     this.osc.on('error', (err) => {
@@ -916,7 +926,7 @@ class ZynthoServer extends EventEmitter {
     this.once(`/damage`, () =>{
       //see if you need to apply route
       if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
-         this.route(partID, undefined);
+         this.route(undefined, undefined);
        }
     });
     
@@ -934,7 +944,9 @@ class ZynthoServer extends EventEmitter {
     }
     
     file = (file === undefined) ? 'default.xmz' : file;
-    this.osc.send(`/save_xmz ${this.IO.workingDir}/sessions/${file}`);
+    this.osc.send(this.parser.translate(
+      `/save_xmz '${this.IO.workingDir}/sessions/${file}'`
+    ));
   }
 }
 

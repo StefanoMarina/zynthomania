@@ -122,7 +122,7 @@ module.exports.registerOSC = function (zynServer) {
      try {
        zyn.sessionSave(args[0].value);
      } catch (err) {
-       console.log(`<3> session load error: ${err}`);
+       console.log(`<3> session save error: ${err}`);
      }
    });
 }

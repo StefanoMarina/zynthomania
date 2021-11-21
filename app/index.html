@@ -28,6 +28,7 @@
               <td><button onclick="onToolbarChangePart(-1)" class="big-btn">&lt;</button></td>
               <td><span id="currentPart" class="big-btn">1</span></td>
               <td><button onclick="onToolbarChangePart(1)" class="big-btn">&gt;</button></td>
+              <td><button id="btnClearPart" class="big-btn"><i class="fa fa-trash-alt"></i></button></td>
             </tr>
           </table>
         
@@ -36,7 +37,7 @@
           <div class="row">
             <div class="col-12 tab">
               <header class="d-flex flex-row tab-h">
-                <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks"><a>Banks</a></button>
+                <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks">Banks</button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds"><a>Binds</a></button>
                 <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
@@ -51,7 +52,7 @@
               
               <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()")>Dry</button>
+                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()">Dry</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="onFxPart()">Part</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onFxRoute()">Route</button>
                   <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="onFxSystem()">System</button>
@@ -142,16 +143,22 @@
                 </div><!-- /scripts -->
               </div>
               
-              
               <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 no-gutters tab-v br">
                   <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
+                  <button class="tab-header" data-tab="sysPanel" data-open="pnlSession" onclick="onSystemSession();">Session</button>
                   <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
                 </header>
                 <div class="col-8"> <!-- fx content container -->
                   <div id="pnlMIDI" class="sysPanel panel hidden row">
                     <div class="col-12" id="sysMidiContainer">
                     </div>
+                  </div>
+                  <div id="pnlSession" class="sysPanel panel hidden row">
+                    <p id="sysCurSession"></p>
+                    <ul id="sysSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
+                    <button class="big-btn send-btn col-6" onclick="onSystemSessionLoadClick()">Load</button>
+                    <button class="big-btn send-btn col-6" onclick="onSystemSessionSaveClick()">Save</button>
                   </div>
                   <div id="pnlUADSR" class="sysPanel panel hidden row">
                     <div class="col-12 row no-gutters">
@@ -470,6 +477,12 @@
           /**
           Button actions
           */
+          $('#btnClearPart').on('click', ()=>{
+            doAction('script', {script: `/part${window.zsession.partID}/clear`},
+              () => {
+                $('#instrumentName').text('Cleared');
+              });
+          });
           $('#btnBinds').on('click', ()=>{onBind();});
           
           $('#btnBanks').on('click', function() { onBanks(); });

@@ -226,7 +226,19 @@ app.get('/status/binds', function( req, res, next) {
     res.status(500).end();
   }
 });
- 
+
+/**
+ * /status/session
+ * GET returns session info
+ */
+app.get('/status/session', function (rq, res) {
+  console.log("[GET] /status/session/");
+  let result = {};
+  result.sessionList = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"sessions");
+  result.currentSession = app.zyntho.lastSession;
+  res.json(result);
+});
+
 /**
  * /fx/part/next_fx
  * POST

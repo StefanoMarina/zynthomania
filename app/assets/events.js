@@ -161,92 +161,6 @@ function onBind() {
     });
   });
 }
-      
-function onSystemMIDI() {
-  doQuery('status/midi', null, (data) => {
-    
-//          data = JSON.parse(data);
-    if (Object.prototype.toString.call(data) !== '[object Array]') {
-      console.log("Error: data is not array.");
-      console.log(data);
-      return;
-    }
-    
-    //data is array
-    let midiCont = $('#sysMidiContainer');
-    $(midiCont).empty();
-    
-    
-    data.forEach( (item) => {
-      
-      let plugged = (item.connections !== undefined && 
-                item.connections.indexOf(zynConnection.plug) > -1);
-      let selClass = (item.connected) ? "btn-selected" : "";
-      
-      let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.port}">${item.name}`+"</button>";
-      $(midiCont).append(content);
-    });
-    
-    $(midiCont).children('button').on('click', (e) => {
-      let target = $(e.target);
-      let plugged = $(target).hasClass('btn-selected');
-      
-      doAction('status/midi/plug', 
-        {'name': $(target).val(), 'status': !plugged}, (data) =>{
-          onSystemMIDI();
-        });
-    });
-  });
-}
-      
-function onSystemUADSR(type) {
-  doQuery("status/options", null, (data) => {
-    let uadsr = data.uadsr;
-    
-    $('.uadsrControl').addClass('hidden');
-    
-    if (type === undefined) type = uadsr.type;
-    $(`#pnlUADSR button[value=${type}]`).addClass('btn-selected');
-    let query = null;
-    
-    switch (type) {
-      case "none": break;
-      case "uadsr4":
-        $('#u4config p').text('General ADSR');
-        $('#u4config, #u4switch, #uadsrApply').removeClass('hidden');
-        
-        query = $('#u4config input');
-        for (let i = 0; i < 4; i++)
-          query[i].value = uadsr['uadsr4_binds'][i];
-          
-        $('#u4switch input').val(uadsr['uadsr4_binds'][4]);
-      break;
-      case "uadsr8":
-        $('#u4config p').text('Amplitude');
-        $('#u4config, #u8config, #uadsrApply').removeClass('hidden');
-        
-        query = $('#u4config input');
-        for (let i = 0; i < 4; i++)
-          query[i].value = uadsr['uadsr8_binds'][i];
-          
-        query = $('#u8config input');
-        for (let i = 0; i < 4; i++)
-          query[i].value = uadsr['uadsr8_binds'][i+4];
-      break;
-    }
-  });
-}
-
-function onScript() {
-  doQuery("files/scripts", null, (data) =>{
-    console.log(data);
-   const ul=$('#selScripts');
-    $(ul).empty();
-    data.forEach( (item) => {
-      $(ul).append('<li>'+item+'</li>');
-    });
-  });
-}
 
 function onFxDry() {
   doQuery('status/options', null, (data) => {
@@ -313,3 +227,150 @@ function onFxSystem() {
         window.buttons[`btnsfx${i}`].setFX(data.efx[i]);
   });
 }
+
+
+
+function onScript() {
+  doQuery("files/scripts", null, (data) =>{
+    console.log(data);
+   const ul=$('#selScripts');
+    $(ul).empty();
+    data.forEach( (item) => {
+      $(ul).append('<li>'+item+'</li>');
+    });
+  });
+}
+      
+function onSystemMIDI() {
+  doQuery('status/midi', null, (data) => {
+    
+//          data = JSON.parse(data);
+    if (Object.prototype.toString.call(data) !== '[object Array]') {
+      console.log("Error: data is not array.");
+      console.log(data);
+      return;
+    }
+    
+    //data is array
+    let midiCont = $('#sysMidiContainer');
+    $(midiCont).empty();
+    
+    
+    data.forEach( (item) => {
+      
+      let plugged = (item.connections !== undefined && 
+                item.connections.indexOf(zynConnection.plug) > -1);
+      let selClass = (item.connected) ? "btn-selected" : "";
+      
+      let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.port}">${item.name}`+"</button>";
+      $(midiCont).append(content);
+    });
+    
+    $(midiCont).children('button').on('click', (e) => {
+      let target = $(e.target);
+      let plugged = $(target).hasClass('btn-selected');
+      
+      doAction('status/midi/plug', 
+        {'name': $(target).val(), 'status': !plugged}, (data) =>{
+          onSystemMIDI();
+        });
+    });
+  });
+}
+
+function onSystemSession() {
+  doQuery('status/session', null, (data) =>{
+    const currentSession = data.currentSession;
+    const sessionList = data.sessionList;
+    
+    $('#sysCurSession').text( (currentSession != null)
+        ? currentSession : 'New session' );
+    
+    const list = $('#sysSessionList');
+    
+    $(list).empty();
+    sessionList.unshift('(Save to new session)');
+    sessionList.forEach( (item) => {
+      const li = `<li>${item}</li>`;
+      $(list).append(li);
+    });
+  });
+}
+
+function onSystemSessionSaveClick() {
+  let select = $('#sysSessionList').find('li.btn-selected');
+  if (select.length == 0)
+    return;
+  let filename = $(select).text();
+  
+  if (filename.match(/^\(Save to new session\)/)) {
+    filename = prompt ("New session name:", "default.xmz");
+    if (filename == null)
+      return;
+    if (!filename.match(/\.xmz$/)) {
+      alert('Please save as .xmz file.');
+      return;
+    }
+    if ($('#sysCurSession').find(`li:contains(${filename})`)) {
+      let res = confirm(`${filename} exists! Overwrite?`)
+      if (!res) return;
+    }
+  }
+  
+  doAction('script', {script : `/zmania/save_xmz '${filename}'`}, () =>{
+    onSystemSession();
+  });
+}
+
+function onSystemSessionLoadClick() {
+  let select = $('#sysSessionList').find('li.btn-selected');
+  if (select.length == 0)
+    return;
+  let filename = $(select).text();
+  if (filename.match(/^\(Save to new session\)/)) 
+    return;
+  
+  doAction('script', {script :`/zmania/load_xmz '${filename}'`}, () =>{
+    $('#instrumentName').text('Loaded session.');
+    onSystemSession();
+  });
+}
+
+function onSystemUADSR(type) {
+  doQuery("status/options", null, (data) => {
+    let uadsr = data.uadsr;
+    
+    $('.uadsrControl').addClass('hidden');
+    
+    if (type === undefined) type = uadsr.type;
+    $(`#pnlUADSR button[value=${type}]`).addClass('btn-selected');
+    let query = null;
+    
+    switch (type) {
+      case "none": break;
+      case "uadsr4":
+        $('#u4config p').text('General ADSR');
+        $('#u4config, #u4switch, #uadsrApply').removeClass('hidden');
+        
+        query = $('#u4config input');
+        for (let i = 0; i < 4; i++)
+          query[i].value = uadsr['uadsr4_binds'][i];
+          
+        $('#u4switch input').val(uadsr['uadsr4_binds'][4]);
+      break;
+      case "uadsr8":
+        $('#u4config p').text('Amplitude');
+        $('#u4config, #u8config, #uadsrApply').removeClass('hidden');
+        
+        query = $('#u4config input');
+        for (let i = 0; i < 4; i++)
+          query[i].value = uadsr['uadsr8_binds'][i];
+          
+        query = $('#u8config input');
+        for (let i = 0; i < 4; i++)
+          query[i].value = uadsr['uadsr8_binds'][i+4];
+      break;
+    }
+  });
+}
+
