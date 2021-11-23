@@ -364,7 +364,7 @@ class ZynthoServer extends EventEmitter {
      
      var _this = this;
      
-     if (onQuery !== undefined && onQuery != null) {
+     if(onQuery !== undefined && onQuery != null) {
        if (message.packets === undefined) {
          _this.once (message.address, (msg) => {onQuery(msg)});
        } else {

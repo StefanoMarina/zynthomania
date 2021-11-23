@@ -117,15 +117,19 @@
               <!-- BINDS -->
               <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
                 <header class="col-4 tab-v br">
-                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain">Chain</button>
-                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindLoadSave()">File</button>
+                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain" onclick="onBindChain()">Chain</button>
+                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindFile()">File</button>
                   <button class="tab-header" data-tab="bindPanel" data-open="pnlBindEdit" onclick="onBindEdit()">Edit</button>
                   <button class="tab-header" data-tab="bindPanel" data-open="pnlBindSession" onclick="onBindSession()">Session</button>
                 </header>
                 <div class="col-8">
-                  <div id="pnlBindIO" class="bindPanel panel row hidden">
+                  <div id="pnlBindIO" class="bindPanel panel hidden">
                     <ul id="selBinds" class="select col-12" style="width: 100% !important; height:280 !important"></ul>
-                    <button class="big-btn send-btn col-12" onclick="onBindIOAddClick(this);">Add </button>
+                    <div class="row">
+                      <button class="big-btn send-btn col-12 col-lg-4" onclick="onBindFileAddClick(this);">Add to chain</button>
+                      <button class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileEditClick();">Edit</button>
+                      <button id="bindSave" class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileSaveClick();">Save</button>
+                    </div>
                   </div>
                   <div id="pnlBindChain" class="bindPanel panel hidden">
                     <p style="text-align: center">Touch to remove</p>
@@ -168,10 +172,11 @@
                         <ul id="bindEditSwitchTable" class="h-ul col-12">
                         </ul>
                       </div>
-                      <div class="col-2"><button class="col-12 tc btn" onclick="onBindEditSwitchAddClick()"><i class="fa fa-plus"></i></button></div>
-                      <div class="col-2"><button class="col-12 tc btn" onclick="onBindEditSwitchDeleteClick()"><i class="fa fa-trash-alt"></i></button></div>
+                      <div class="col-4 no-gutters row">
+                        <button class="col-6 tc btn" onclick="onBindEditSwitchAddClick()"><i class="fa fa-plus"></i></button>
+                        <button class="col-6 tc btn" onclick="onBindEditSwitchDeleteClick()"><i class="fa fa-trash-alt"></i></button>
+                      </div>
                     </div>
-                    
                     <div class="row hidden no-gutters bindSubEditor" id="bindEditTrigger">
                       <div class="col-6">Value:</div>
                       <div class="col-6"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
@@ -182,8 +187,24 @@
                       <div class="col-12 col-md-10"><textarea id="bindEditOSC" class="col-12 bindSubEditor"></textarea></div>
                     </div>
                     <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
-                    <button class="send-btn col-12" onclick="onBindEditMidilearn()">Midi Learn</button>
+                    <div class="row">
+                      <div class="col-12 col-md-6"><button class="send-btn col-12" onclick="onBindEditMidilearn()">Midi Learn</button></div>
+                      <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
+                    </div>
                   </div>
+                  
+                  <div id="pnlBindSession" class="bindPanel panel hidden">
+                    <div class="row no-gutters">
+                        <div class="header col-2 tc">Ch</div>
+                        <div class="header col-5 tc">Event</div>
+                        <div class="header col-5 tc">Edit</div>
+                    </div>
+                    <div id="bindSessionTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
+                      
+                    </div>
+                  <p>Session is empty. 'Edit' to add.</p>
+                  </div>
+                  
                 </div>
               </div> <!-- /binds -->
               
@@ -216,11 +237,13 @@
                     <div class="col-12" id="sysMidiContainer">
                     </div>
                   </div>
-                  <div id="pnlSession" class="sysPanel panel hidden row">
+                  <div id="pnlSession" class="sysPanel panel hidden">
                     <p id="sysCurSession"></p>
                     <ul id="sysSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
-                    <button class="big-btn send-btn col-6" onclick="onSystemSessionLoadClick()">Load</button>
-                    <button class="big-btn send-btn col-6" onclick="onSystemSessionSaveClick()">Save</button>
+                    <div class="row">
+                      <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionLoadClick()">Load</button></div>
+                      <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionSaveClick()">Save</button></div>
+                    </div>
                   </div>
                   <div id="pnlUADSR" class="sysPanel panel hidden row">
                     <div class="col-12 row no-gutters">
@@ -525,7 +548,6 @@
                 $('#instrumentName').text('Cleared');
               });
           });
-          $('#btnBinds').on('click', ()=>{onBind();});
           
           $('#btnBanks').on('click', function() { onBanks(); });
           $('#selBanks').on('click', 'li', function(e) {

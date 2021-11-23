@@ -38,7 +38,15 @@ class ZynthoMidi extends EventEmitter {
     this.knot.setEmitOnly(true);
     this.filterList = [];
     this.baseFilterMap = null;
+    
+    //Midi instrument map. still single map
     this.instrumentMap = null;
+    
+    //Session map. this is the currently edited session.
+    this.sessionMap = null;
+    
+    //Session config. this is the currently edited session.
+    this.sessionConfig = null;
     
     this.cartridgeDir = IODir + "/binds";
     
@@ -268,6 +276,8 @@ class ZynthoMidi extends EventEmitter {
    * files that are not instrument binds.
    * This should be avoided for live perfomances as it is a bit time consuming,
    * each filter list must be reloaded.
+   * Filter chain:
+   * [default.json]>[static filters]>[midi filter]>[uadsr]>[instrument]>[session]
    * @param force (default=false) if true, reloads the default bindings 
    */
   refreshFilterMap(force) {
@@ -289,23 +299,31 @@ class ZynthoMidi extends EventEmitter {
       }
     }
     
-    let map = null;
+    let map = this.baseFilterMap;
+    let mapMerge = [];
     
-    //if present, merge with uadsr map
-    if (this.baseFilterMap != null &&
-          this.uadsrConfig.type != "none" && this._uadsr != null) {
-      map = KNOT.FilterMap.merge(this.baseFilterMap, 
-            this._uadsr.getFilterMap(this.uadsrConfig.mode));
-    } else {
-      map = this.baseFilterMap;
+    if (this._uadsr != null && this.uadsrConfig.type != "none")
+      mapMerge.push(this._uadsr.getFilterMap(this.uadsrConfig.mode));
+    if (this.instrumentMap != null)
+      mapMerge.push(this.instrumentMap);
+    
+    if (this.sessionMap != null) {
+      mapMerge.push(this.sessionMap);
+    } else if (this.sessionConfig != null) {
+      try {
+        this.sessionMap = new KNOT.FilterMap(this.sessionConfig, false)
+        mapMerge.push(this.sessionMap);
+      } catch (err) {
+        console.log(`<3> Invalid session filter map : ${err}`);
+      }
     }
     
-    if (this.instrumentMap != null && map != null) {
-      this.knot.filterMap = KNOT.FilterMap.merge(map,this.instrumentMap);
-    } else if (map != null) {
+    mapMerge.forEach( (fmap) => {
+      map =  ( map == null) ? fmap : KNOT.FilterMap.merge(map, fmap);
+    });
+    
+    if (map != null)
       this.knot.filterMap = map;
-    } else if (this.instrumentMap != null)
-      this.knot.filterMap = this.instrumentMap;
     
    // console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
   }

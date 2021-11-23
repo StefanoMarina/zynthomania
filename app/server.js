@@ -216,6 +216,7 @@ app.get('/status/binds', function( req, res, next) {
   let list = app.zyntho.midiService.filterList;
   result.chain = list.map( item => item.match(/[^/]+$/)[0]);
   result.hasInstrument = app.zyntho.midiService.instrumentMap != null;
+  result.sessionConfig = app.zyntho.midiService.sessionConfig;
   
   try {
     result.files = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"binds");
@@ -225,6 +226,15 @@ app.get('/status/binds', function( req, res, next) {
     console.log(`Error on file parsing: ${err}`);
     res.status(500).end();
   }
+});
+
+app.get('binds/session', function (rq, res) {
+  console.log('[GET] bind session query');
+  
+  if (app.zyntho.midiService.sessionConfig == null) {
+    res.json({});
+  } else
+    res.json(app.zyntho.midiService.sessionConfig);
 });
 
 /**
@@ -247,6 +257,7 @@ app.get('/midilearn', function(rq, res) {
   }, 3000);
   
 });
+
 /**
  * /status/session
  * GET returns session info
@@ -458,6 +469,85 @@ app.post('/binds/remove', function(req, res) {
       console.log("<3> "+err);
       res.status(500).end();
     }
+  }
+});
+
+app.post('/binds/session', function (req, res) {
+  console.log(`[POST] bind session query ${JSON.stringify(req.body.file)}`);
+  if (req.body.file === undefined){
+     res.status(400).end();
+     return;
+  }
+  
+  let file = app.zyntho.midiService.cartridgeDir + `/${req.body.file}`;
+  if (!Fs.existsSync(file)) {
+    res.statusMessage='Invalid file.';
+    res.status(404).end();
+    return;
+  }
+  
+  try {
+    let sessionData = JSON.parse(Fs.readFileSync(file));
+    app.zyntho.midiService.sessionConfig = sessionData;
+    app.zyntho.midiService.sessionMap = null;
+    app.zyntho.midiService.refreshFilterMap(false);
+    res.json(sessionData);
+  } catch (err) {
+    console.log(`<3>: ${err}`);
+    res.statusMessage='Invalid session file';
+    res.status(402).end();
+  }
+});
+
+app.post('/binds/session/set', function (req, res) {
+  console.log(`[POST] Session set request: ${JSON.stringify(req.body.session)}`);
+  
+  if (req.body.session === undefined){
+     res.status(400).end();
+     return;
+  }
+  
+  app.zyntho.midiService.sessionConfig = req.body.session;
+  app.zyntho.midiService.sessionMap = null;
+  
+  try {
+    app.zyntho.midiService.refreshFilterMap(false);
+    res.end();
+  } catch (err) {
+    console.log(`<3>: ${err}`);
+    res.statusMessage='Invalid session file';
+    res.status(402).end();
+  }
+});
+
+app.post('/binds/session/save', function (req, res) {
+  console.log(`[POST] Session save request: ${JSON.stringify(req.body.file)}`);
+  
+  if (req.body.file === undefined){
+     res.status(400).end();
+     return;
+  }
+  if (app.zyntho.IO.readOnlyMode){
+    res.statusMessage='System is read only.';
+    res.status(403).end();
+    return;
+  }
+  if (app.zyntho.midiService.sessionConfig == null) {
+    res.statusMessage='Empty session binding';
+    res.status(403).end();
+    return;
+  }
+  
+  let bindDir = app.zyntho.midiService.cartridgeDir+`/${req.body.file}`;
+  
+  try {
+    Fs.writeFile(bindDir, JSON.stringify(app.zyntho.midiService.sessionConfig,null,2), 'utf-8', ()=>{
+      res.end();
+    });
+  } catch (err) {
+    console.log(`<3> Cannot save file: ${err}`);
+    res.statusMessage='Cannot save!';
+    res.status(500).end();
   }
 });
 

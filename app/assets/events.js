@@ -93,14 +93,76 @@ function onBanksInstrumentClick(instrument) {
     })
   }
 
-function onBindEdit() {
-  if (window.zsession.bind.current == null) {
+function onBindChain() {
+  doQuery("status/binds", null, (data) =>{
+    
+    const chain = $('#chainContainer');
+    $(chain).empty();
+    
+    if (data.chain == null || data.chain.length == 0)
+      return;
+    
+    data.chain.forEach( (item) => {
+      $(chain).append('<div class="col-12 panel"><button class="col-12 smallEntry">'+item+'</button></div>');
+    });
+    if (data.hasInstrument) {
+      $(chain).append('<button class="col-12 smallEntry" data-remove="instrument">Remove instrument bind</button>');
+    }
+    
+    $(chain).find('button').on('click', (e) => {
+      let value = 
+       ($(e.target).attr('data-remove') !== undefined) 
+          ? "instrument"
+          : $(e.target).text();
+          
+      doAction('binds/remove', {file : value}, (data) =>{
+            onBind();
+      });
+        
+    });
+  });
+}
+
+function onBindFile() {
+  
+    
+  
+  doQuery("status/binds", null, (data) =>{
+  
+    window.zsession.bind.session = data.sessionConfig;
+    
+    const saveMode = window.zsession.bind.session != null
+    && Object.keys(window.zsession.bind.session).length > 0;
+    
+    const ul=$('#selBinds');
+    
+    $(ul).empty();
+    if (saveMode)
+      $(ul).append('(Save to new file)');
+    data.files.forEach( (item) => {
+      $(ul).append('<li>'+item+'</li>');
+    });
+    
+    if (saveMode)
+      $('#bindSave').removeClass('hidden');
+    else
+      $('#bindSave').addClass('hidden');
+  });
+}
+
+function onBindEdit(config) {
+  if (config === undefined) {
     window.zsession.bind.current = {
       "type" : "trigger",
       "cc" : 0,
       "trigger" : 64,
       "osc" : []
     };
+    $('#bindApply').text('Add');
+    
+  } else {
+    window.zsession.bind.current = config;
+    $('#bindApply').text('Update');
   }
   
   let bind = window.zsession.bind;
@@ -140,10 +202,79 @@ function onBindEdit() {
   
   
   if (current['osc'] !== undefined)
-    bindTranslateOSC(current['osc']);
+    bindSetOSC(current['osc']);
   
   if (bind.info.isEditing){}
     //refresh instead of add
+}
+
+function onBindEditApply() {
+  let current = window.zsession.bind.current;
+  let info = window.zsession.bind.info;
+  
+  let d1source= $('#bindEditSource').val();
+  
+  console.log(`::onBindEditApply: changing ${d1source} to ${$('#bindEditData1').val()}`);
+  
+  switch (d1source)  {
+    case 'noteon' :
+      current.noteon = $('#bindEditData1').val();
+      delete current.cc;
+    break;
+    case 'cc':
+      current.cc = $('#bindEditData1').val();
+      delete current.noteon;
+    break;
+  }
+  
+  let type = $('#bindEditType').val();
+  ['switch','trigger','fader'].forEach( (tt) => {
+    if (current[tt] && tt != type)
+        delete current[tt];
+  });
+  
+  switch (type) {
+    case 'trigger': 
+      current[type] = $('#bindEditData2').val();  
+      current.osc = $('#bindEditOSC').val().split(/[\n\r]+/);
+    break;
+    case 'switch' : bindSaveCurrentEdit(); break;
+    default: 
+      current['fader'] = type;
+      current.osc = $('#bindEditOSC').val().split(/[\n\r]+/);
+    break;
+  }
+  
+  let newChannel = String($('#bindEditChannel').val());
+  
+  if (window.zsession.bind.session == null)
+    window.zsession.bind.session = {};
+  
+  let session =  window.zsession.bind.session;
+  
+  //find if new config and channel !=, remove old position
+  if (newChannel != info.channel && (info.channel != null
+            && session[info.channel] != null)) {
+    console.log('::onBindEditApply: divergent channel');
+    let index = session[info.channel].indexOf(current);
+    if (index != -1) {
+      console.log('::onBindEditApply: bind found, removing.');
+      session[info.channel].splice(index, 1);
+    }
+  }
+
+  //if unset, add
+  if (session[newChannel] == null)
+      session[newChannel] = [];
+    
+  if (session[newChannel].indexOf(current) == -1) {
+    console.log('::onBindEditApply: bind not found, adding.');
+    session[newChannel].push(current);
+  }
+
+  $('#bindApply').text('Update');
+  
+  bindUpdateRemoteSession();
 }
 
 function onBindEditChange(e) {
@@ -161,7 +292,7 @@ function onBindEditChange(e) {
       current.trigger = 127;
       $('#bindEditOSC').val('');
     } else {
-      bindTranslateOSC(current['osc']);
+      bindSetOSC(current['osc']);
     }
     
     break;
@@ -183,7 +314,7 @@ function onBindEditChange(e) {
       if (current.switch) delete current.switch;
       current.fader = newMode;
     } else {
-      bindTranslateOSC(current['osc']);
+      bindSetOSC(current['osc']);
     }
     break;
   }
@@ -227,7 +358,7 @@ function onBindEditSwitchListClick(e) {
   
   $('#bindEditData2').val(value);
   $('#bindEditTrigger').removeClass('hidden');
-  bindTranslateOSC(source[value]);
+  bindSetOSC(source[value]);
   $('#bindEditOSC').removeClass('hidden');
   $('#bindEditUpdate').removeClass('hidden');
 }
@@ -251,9 +382,21 @@ function bindSaveCurrentEdit() {
   }
 }
 
-function bindTranslateOSC(osc) {
+function bindSetOSC(osc) {
   $('#bindEditOSC'). val ( (Array.isArray(osc))
       ? osc.join("\n") : osc );
+}
+
+function bindUpdateRemoteSession() {
+  let session = window.zsession.bind.session;
+  if (session == null || Object.keys(session).length == 0) {
+    $('#instrumentName').text('No session to save');
+    return;
+  }
+  
+  doAction('binds/session/set', {'session': session}, (data) =>{
+    $('#instrumentName').text('Session updated');
+  });
 }
 
 function onBindEditSwitchAddClick() {
@@ -294,7 +437,7 @@ function onBindEditSwitchDeleteClick() {
   }
 }
 
-function onBindFileAddClick(source) {
+function onBindFileAddClick (source) {
   let file = $('#selBinds').children('li.btn-selected').text();
   //console.log(file);
   if (file == "") return;
@@ -304,65 +447,115 @@ function onBindFileAddClick(source) {
   });
 }
 
-
-function onScriptSendClick() {
-  let data = $('#commandLine').val();
-  doAjax({method:'post', url: window.location.href+"script",
-          data: JSON.stringify({script: data}), 
-          contentType: 'application/json; charset=utf-8'},
-          function(){
-  });
-}
+function onBindFileEditClick() {
+  let file = $('#selBinds').children('li.btn-selected').text();
+  if (file == "") return;
   
-function onToolbarChangePart(index) {
-  if (window.zsession.partID+index < 0)
-    window.zsession.partID = 15;
-  else if (window.zsession.partID+index > 15)
-    window.zsession.partID = 0;
-  else
-    window.zsession.partID += index;
-  $('#currentPart').text( ('0'+window.zsession.partID).substr(-2) );
-  
-  //retrieve part info
-  doQuery('status/part', {id: window.zsession.partID}, (data) => {
-    console.log(data);
-    if (data.name == '') data.name = 'Unloaded';
-    $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
-  });
-  
-  //any active panel must be re-triggered
-  $('.controlPanel tab-header.btn-selected').trigger('click');
-}
-
-function onBind() {
-  doQuery("status/binds", null, (data) =>{
-    const ul=$('#selBinds');
-    $(ul).empty();
-    data.files.forEach( (item) => {
-      $(ul).append('<li>'+item+'</li>');
-    });
+  doAction('binds/session', {'file': file}, 
+    (data) => {
+      
+    window.zsession.bind.session = data;
     
-    const chain = $('#chainContainer');
-    $(chain).empty();
-    data.chain.forEach( (item) => {
-      $(chain).append('<div class="col-12 panel"><button class="col-12 smallEntry">'+item+'</button></div>');
-    });
-    if (data.hasInstrument) {
-      $(chain).append('<button class="col-12 smallEntry" data-remove="instrument">Remove instrument bind</button>');
-    }
-    $(chain).find('button').on('click', (e) => {
-      console.log('howdy!');
-      let value = 
-       ($(e.target).attr('data-remove') !== undefined) 
-          ? "instrument"
-          : $(e.target).text();
-          
-      doAction('binds/remove', {file : value}, (data) =>{
-            onBind();
-      });
-        
-    });
   });
+}
+function onBindFileSaveClick() {
+   let select = $('#selBinds').find('li.btn-selected');
+  if (select.length == 0)
+    return;
+  let filename = $(select).text();
+  
+  if (filename.match(/^\(Save to new file\)/)) {
+    filename = prompt ("New binds name:", "default.json");
+    if (filename == null)
+      return;
+    if (!filename.match(/\.json$/)) {
+      alert('Please save as .json file.');
+      return;
+    }
+    if ($('#selBinds').find(`li:contains(${filename})`)) {
+      let res = confirm(`${filename} exists! Overwrite?`)
+      if (!res) return;
+    }
+  }
+  
+  doAction ('binds/session/save', {file: filename});
+}
+
+function onBindSession() {
+  doQuery('status/binds', null, (data) => {
+    window.zsession.bind.session = data.sessionConfig;
+     
+    if (window.zsession.bind.session == null) {
+      window.zsession.bind.session = {};
+    }
+    
+    let session = window.zsession.bind.session;
+    let pnlSession = $('#pnlBindSession');
+    if (Object.keys(session).length ==0) {
+      $('#pnlBindSession > div').addClass('hidden');
+      $(pnlSession).find('p').removeClass('hidden');
+      return;
+    }
+    
+    $(pnlSession).find('p').addClass('hidden');
+    let content = $('#bindSessionTable');
+    
+    $('#pnlBindSession > div').removeClass('hidden');
+    $(content).empty();
+    
+    let ch = null, type = null, val = null, id= null, html = null;
+    for (let channel in session) {
+      ch = session[channel];
+      ch.forEach ( (bind) => {
+        type = (bind.cc === undefined) ? 'NOTE' : 'CC';
+        val = ('NOTE' == type) ? bind.noteon : bind.cc;
+        id = `bind-ses-${channel}-${ch.indexOf(bind)}`
+        
+        if (bind.type === undefined) {
+          bind.type = (bind.trigger) ? 'trigger'
+                      : (bind['switch'] ? 'switch': 'fader')
+        }
+        
+        html = 
+        `<div class="row no-gutters">
+            <div class="col-2 tc">${channel}</div>
+            <div class="col-5 tc">${bind.type.substr(0,1).toUpperCase()} ${type} ${val}</div>
+            <div class="col-5 row no-gutters">
+              <button class="bindEditSes col-5" onclick="onBindSessionEditClick('${id}')"><i class="fa fa-edit"></i></button>
+              <button class="bindRmSes col-5" onclick="onBindSessionDelClick('${id}')"><i class="fa fa-trash-alt"></i></button>
+            </div>
+        </tr>
+        `
+        
+        $(content).append(html);
+      });
+    }
+  });
+}
+
+function onBindSessionEditClick(id) {
+  let rx = id.match(/^bind-ses-(\d+|all)-(\d+)/);
+  let channel = rx[1], index = rx[2];
+  //emulate click
+  $('#pnlBindSession').addClass('hidden');  
+  $('#pnlBindEdit').removeClass('hidden');
+  $('#pnlBinds header button[data-open=pnlBindSession]').removeClass('btn-selected');
+  $('#pnlBinds header button[data-open=pnlBindEdit]').addClass('btn-selected');
+  
+  let info = window.zsession.bind.info;
+  info.channel = channel;
+  let bind = window.zsession.bind.session[String(channel)][index];
+  info.source = (bind.cc) ? 'cc' : 'noteon';
+  onBindEdit(bind);
+}
+
+function onBindSessionDelClick(id) {
+  let rx = id.match(/^bind-ses-(\d+)-(\d+)/);
+  let channel = rx[1], index = rx[2];
+  
+  window.zsession.bind.session[channel].splice(index,1);
+  bindUpdateRemoteSession();
+  onBindSession();
 }
 
 function onFxDry() {
@@ -379,7 +572,7 @@ function onFxDry() {
 
 /** loads part fx */
 function onFxPart() {
-  doQuery('status/partfx', {id: window.zsession.partID}, function(data){
+  doQuery('status/partfx', {id: window.zsession.partID}, (data) =>{
     console.log(data);
       window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
       //onFXLoad('btnpfx', data);
@@ -421,7 +614,7 @@ function onFxPartSystemKnobChange(id) {
 }
 
 function onFxSystem() {
-   doQuery('status/systemfx', undefined, function(data){
+   doQuery('status/systemfx', undefined, (data) =>{
     console.log(data);
       //window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
       //onFXLoad('btnpfx', data);
@@ -444,6 +637,13 @@ function onScript() {
   });
 }
       
+
+function onScriptSendClick() {
+  let data = $('#commandLine').val();
+  doAction('script', {script: data});
+}
+  
+
 function onSystemMIDI() {
   doQuery('status/midi', null, (data) => {
     
@@ -576,4 +776,25 @@ function onSystemUADSR(type) {
     }
   });
 }
+
+function onToolbarChangePart(index) {
+  if (window.zsession.partID+index < 0)
+    window.zsession.partID = 15;
+  else if (window.zsession.partID+index > 15)
+    window.zsession.partID = 0;
+  else
+    window.zsession.partID += index;
+  $('#currentPart').text( ('0'+window.zsession.partID).substr(-2) );
+  
+  //retrieve part info
+  doQuery('status/part', {id: window.zsession.partID}, (data) => {
+    console.log(data);
+    if (data.name == '') data.name = 'Unloaded';
+    $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
+  });
+  
+  //any active panel must be re-triggered
+  $('.controlPanel tab-header.btn-selected').trigger('click');
+}
+
 

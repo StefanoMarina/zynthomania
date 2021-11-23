@@ -1,6 +1,17 @@
+/*
+Font
+*/
 @font-face {
   font-family: Minecart;
   src: url('Minecart LCD.ttf');
+}
+
+/*
+ variables
+*/
+:root {
+  --border:2px dotted black;
+  --color-lcd:rgb(204,204,0);
 }
 
 body {
@@ -13,6 +24,8 @@ body {
 }
 
 body, body * {font-family: Minecart}
+
+table td, table th {text-align: center}
 
 /*FONT SIZE*/
 @media only screen and (max-width: 768px) {
@@ -32,10 +45,10 @@ body, body * {font-family: Minecart}
 /*
  * utilities for bordering
  *  */
-.bl {border-left: 2px dotted black;}
-.br {border-right: 2px dotted black;}
-.bb {border-bottom: 2px dotted black;}
-.bt {border-top: 2px dotted black;}
+.bl {border-left: var(--border);}
+.br {border-right: var(--border);}
+.bb {border-bottom: var(--border);}
+.bt {border-top: var(--border);}
 
 .tc {text-align: center !important}
 /* blurry lines */
@@ -64,9 +77,6 @@ body::after {
 }
 */
 
-/* button look & feel */
-.btn { border: 2px dotted black !important;}
-
 /*
  * tab classes
  * .tab
@@ -78,10 +88,10 @@ body::after {
  * Controlpanel class
  * all main control divs under the header
  */
-.controlPanel { border: 2px dotted black; min-width:350px; min-height: 300px}
+.controlPanel { border: var(--border, 1px solid red); min-width:350px; min-height: 300px}
 
 .controlPanel aside { font-size: 16px; }
-.controlPanel aside button { padding: 4px; width: 100%; border: none; border-bottom: 2px dotted black }
+.controlPanel aside button { padding: 4px; width: 100%; border: none; border-bottom: var(--border) }
 
 /* add/remove this to hide */
 .hidden {display: none !important}
@@ -100,7 +110,8 @@ body::after {
    
    .tab-header, .big-btn, .big-btn * {font-size: 16px !important;}
    .big-icon { font-size: 20 px !important}
-   small {font-size: 8px}
+   small {font-size: 8px !important}
+  .header, th { padding: 2px !important }
 }
 
 @media only screen and (min-width: 768px) { 
@@ -114,18 +125,28 @@ body::after {
    .tab-header, .big-btn, .big-btn * {font-size: 24px !important;}
    
   .big-icon {font-size: 32px !important;}
-  small {font-size: 12px}
+  small {font-size: 12px !important}
+  
+  .header, th { padding: 4px !important }
 }
 
+.header, th {background-color: black; color: var(--color-lcd)}
+
+/*
+Buttons
+*/
 button, select, .btn, .fx-btn {
   background-color: transparent;
   color: black;
 }
 
 button, .btn, .fx-btn {
-  border: 2px dotted black;
+  border: var(--border);
 }
 
+button + button, .btn+.btn {
+  border-left: none !important;
+}
 .fx-btn button { border: none !important}
 .fx-btn .text::before {content : "< "}
 .fx-btn .text::after {content : " >"}
@@ -143,12 +164,9 @@ button, .btn, .fx-btn {
  * head tab headers look and feel
  */
 .toolbar  button {border: none !important;}
-.toolbar tr td {border: 2px dotted black; text-align:center}
-.toolbar { border: 2px dotted black; border-collapse: collapse}
-
-.tab-h button { border-right:none; border-bottom:none !important }
-.tab-h button:last-child {border-right: 2px dotted black !important}
-
+.toolbar tr td {border: var(--border); text-align:center}
+.toolbar { border: var(--border); border-collapse: collapse}
+.tab-h button {border-bottom: none;}
 .tab-v button {
   width: 100% !important;
   display: block !important;
@@ -158,7 +176,7 @@ button, .btn, .fx-btn {
 
 button:hover, .send-btn, .btn-selected, .btn-selected *, button:hover *, .fx-btn:hover, .fx-btn:hover * {
   background-color: black !important;
-  color: rgba(204, 204, 0) !important;
+  color: var(--color-lcd) !important;
 }
 
 select {border: none; min-width: 45%}
@@ -167,8 +185,12 @@ ul, .select {
    list-style: none;
    margin:  0;
    padding: 2px;
-   border: 1px solid grey;
+  /* border: 1px solid grey;*/
    overflow: auto;
+}
+
+ul + ul, .select + .select {
+  border-left: var(--border);
 }
 
 .select {
@@ -189,6 +211,10 @@ ul li.selected, .select li.selected {
    color: white;
 }
 
+.h-ul {
+  padding-bottom: 10px;
+}
+
 .h-ul li {
   display: inline;
   height: default !important;
@@ -198,7 +224,7 @@ ul li.selected, .select li.selected {
 .knob {
   border-radius: 1rem;
   background-color: black;
-  color: rgb(153,204,0);
+  color: var(--color-lcd);
   text-align:center;
   height:40px;
 }
@@ -214,7 +240,7 @@ input[type=checkbox][checked] + label::before { content: '[X]';}
 
 .itext {
   background-color: transparent;
-  border: 2px dotted black;
+  border: var(--border);
   padding-right: 0 !important;
 }
 .toggle {
