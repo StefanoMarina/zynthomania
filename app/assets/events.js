@@ -138,7 +138,7 @@ function onBindFile() {
     
     $(ul).empty();
     if (saveMode)
-      $(ul).append('(Save to new file)');
+      $(ul).append('<li>(Save to new file)</li>');
     data.files.forEach( (item) => {
       $(ul).append('<li>'+item+'</li>');
     });
