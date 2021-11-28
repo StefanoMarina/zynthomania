@@ -11,10 +11,10 @@ Font
 */
 :root {
   --border:2px dotted black;
-  --color-lcd:rgb(204,204,0);
+  --color-lcd:rgb(153,204,0);
 }
 
-body {
+body, .dialogBox > div {
   /*Gradient*/
     background-color: black;
     background-image: radial-gradient(
@@ -30,13 +30,14 @@ table td, table th {text-align: center}
 /*FONT SIZE*/
 @media only screen and (max-width: 768px) {
   body, body * {  
-    font-size: 16px 
+    font-size: 14px
   }
+  .fx-btn label {font-size: 12px}
 }
 
 @media only screen and (min-width: 768px) {
   body, body * {  
-    font-size: 24px
+    font-size: 20px
   }  
 }
 
@@ -108,7 +109,7 @@ body::after {
       padding: 4px;
    }
    
-   .tab-header, .big-btn, .big-btn * {font-size: 16px !important;}
+   .tab-header, .big-btn, .big-btn * {font-size: 14px !important;}
    .big-icon { font-size: 20 px !important}
    small {font-size: 8px !important}
   .header, th { padding: 2px !important }
@@ -148,8 +149,6 @@ button + button, .btn+.btn {
   border-left: none !important;
 }
 .fx-btn button { border: none !important}
-.fx-btn .text::before {content : "< "}
-.fx-btn .text::after {content : " >"}
 
 .send-btn::after {
   font-family: "Font Awesome 5 Free";
@@ -229,6 +228,18 @@ ul li.selected, .select li.selected {
   height:40px;
 }
 
+/*Swipeable selects*/
+.swipeable > label::before { content : '< '; }
+.swipeable > label::after { content : ' >'; }
+.swipeable > label {
+  text-align: center;
+  display: inline-block;
+  width: 100%;
+}
+.swipeable { min-width: 100px !important; }
+.swipeable > select {display: none;}
+
+/*Checkboxes*/
 input[type=checkbox].check {display:hidden;}
 input[type=checkbox] + label {
   border: none !important;
@@ -246,3 +257,43 @@ input[type=checkbox][checked] + label::before { content: '[X]';}
 .toggle {
   border-radius: 10px;
 }
+
+.dialogBox {
+  position: absolute;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #444444;
+  overflow: auto;
+}
+.dialogBox h4 {margin-top: 0 !important}
+
+.dialogBox > div {
+  border: var(--border);
+}
+
+.dialogBox footer { margin-top: 20px; !important}
+
+@media only screen and (max-width: 768px) {
+  .dialogBox > div {
+     top: 0;
+  }
+  .dialogBox div.container button {
+    margin-bottom: 5px !important;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .dialogBox > div {
+    top: 20%;
+    left: 20%;
+    width: 80%;
+    height: 60%;
+  }
+  .dialogBox div.container button {
+    margin-bottom: 10px !important;
+  }
+}
+

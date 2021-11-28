@@ -7,287 +7,305 @@
     <link href="fontawesome-free-5.15.3-web/css/all.css" rel="stylesheet">
     
     <script src="jquery/dist/jquery.min.js"></script>
+    <script
+			  src="jquery.mobile.custom/jquery.mobile.custom.min.js"
+    ></script>
+        
     <script src="jquerySwipeHandler.js"></script>
+    <script src="JQuery-custom-valhooks.js"></script>
     <script src="lcdknob.js"></script>
+    <script src="swipeable.js"></script>
     <script src="fxbutton.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ZynthoMania!</title>
   </head>
 
   <body>
-    <input id="currentInstrument" type="hidden">
+    <div id="dialogBox" class="dialogBox hidden">
+      <div>
+        <h4 class="header"></h4>
+        <div class="container">
+        </div>
+        <footer class="container row">
+          <div class="col-6"><button class="btn-selected col-12" id="btnOk">Ok</button></div>
+          <div class="col-6"><button class="btn-selected col-12" id="btnCancel">Cancel</button></div>
+        </footer>
+      </div>
+    </div>
     
-    <div class="">
-      <div class="row no-gutters">
+    <main class="row no-gutters">
+      
+      <div class="col-12"> <!-- main body -->
         
-        <div class="col-12"> <!-- main body -->
+        <table class="col-12 toolbar">
+          <tr>
+            <td><button id="btnDoFavorite"><i class="far fa-star big-icon"></i></button></td>
+            <td><button onclick="onToolbarChangePart(-1)" class="big-btn">&lt;</button></td>
+            <td><span id="currentPart" class="big-btn">1</span></td>
+            <td><button onclick="onToolbarChangePart(1)" class="big-btn">&gt;</button></td>
+            <td><button id="btnClearPart" class="big-btn"><i class="fa fa-trash-alt"></i></button></td>
+          </tr>
+        </table>
+      
+      <div class="col-12"><h3><span id="instrumentName">Welcome to Zynthomania! </span></h3></div>        
+      
+        <div class="row">
+          <div class="col-12 tab">
+            <header class="d-flex flex-row tab-h">
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks">Banks</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds"><a>Binds</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem"><a>System</a></button>
+            </header>
           
-          <table class="col-12 toolbar">
-            <tr>
-              <td><button id="btnDoFavorite"><i class="far fa-star big-icon"></i></button></td>
-              <td><button onclick="onToolbarChangePart(-1)" class="big-btn">&lt;</button></td>
-              <td><span id="currentPart" class="big-btn">1</span></td>
-              <td><button onclick="onToolbarChangePart(1)" class="big-btn">&gt;</button></td>
-              <td><button id="btnClearPart" class="big-btn"><i class="fa fa-trash-alt"></i></button></td>
-            </tr>
-          </table>
-        
-        <div class="col-12"><h3><span id="instrumentName">Welcome to Zynthomania! </span></h3></div>        
-        
-          <div class="row">
-            <div class="col-12 tab">
-              <header class="d-flex flex-row tab-h">
-                <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks">Banks</button>
-                <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
-                <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds"><a>Binds</a></button>
-                <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
-                <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem"><a>System</a></button>
-              </header>
+          <!--panels-->
+            <div id="pnlBanks" class="tab row controlPanel no-gutters hidden">
+                <ul id="selBanks" class="select col-6 col-xs-6"></ul>
+                <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
+            </div>
             
-            <!--panels-->
-              <div id="pnlBanks" class="tab row controlPanel no-gutters hidden">
-                  <ul id="selBanks" class="select col-6 col-xs-6"></ul>
-                  <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
-              </div>
-              
-              <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
-                <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()">Dry</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="onFxPart()">Part</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onFxRoute()">Route</button>
-                  <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="onFxSystem()">System</button>
-                </header>
-                <div class="col-8"> <!-- fx content container -->
-                  
-                  <div id="pnlDry" class="panel fxPanel hidden row">
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Reverb</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Echo</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Chorus</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Phaser</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Distorsion</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">EQ</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">DynamicFilter</button></div>
-                    <div class="col-12 col-md-6">
-                      <button class="col-12 big-btn btn-selected send-btn" id="applyDry">Dry</button>
-                    </div>
+            <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
+              <header class="col-4 no-gutters tab-v br">
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()">Dry</button>
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="onFxPart()">Part</button>
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onFxRoute()">Route</button>
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="onFxSystem()">System</button>
+              </header>
+              <div class="col-8"> <!-- fx content container -->
+                
+                <div id="pnlDry" class="panel fxPanel hidden row">
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Reverb</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Echo</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Chorus</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Phaser</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Distorsion</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">EQ</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">DynamicFilter</button></div>
+                  <div class="col-12 col-md-6">
+                    <button class="col-12 big-btn btn-selected send-btn" id="applyDry">Dry</button>
                   </div>
-                  
-                  <div id="pnlPart" class="panel fxPanel hidden row">
-                    <div class="col-12">
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx0"></div>
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
-                    </div>
-                    <div class="col-12"><p>Part System FX send</p></div>
-                     <div class="row col-12">
-                      <div class="col-3 col-lg-2"><button class="knob" id="kss0"></button></div>
-                      <div class="col-3 col-lg-2"><button class="knob" id="kss1"></button></div>
-                      <div class="col-3 col-lg-2"><button class="knob" id="kss2"></button></div>
-                      <div class="col-3 col-lg-2"><button class="knob" id="kss3"></button></div>
-                      <div class="col-12 col-lg-3">
-                        <button class="send-btn col-12" onclick="actionMaximizeSend()"><span class="d-lg-none">Send all to </span>Max</button></div>
-                    </div>
+                </div>
+                
+                <div id="pnlPart" class="panel fxPanel hidden row">
+                  <div class="col-12">
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx0"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
                   </div>
-                  <div id="pnlSystemFX" class="panel fxPanel hidden row">
-                    <div class="col-12">
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx0"></div>
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx1"></div>
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx2"></div>
-                      <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx3"></div>
-                    </div>
-                  </div>         
-                  <div id="pnlRoute" class="panel fxPanel hidden row">
-                    <div class="col-8 align:center"><h4 style="text-align:center">To system FX </h4></div>
-                    <div class="col-4 "><button class="knob" id="routeSend"></button></div>
+                  <div class="col-12"><p>Part System FX send</p></div>
+                   <div class="row col-12">
+                    <div class="col-3 col-lg-2"><button class="knob" id="kss0"></button></div>
+                    <div class="col-3 col-lg-2"><button class="knob" id="kss1"></button></div>
+                    <div class="col-3 col-lg-2"><button class="knob" id="kss2"></button></div>
+                    <div class="col-3 col-lg-2"><button class="knob" id="kss3"></button></div>
+                    <div class="col-12 col-lg-3">
+                      <button class="send-btn col-12" onclick="actionMaximizeSend()"><span class="d-lg-none">Send all to </span>Max</button></div>
+                  </div>
+                </div>
+                <div id="pnlSystemFX" class="panel fxPanel hidden row">
+                  <div class="col-12">
+                  
+                    <div id="swipeTest" class="col-12 big-btn swipeable"></div>
                     
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Reverb</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Echo</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Chorus</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Phaser</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Distorsion</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">EQ</button></div>
-                    <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">DynamicFilter</button></div>
-                    <div class="col-12 col-md-6">
-                      <button class="col-12 big-btn send-btn btn-selected" id="applyRoute">Apply</button>
-                    </div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx0"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx1"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx2"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx3"></div>
                   </div>
-                </div> <!-- /fx content -->
-              </div> <!-- /fx -->
-              
-              <!-- BINDS -->
-              <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
-                <header class="col-4 tab-v br">
-                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain" onclick="onBindChain()">Chain</button>
-                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindFile()">File</button>
-                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindEdit" onclick="onBindEdit()">Edit</button>
-                  <button class="tab-header" data-tab="bindPanel" data-open="pnlBindSession" onclick="onBindSession()">Session</button>
-                </header>
-                <div class="col-8">
-                  <div id="pnlBindIO" class="bindPanel panel hidden">
-                    <ul id="selBinds" class="select col-12" style="width: 100% !important; height:280 !important"></ul>
-                    <div class="row">
-                      <button class="big-btn send-btn col-12 col-lg-4" onclick="onBindFileAddClick(this);">Add to chain</button>
-                      <button class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileEditClick();">Edit</button>
-                      <button id="bindSave" class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileSaveClick();">Save</button>
-                    </div>
+                </div>         
+                <div id="pnlRoute" class="panel fxPanel hidden row">
+                  <div class="col-8 align:center"><h4 style="text-align:center">To system FX </h4></div>
+                  <div class="col-4 "><button class="knob" id="routeSend"></button></div>
+                  
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Reverb</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Echo</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Chorus</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Phaser</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Distorsion</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">EQ</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">DynamicFilter</button></div>
+                  <div class="col-12 col-md-6">
+                    <button class="col-12 big-btn send-btn btn-selected" id="applyRoute">Apply</button>
                   </div>
-                  <div id="pnlBindChain" class="bindPanel panel hidden">
-                    <p style="text-align: center">Touch to remove</p>
-                    <div class="col-12" id="chainContainer">
-                    </div>
+                </div>
+              </div> <!-- /fx content -->
+            </div> <!-- /fx -->
+            
+            <!-- BINDS -->
+            <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
+              <header class="col-4 tab-v br">
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain" onclick="onBindChain()">Chain</button>
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindFile()">File</button>
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindEdit" onclick="onBindEdit()">Edit</button>
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindSession" onclick="onBindSession()">Session</button>
+              </header>
+              <div class="col-8">
+                <div id="pnlBindIO" class="bindPanel panel hidden">
+                  <ul id="selBinds" class="select col-12" style="width: 100% !important; height:280 !important"></ul>
+                  <div class="row">
+                    <button class="big-btn send-btn col-12 col-lg-4" onclick="onBindFileAddClick(this);">Add to chain</button>
+                    <button class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileEditClick();">Edit</button>
+                    <button id="bindSave" class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileSaveClick();">Save</button>
                   </div>
-                  <div id="pnlBindEdit" class="bindPanel panel container hidden">
-                    <div class="row">
-                      <div class="col-6">Channel</div>
-                      <div class="col-6">
-                          <select id="bindEditChannel" value="0">
-                          </select>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="hidden d-md-inline col-md-4">Event</div>
-                      <div class="col-6 col-md-4">
-                        <select id="bindEditSource" class="btn-selected col-12" style="text-align: center; border-radius:2em" value="CC">
-                          <option value="cc">CC</option>
-                          <option value="noteon">noteon</option>
+                </div>
+                <div id="pnlBindChain" class="bindPanel panel hidden">
+                  <p style="text-align: center">Touch to remove</p>
+                  <div class="col-12" id="chainContainer">
+                  </div>
+                </div>
+                <div id="pnlBindEdit" class="bindPanel panel container hidden">
+                  <div class="row">
+                    <div class="col-6">Channel</div>
+                    <div class="col-6 swipeable">
+                        <select id="bindEditChannel" value="0">
                         </select>
-                      </div>
-                      <div class="col-6 col-md-4">
-                        <input id="bindEditData1" type="number" class="itext col-12" value="0">
-                      </div>
-                    </div>
-                    <div class="row bb">
-                      <div class="col-2"><p>Type:</p></div>
-                      <div class="col-10"><select class="col-12" id="bindEditType">
-                        <option value="trigger">Trigger</option>
-                        <option value="switch">Switch</option>
-                        <option value="abs">Fader/Absolute</option>
-                        <option value="int">Fader/Integer</option>
-                        <option value="float">Fader/Float</option>
-                        <option value="boolean">Fader/Bool</option>
-                      </select></div>
-                    </div>
-                    <div class="row no-gutters hidden bindSubEditor" id="bindEditSwitch">
-                      <div class="col-8">
-                        <ul id="bindEditSwitchTable" class="h-ul col-12">
-                        </ul>
-                      </div>
-                      <div class="col-4 no-gutters row">
-                        <button class="col-6 tc btn" onclick="onBindEditSwitchAddClick()"><i class="fa fa-plus"></i></button>
-                        <button class="col-6 tc btn" onclick="onBindEditSwitchDeleteClick()"><i class="fa fa-trash-alt"></i></button>
-                      </div>
-                    </div>
-                    <div class="row hidden no-gutters bindSubEditor" id="bindEditTrigger">
-                      <div class="col-6">Value:</div>
-                      <div class="col-6"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
-                    </div>
-                    <div class="row" id="oscParameters">
-                      <div class="col-12 col-md-2">OSC <span class="d-md-none">parameters:</span></div>
-                      <p class="col-12"><small>Separate with new line for bundle</small></p>
-                      <div class="col-12 col-md-10"><textarea id="bindEditOSC" class="col-12 bindSubEditor"></textarea></div>
-                    </div>
-                    <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
-                    <div class="row">
-                      <div class="col-12 col-md-6"><button class="send-btn col-12" onclick="onBindEditMidilearn()">Midi Learn</button></div>
-                      <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
                     </div>
                   </div>
-                  
-                  <div id="pnlBindSession" class="bindPanel panel hidden">
-                    <div class="row no-gutters">
-                        <div class="header col-2 tc">Ch</div>
-                        <div class="header col-5 tc">Event</div>
-                        <div class="header col-5 tc">Edit</div>
+                  <div class="row">
+                    <div class="hidden d-md-inline col-md-4">Event</div>
+                    <div class="col-6 col-md-4 swipeable">
+                      <select id="bindEditSource" class="btn-selected col-12" value="cc">
+                        <option value="cc">CC</option>
+                        <option value="noteon">noteon</option>
+                      </select>
                     </div>
-                    <div id="bindSessionTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
-                      
+                    <div class="col-6 col-md-4">
+                      <input id="bindEditData1" type="number" class="itext col-12" value="0">
                     </div>
-                  <p>Session is empty. 'Edit' to add.</p>
                   </div>
-                  
+                  <div class="row bb">
+                    <div class="col-2"><p>Type:</p></div>
+                    <div class="col-10 swipeable"><select class="col-12" id="bindEditType">
+                      <option value="trigger">Trigger</option>
+                      <option value="switch">Switch</option>
+                      <option value="abs">Fader/Absolute</option>
+                      <option value="int">Fader/Integer</option>
+                      <option value="float">Fader/Float</option>
+                      <option value="boolean">Fader/Bool</option>
+                    </select></div>
+                  </div>
+                  <div class="row no-gutters hidden bindSubEditor" id="bindEditSwitch">
+                    <div class="col-8">
+                      <ul id="bindEditSwitchTable" class="h-ul col-12">
+                      </ul>
+                    </div>
+                    <div class="col-4 no-gutters row">
+                      <button class="col-6 tc btn" onclick="onBindEditSwitchAddClick()"><i class="fa fa-plus"></i></button>
+                      <button class="col-6 tc btn" onclick="onBindEditSwitchDeleteClick()"><i class="fa fa-trash-alt"></i></button>
+                    </div>
+                  </div>
+                  <div class="row hidden no-gutters bindSubEditor" id="bindEditTrigger">
+                    <div class="col-6">Value:</div>
+                    <div class="col-6"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
+                  </div>
+                  <div class="row" id="oscParameters">
+                    <div class="col-12 col-md-2">OSC <span class="d-md-none">parameters:</span></div>
+                    <p class="col-12"><small>Separate with new line for bundle</small></p>
+                    <div class="col-12 col-md-10"><textarea id="bindEditOSC" class="col-12 bindSubEditor"></textarea></div>
+                  </div>
+                  <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
+                  <div class="row">
+                    <div class="col-12 col-md-6"><button class="send-btn col-12" onclick="onBindEditMidilearn()">Midi Learn</button></div>
+                    <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
+                  </div>
                 </div>
-              </div> <!-- /binds -->
-              
-              <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
-                <header class="col-4 tab-v br">
-                  <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScript()">File</button>
-                  <button class="tab-header" data-tab="scrPanel" data-open="pnlConsole">Console</button>
-                </header>
-                <div class="col-8">
-                  <div id="pnlConsole" class="scrPanel panel hidden">
-                    <textarea class="col-12" style="min-height: 200px !important" 
-                        id="commandLine" placeholder="Input parameter..."></textarea>
-                    <button class="send-btn col-12 big-btn" onclick="onScriptSendClick();">Send</button>
+                
+                <div id="pnlBindSession" class="bindPanel panel hidden">
+                  <div class="row no-gutters">
+                      <div class="header col-2 tc">Ch</div>
+                      <div class="header col-5 tc">Event</div>
+                      <div class="header col-5 tc">Edit</div>
                   </div>
-                  <div id="pnlFile" class="scrPanel panel hidden">
-                    <ul id="selScripts" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
-                    <button id="scriptSend" class="big-btn send-btn col-12">Launch</button>
+                  <div id="bindSessionTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
+                    
                   </div>
-                </div><!-- /scripts -->
+                <p>Session is empty. 'Edit' to add.</p>
+                </div>
+                
               </div>
-              
-              <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
-                <header class="col-4 no-gutters tab-v br">
-                  <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
-                  <button class="tab-header" data-tab="sysPanel" data-open="pnlSession" onclick="onSystemSession();">Session</button>
-                  <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
-                </header>
-                <div class="col-8"> <!-- fx content container -->
-                  <div id="pnlMIDI" class="sysPanel panel hidden row">
-                    <div class="col-12" id="sysMidiContainer">
-                    </div>
-                  </div>
-                  <div id="pnlSession" class="sysPanel panel hidden">
-                    <p id="sysCurSession"></p>
-                    <ul id="sysSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
-                    <div class="row">
-                      <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionLoadClick()">Load</button></div>
-                      <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionSaveClick()">Save</button></div>
-                    </div>
-                  </div>
-                  <div id="pnlUADSR" class="sysPanel panel hidden row">
-                    <div class="col-12 row no-gutters">
-                      <button class="btnUADSR col-4"  value="none" >Off</button>
-                      <button class="btnUADSR col-4"  value="uadsr4" >4</button>
-                      <button class="btnUADSR col-4"  value="uadsr8" >8</button>
-                    </div>
-                    <div id="u4config" class="uadsrControl hidden col-12 row">
-                      <p class="col-12 tc">ADSR</p>
-                      <div class="tc col-2 col-md-3">A</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4a"></div> 
-                      <div class="tc col-2 col-md-3">D</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4d"></div> 
-                      <div class="tc col-2 col-md-3">S</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4s"></div> 
-                      <div class="tc col-2 col-md-3">R</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4r"></div> 
-                    </div>
-                    <div id="u4switch" class="uadsrControl hidden col-12 row">
-                      <div class="col-4">Switch</div>
-                      <div class="col-8"><input class="itext col-12" type="number" id="iu4sw"></div>
-                    </div>
-                     <div id="u8config" class="uadsrControl hidden col-12 row">
-                      <p class="tc col-12">Filter</p>
-                      <div class="tc col-2 col-md-3">A</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8a"></div> 
-                      <div class="tc col-2 col-md-3">D</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8d"></div> 
-                      <div class="tc col-2 col-md-3">S</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8s"></div> 
-                      <div class="tc col-2 col-md-3">R</div>
-                      <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
-                    </div>
-                    <div class="col-12">
-                    <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
-                    </div>
-                  </div>
-                  
+            </div> <!-- /binds -->
+            
+            <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
+              <header class="col-4 tab-v br">
+                <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScript()">File</button>
+                <button class="tab-header" data-tab="scrPanel" data-open="pnlConsole">Console</button>
+              </header>
+              <div class="col-8">
+                <div id="pnlConsole" class="scrPanel panel hidden">
+                  <textarea class="col-12" style="min-height: 200px !important" 
+                      id="commandLine" placeholder="Input parameter..."></textarea>
+                  <button class="send-btn col-12 big-btn" onclick="onScriptSendClick();">Send</button>
                 </div>
-            </div> 
+                <div id="pnlFile" class="scrPanel panel hidden">
+                  <ul id="selScripts" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
+                  <button id="scriptSend" class="big-btn send-btn col-12">Launch</button>
+                </div>
+              </div><!-- /scripts -->
+            </div>
+            
+            <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
+              <header class="col-4 no-gutters tab-v br">
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlSession" onclick="onSystemSession();">Session</button>
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
+              </header>
+              <div class="col-8"> <!-- fx content container -->
+                <div id="pnlMIDI" class="sysPanel panel hidden row">
+                  <div class="col-12" id="sysMidiContainer">
+                  </div>
+                </div>
+                <div id="pnlSession" class="sysPanel panel hidden">
+                  <p id="sysCurSession"></p>
+                  <ul id="sysSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
+                  <div class="row">
+                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionLoadClick()">Load</button></div>
+                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionSaveClick()">Save</button></div>
+                  </div>
+                </div>
+                <div id="pnlUADSR" class="sysPanel panel hidden row">
+                  <div class="col-12 row no-gutters">
+                    <button class="btnUADSR col-4"  value="none" >Off</button>
+                    <button class="btnUADSR col-4"  value="uadsr4" >4</button>
+                    <button class="btnUADSR col-4"  value="uadsr8" >8</button>
+                  </div>
+                  <div id="u4config" class="uadsrControl hidden col-12 row">
+                    <p class="col-12 tc">ADSR</p>
+                    <div class="tc col-2 col-md-3">A</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4a"></div> 
+                    <div class="tc col-2 col-md-3">D</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4d"></div> 
+                    <div class="tc col-2 col-md-3">S</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4s"></div> 
+                    <div class="tc col-2 col-md-3">R</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4r"></div> 
+                  </div>
+                  <div id="u4switch" class="uadsrControl hidden col-12 row">
+                    <div class="col-4">Switch</div>
+                    <div class="col-8"><input class="itext col-12" type="number" id="iu4sw"></div>
+                  </div>
+                   <div id="u8config" class="uadsrControl hidden col-12 row">
+                    <p class="tc col-12">Filter</p>
+                    <div class="tc col-2 col-md-3">A</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8a"></div> 
+                    <div class="tc col-2 col-md-3">D</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8d"></div> 
+                    <div class="tc col-2 col-md-3">S</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8s"></div> 
+                    <div class="tc col-2 col-md-3">R</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
+                  </div>
+                  <div class="col-12">
+                  <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
+                  </div>
+                </div>
+                
+              </div>
           </div> 
-        </div> <!--col-10 -->        
-      </div><!-- main row -->
-    </div> <!--container-->
+        </div> 
+      </div> <!--col-10 -->        
+    </main><!-- main row -->
+
     <script src="events.js"></script>
     <script type="text/javascript">
       
@@ -494,8 +512,11 @@
         
         $('.fx-btn').each( function (index) {
           let id = $(this).attr('id');
+          let options = (id.match(/^btnsfx/))
+            ? {noBypass: 1} : undefined;
+            
           let chid = parseInt(/\w+(\d+)/.exec(id)[1]);
-          let fxButton = new FXButton(id, chid);
+          let fxButton = new FXButton(id, chid, options);
           window.buttons[id] = fxButton;
         });
         
@@ -662,6 +683,20 @@
           */
           
           $('#bindEditType').on('change', onBindEditChange);
+          
+          let bec = $('#bindEditChannel');
+          bec.append('<option value="all">all</option>');
+          for (let i = 1; i < 17; i++)
+            bec.append(`<option value="${i}">${i}</option>`);
+            
+          //build bind edit swipeables
+          $('#pnlBindEdit .swipeable').each( function () {
+            createSwipeable(this);
+          });
+          
+          //register all swipeable events
+          registerSwipeables('#pnlBindEdit .swipeable', false);
+          registerSwipeables('.fx-btn .swipeable', true);
           
           /**
           Init actions

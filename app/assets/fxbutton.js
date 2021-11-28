@@ -1,25 +1,20 @@
 /*********************************************************************
-(c) Copyright 2021 by Stefano Marina.
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject
-to the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
-ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**********************************************************************/
+ * Zynthomania
+ * Copyright (C) 2021 Stefano Marina
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************/
 
 /**
  * Class behavior
@@ -28,94 +23,101 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * methods:
  * setFX: updates the button with FX data
  */
- 
+
+const FX_LIST = [
+  'None', 'Reverb','Echo','Chorus','Phaser','Alienwah','Distorsion', 'EQ', 'DynamicFilter'
+];
+
 class FXButton {
-  constructor(id, channelid) {
-    const qid = `#${id}`;
+  /**
+  available options:
+  noBypass: remove bypass button
+  */
+  constructor(id, channel_id, options) {
+    const qid = $(`#${id}`);
     
-    this.id = id;
-    this.channelid = channelid;
-    this.path = this.base_path = $(qid).attr('data-osc');
+    this.element_id = id;
+    this.channel_id = channel_id;
+    this.path = this.base_path = qid.attr('data-osc');
+    this.options = options;
+    this.value = 0;
     
-    $(qid).append(`<button class='col-2 fxBypass'><i class="fa fa-volume-mute"></i></button>`);
-    $(qid).append(`<span class='col-8 text' style='text-align:center'></span>`);
-    $(qid).append(`<button class='col-2 fxPreset hidden'></button>`);
+    if (this.options == null)
+        this.options = {};
     
-    $(qid).addClass('fx-btn');
+    if (this.options.noBypass) {
+      qid.append(`<div class='col-10 text swipeable' style='text-align:center'></div>`);
+      qid.append(`<button class='col-2 fxPreset hidden'></button>`);
+    } else {
+      qid.append(`<button class='col-2 fxBypass'><i class="fa fa-volume-mute"></i></button>`);  
+      qid.append(`<div class='col-8 text swipeable' style='text-align:center'></div>`);
+      qid.append(`<button class='col-2 fxPreset hidden'></button>`);
+      
+      qid.on('click', '.fxBypass',  (e)=>{
+        this.actionBypassPartFX();
+      });
+    }
+        
+    qid.addClass('fx-btn');
+    createSwipeable($(`#${id} > .swipeable`), FX_LIST);
     
-    const _this = this;
-    //doAction(`fx/part/${rest}`, {efxID: window.zsession.fx.id, partID:  window.zsession.partID},
+    let select = qid.find('.swipeable > select');
     
-    const onPrev = function() { $(qid).trigger({type: 'previous-fx', path: _this.path, basepath: _this.base_path}); };
-    const onNext = function() { $(qid).trigger({type: 'next-fx', path: _this.path, basepath: _this.base_path}); };
-    
-    //name swipe
-    jquerySwipeHandler.handleSwipe(`${qid} > .text`, [
-      jquerySwipeHandler.SWIPE_LEFT,
-      jquerySwipeHandler.SWIPE_RIGHT,
-      jquerySwipeHandler.CLICK
-    ], (direction) => {
-      console.log('swiped! ' + direction);
-      switch (direction) {
-        case jquerySwipeHandler.SWIPE_LEFT: _this.actionChangeFX('prev_fx'); break;
-        case jquerySwipeHandler.SWIPE_RIGHT:_this.actionChangeFX('next_fx'); break;
-        case jquerySwipeHandler.CLICK: $(`${qid} .text`).trigger({type: 'click', path: _this.path, basepath: _this.base_path}); break;
-      }
+    select.on('change', (e) =>{
+      this.actionChangeFX(e.target.value);
     });
     
-    $(`${qid}`).on('click', '*', function() {
+    //selection
+    qid.on('click', '*', function() {
       //set button as selected, if 'data-group' exists remove all others
-      let group = $(qid).attr('data-group');
+      let group = qid.attr('data-group');
       if (group !== undefined) {
-        $(`*[data-group=${group}]`).removeClass('btn-selected');
+        $(`.fx-btn[data-group=${group}], .fx-btn[data-group=${group}] label`).removeClass('btn-selected');
       }
-      $(qid).addClass('btn-selected');  
+      qid.addClass('btn-selected');  
+      qid.find('.swipeable label').addClass('btn-selected');
     });
     
-    $(`${qid}`).on('click', '.fxBypass', function () { _this.actionBypassPartFX(); $('#instrumentName').text('click');});
-    $(`${qid}`).on('click', '.fxPreset', function() {_this.actionChangeFXPreset(); });
+    qid.on('click', '.fxPreset', () => {this.actionChangeFXPreset();});
   }
   
   setFX(fx) {
-    let qid = `#${this.id}`;
+    let qid = $(`#${this.element_id}`);
     
     //bypass status
-    let btnBypass = $(`${qid} .fxBypass`);
+    let btnBypass = qid.find('.fxBypass');
     
-    if (fx.bypass !== undefined)
-    {
-      $(btnBypass).removeClass('hidden');
+    if (fx.bypass !== undefined && btnBypass.length > 0)  {
       let icon = (fx.bypass) ? 'fa-volume-mute' : 'fa-volume-up';
-      $(`${qid} .fxBypass > i`).removeClass('fa-volume-mute fa-volume-up').addClass(icon);  
-    } else {
-      $(btnBypass).addClass('hidden');
+      qid.find ('.fxBypass > i').removeClass('fa-volume-mute fa-volume-up').addClass(icon);  
     }
     
-    let btnPreset = $(`${qid} .fxPreset`);
+    let btnPreset = qid.find('.fxPreset');
     if (fx.preset > -1) {
       $(btnPreset).removeClass('hidden')
         .text(fx.preset);
     } else
       $(btnPreset).addClass('hidden');
     
-    $(`${qid} > .text`).text(fx.name);
+    qid.find('.swipeable > select').val(fx.name);
+    qid.find('.swipeable > label').text(fx.name);
     
-    this.path = `${this.base_path}${this.channelid}/${fx.name}`;
+    this.path = `${this.base_path}${this.channel_id}/${fx.name}`;
   }
   
   getFX() {
-    let qid = `#${this.id}`;
+    let qid = $(`#${this.element_id}`);
     
     return {
-      "name" : $(`${qid} > .text`).text(),
-      "bypass": $(`${qid} > .fxBypass`).hasClass("hidden")
-                ? undefined : $(`${qid} > .fxBypass > i`).hasClass('fa-volume-mute'),
-      "preset" : parseInt($(`${qid} > .fxPreset`).text())
+      "name" : qid.find('select').val(),
+      "bypass": qid.find('.fxBypass').length == 0
+                ? undefined : qid.find('.fxBypass > i').hasClass('fa-volume-mute'),
+      "preset" : parseInt(qid.find('.fxPreset').text())
     }
   }
   
   actionBypassPartFX() {
-    let path = window.zsession.sanitize(`/part/Pefxbypass${this.channelid}`);
+    let path = window.zsession.sanitize(`/part/Pefxbypass${this.channel_id}`);
     let currentFX = this.getFX();
     path += (currentFX.bypass) ? ' F' : ' T';
     console.log(`part bypass path: ${path}`);
@@ -157,19 +159,21 @@ class FXButton {
       })
   }
   
-  actionChangeFX(rest) {
-    let qid = `#${this.id}`;
+  actionChangeFX(value) {
+    let qid = `#${this.element_id}`;
     
-    let rest_path = (this.base_path.search('part') > -1)
-              ? `fx/part/${rest}`
-              : `fx/system/${rest}`;
+    let request = {
+      part  : ((this.base_path.search('part') > -1)
+              ? window.zsession.partID : undefined),
+      fx    : this.channel_id,
+      type  : FX_LIST.indexOf(value) 
+    };
     
-    doAction(rest_path, {efxID: this.channelid, partID: window.zsession.partID },
+    
+    doAction('fx/set', request,
      (data) => {
-       console.log(data);
        //change fx does not return bypass status
        data.bypass = $(`${qid} .btnBypass`).hasClass('hidden');
-       
        this.setFX(data);
      })
   }

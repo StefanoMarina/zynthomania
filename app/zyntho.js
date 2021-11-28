@@ -535,44 +535,47 @@ class ZynthoServer extends EventEmitter {
   /**
   * changeFX
   * Changes the current part FX, queries new preset, sends done
-  * part: part id
-  * fxid : efx id
-  * number: new fx (0-8)
+  * @param part part id - undefined or null for system fx
+  * @param fxid fx channel id
+  * @param efftype effect type id
+  * @param preset id - if set, preset will be changed
+  * @param onDone on done query
   */
-  changeFX(part, fxid, efftype, onDone) {
+  changeFX(part, fxid, efftype, preset, onDone) {
     efftype = (efftype < 0) ? 8 : efftype % 8;
     const newEffName = exports.typeToString(efftype);
-    
     const nameQueryString = (part === undefined)
         ? `/sysefx${fxid}` : `/part${part}/partefx${fxid}`;
     
-        
-    let bundle = this.parser.emptyBundle();
+    let queries = [];
     
-    bundle.packets.push(
-      this.parser.translate(`${nameQueryString}/efftype ${efftype}`)
-    );
+    var currentPreset = preset;
     
-    /*
-     * TODO
-     * change to OSCWorker
-     */
-    if (efftype != 0 && efftype != 7) {
-      let presetQuery = `${nameQueryString}/${newEffName}/preset`;
-      bundle.packets.push(this.parser.translate(presetQuery));
+    //fx change request
+    if (preset == null) {
+      let fxSetQuery = `${nameQueryString}/efftype ${efftype}`,
+      fxPresetListenQuery= `${nameQueryString}/${newEffName}/preset`;
       
-      this.once(presetQuery, (msg) =>{
-      //  console.log("called onDone");
-        onDone({name : newEffName, preset: msg.args[0].value});
-      })
-    } else {
-      bundle = this.injectDone(bundle, (msg) =>{
-        onDone({name : newEffName, preset: -1});
-      })
+      queries.push(fxSetQuery);
+      queries.push(fxPresetListenQuery);
+      
+      if (efftype != 0 && efftype != 7) {
+        this.once(fxPresetListenQuery, (msg) =>{
+          currentPreset = msg.args[0].value;
+        });
+      }
+    } else { //fx change preset request
+      let fxPresetQuery= `${nameQueryString}/${newEffName}/preset ${preset}`;
+      queries.push(fxPresetQuery);
     }
     
-    //console.log(JSON.stringify(bundle.packets));
+    const worker = new OSCWorker(this);
+    let bundle = this.parser.translateLines(queries);
+    worker.pushPacket(bundle);
     this.osc.send(bundle);
+    worker.listen().then(()=>{
+      onDone({name: newEffName, preset: currentPreset});
+    });
   } 
   
   /**

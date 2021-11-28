@@ -95,7 +95,6 @@ app.post('/loadInstrument', function (req, res) {
   app.zyntho.loadInstrument(req.body.id, req.body.instrument.path, function() {
     res.status(200).end();
   })
-  
 });
 
   
@@ -327,7 +326,7 @@ app.post('/fx/system/next_fx', function (req, res) {
   app.zyntho.query(app.zyntho.parser.translate(`/sysefx${efxID}/efftype`),
   (msg) => {
     let value = msg.args[0].value;
-    app.zyntho.changeFX(undefined, efxID, ++value, (result) =>{
+    app.zyntho.changeFX(undefined, efxID, ++value,null, (result) =>{
       res.json(result);
     });
   });
@@ -347,13 +346,30 @@ app.post('/fx/system/prev_fx', function (req, res) {
   app.zyntho.query(app.zyntho.parser.translate(`/sysefx${efxID}/efftype`),
   (msg) => {
     let value = msg.args[0].value;
-    app.zyntho.changeFX(undefined, efxID, --value, (result) =>{
+    app.zyntho.changeFX(undefined, efxID, --value, null, (result) =>{
       res.json(result);
     });
   });
 })
 
-
+/**
+* /fx/set
+* [POST] sets a part fx id and/or preset. if part id is null, system fx will be
+* changed instead
+* body { [part: partid], fx : fx channel id, type: type id, [preset: preset id] }
+* will publish the new fx preset, if available
+*/
+app.post('/fx/set', function (req, res) {
+  console.log(`[POST] setPartFX Query: ${JSON.stringify(req.body)}`);
+  if (req.body.fx == null) {
+    res.status(400).end();
+    return;
+  }
+  
+  app.zyntho.changeFX(req.body.part, req.body.fx, req.body.type, req.body.preset,
+                        (data) => {res.json(data)});
+  
+});
 /**
  * /fx/route
  * POST sets the new route filter
