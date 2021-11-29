@@ -23,6 +23,7 @@ const OS = require('os');
 const Util = require ('util');
 const OSCParser = require ('./parser.js')
 const ZynthoIO = require ('./io.js');
+const zconsole = ZynthoIO.zconsole;
 const ZynthoMania = require ('./zyntho.js');
 
 const app = EXPRESS();
@@ -52,7 +53,8 @@ app.get('/', function(req, res,next) {
  * GET request to retrieve all bank folder
  */
 app.get('/files/banks', function (req, res, next) {
-  console.log(`[GET] getBanks query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
+  
   res.json (app.zyntho.getBanks());
 });
 
@@ -61,7 +63,7 @@ app.get('/files/banks', function (req, res, next) {
  * GET request to retrieve all .xiz file inside a folder
  */
 app.get('/files/banks/xiz', function (req, res, next) {
-  console.log(`[GET] getInstruments query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
   
   if (req.query.bank === undefined) {
     res.status(400).end();
@@ -71,7 +73,7 @@ app.get('/files/banks/xiz', function (req, res, next) {
 });
 
 app.get('/files/scripts', function (req, res, next) {
-  console.log(`[GET] /files/scripts query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
   let dir = app.zyntho.IO.workingDir + "/scripts";
   let files = [];
   if (Fs.existsSync(dir)){
@@ -86,7 +88,7 @@ app.get('/files/scripts', function (req, res, next) {
  * BODY {instrument: instrument}
  */
 app.post('/loadInstrument', function (req, res) {
-  console.log(`[POST] /loadInstrument body: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   if (req.body.id === undefined || req.body.instrument === undefined) {
     res.status(400).end();
@@ -104,7 +106,7 @@ app.post('/loadInstrument', function (req, res) {
  * Body {action :"set/unset", instrument : {Instrument} }
  */
 app.post('/setFavorite', function (req, res) {
-  console.log(`[POST] /setFavorite body: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   result = ('set' == req.body.action)
     ? app.zyntho.addFavorite(req.body.instrument)
@@ -119,7 +121,7 @@ app.post('/setFavorite', function (req, res) {
  * Body { script : "" }
  */
 app.post('/script', function(req, res) {
-  console.log(`[POST] /script body: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   if (req.body.script === undefined) {
     res.status(400).send("Missing script");
@@ -139,7 +141,7 @@ app.post('/script', function(req, res) {
  */
  
 app.get('/status/partfx', function (req, res, next) {
- console.log(`[GET] getStatusFX query: ${JSON.stringify(req.query)}`);
+ zconsole.logGet(req);
  
  if (req.query.id === undefined) {
    res.status(400).json({});
@@ -158,7 +160,7 @@ app.get('/status/partfx', function (req, res, next) {
  */
  
 app.get('/status/systemfx', function (req, res, next) {
- console.log(`[GET] systemfx query: ${JSON.stringify(req.query)}`);
+ zconsole.logGet(req);
  app.zyntho.querySystemFX((result) => { res.json(result) });
 })
 
@@ -169,7 +171,7 @@ app.get('/status/systemfx', function (req, res, next) {
  * return : json
  */
 app.get('/status/options', function (req, res, next) {
-  console.log(`[GET] getoptions query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
   res.json(app.zyntho.config);
 });
 
@@ -179,7 +181,7 @@ app.get('/status/options', function (req, res, next) {
  * return: json
  */
 app.get('/status/midi', function (req, res, next) {
-  console.log(`[GET] getMIDI query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
   res.json(app.zyntho.midiService.enumerateInputs());
 });
 
@@ -192,7 +194,7 @@ app.get('/status/midi', function (req, res, next) {
  */
 
 app.get('/status/part', function( req, res, next) {
-  console.log(`[GET] getStatusPart query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
   if ( req.query.id === undefined) {
     res.status(400).end();
     return;
@@ -208,7 +210,7 @@ app.get('/status/part', function( req, res, next) {
  * GET return array with bind information
  */
 app.get('/status/binds', function( req, res, next) {
-  console.log(`[GET] binds status query: ${JSON.stringify(req.query)}`);
+  zconsole.logGet(req);
   
   let result = {};
   
@@ -222,13 +224,13 @@ app.get('/status/binds', function( req, res, next) {
    // console.log(JSON.stringify(result, null, 2));
     res.json(result);
   } catch (err) {
-    console.log(`Error on file parsing: ${err}`);
+    zconsole.error(`Error on file parsing: ${err}`);
     res.status(500).end();
   }
 });
 
 app.get('binds/session', function (rq, res) {
-  console.log('[GET] bind session query');
+  zconsole.logGet(rq);
   
   if (app.zyntho.midiService.sessionConfig == null) {
     res.json({});
@@ -242,6 +244,8 @@ app.get('binds/session', function (rq, res) {
  * Will wait for an event for 3 seconds, then sends error
  */
 app.get('/midilearn', function(rq, res) {
+  zconsole.logGet(rq);
+  
   app.zyntho.midiService.on('learn', (msg) => {
     if (!res._headerSent)
       res.json(msg);
@@ -262,7 +266,8 @@ app.get('/midilearn', function(rq, res) {
  * GET returns session info
  */
 app.get('/status/session', function (rq, res) {
-  console.log("[GET] /status/session/");
+  zconsole.logGet(rq);
+  
   let result = {};
   result.sessionList = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"sessions");
   result.currentSession = app.zyntho.lastSession;
@@ -276,7 +281,7 @@ app.get('/status/session', function (rq, res) {
  * body {part: part id, efx: efx id}
  */
 app.post('/fx/part/next_fx', function (req, res) {
-  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   let partID = req.body.partID;
   let efxID = req.body.efxID;
@@ -298,7 +303,7 @@ app.post('/fx/part/next_fx', function (req, res) {
  * body {part: part id, efx: efx id}
  */
 app.post('/fx/part/prev_fx', function (req, res) {
-  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   let partID = req.body.partID;
   let efxID = req.body.efxID;
@@ -319,7 +324,7 @@ app.post('/fx/part/prev_fx', function (req, res) {
  * body { efx: efx id}
  */
 app.post('/fx/system/next_fx', function (req, res) {
-  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   let efxID = req.body.efxID;
   
@@ -339,7 +344,7 @@ app.post('/fx/system/next_fx', function (req, res) {
  * body { efx: efx id}
  */
 app.post('/fx/system/prev_fx', function (req, res) {
-  console.log(`[POST] nextFX query: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   
   let efxID = req.body.efxID;
   
@@ -360,7 +365,7 @@ app.post('/fx/system/prev_fx', function (req, res) {
 * will publish the new fx preset, if available
 */
 app.post('/fx/set', function (req, res) {
-  console.log(`[POST] setPartFX Query: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   if (req.body.fx == null) {
     res.status(400).end();
     return;
@@ -416,7 +421,7 @@ app.post('/fx/dry', function(req, res) {
  * @body : {plug: device id, status: desired action, true for connect}
  */
 app.post('/status/midi/plug', function(req, res) {
-  console.log(`[POST] plug request: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   if (req.body.name === undefined || req.body.status === undefined){
     res.status(400).end();
     return;
@@ -427,7 +432,7 @@ app.post('/status/midi/plug', function(req, res) {
     app.zyntho.midiService.setConnection(req.body.name, req.body.status);
     res.status(200).end();
   } catch (err) {
-    console.log (`Error on plug operation: ${err}`);
+    zconsole.error (`Error on plug operation: ${err}`);
     res.status(500).end();
   }
   
@@ -439,7 +444,7 @@ app.post('/status/midi/plug', function(req, res) {
  * @body : {file}
  */
 app.post('/binds/add', function(req, res) {
-  console.log(`[POST] bind_add request: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   if (req.body.file === undefined) {
     res.status(400).end();
     return;
@@ -450,7 +455,7 @@ app.post('/binds/add', function(req, res) {
     app.zyntho.midiService.addBind(path);
     res.status(200).end();
   } catch (err) {
-    console.log(err);
+    zconsole.error(err);
     res.status(500).end();
   }
 });
@@ -461,7 +466,7 @@ app.post('/binds/add', function(req, res) {
  * @body : {file}
  */
 app.post('/binds/remove', function(req, res) {
-  console.log(`[POST] bind_remove request: ${JSON.stringify(req.body)}`);
+  zconsole.logPost(req);
   if (req.body.file === undefined) {
     res.status(400).end();
     return;
@@ -473,7 +478,7 @@ app.post('/binds/remove', function(req, res) {
       app.zyntho.midiService.refreshFilterMap(false);
       res.status(200).end();
     } catch (err) {
-      console.log("<3> " +err);
+      zconsole.error(err);
       res.status(500).end();
     }
   } else {  
@@ -482,14 +487,14 @@ app.post('/binds/remove', function(req, res) {
       app.zyntho.midiService.removeBind(path);
       res.status(200).end();
     } catch (err) {
-      console.log("<3> "+err);
+      zconsole.error(err);
       res.status(500).end();
     }
   }
 });
 
 app.post('/binds/session', function (req, res) {
-  console.log(`[POST] bind session query ${JSON.stringify(req.body.file)}`);
+  zconsole.logPost(req);
   if (req.body.file === undefined){
      res.status(400).end();
      return;
@@ -509,14 +514,14 @@ app.post('/binds/session', function (req, res) {
     app.zyntho.midiService.refreshFilterMap(false);
     res.json(sessionData);
   } catch (err) {
-    console.log(`<3>: ${err}`);
+    zconsole.error(err);
     res.statusMessage='Invalid session file';
     res.status(402).end();
   }
 });
 
 app.post('/binds/session/set', function (req, res) {
-  console.log(`[POST] Session set request: ${JSON.stringify(req.body.session)}`);
+  zconsole.logPost(req);
   
   if (req.body.session === undefined){
      res.status(400).end();
@@ -530,14 +535,14 @@ app.post('/binds/session/set', function (req, res) {
     app.zyntho.midiService.refreshFilterMap(false);
     res.end();
   } catch (err) {
-    console.log(`<3>: ${err}`);
+    zconsole.error(err);
     res.statusMessage='Invalid session file';
     res.status(402).end();
   }
 });
 
 app.post('/binds/session/save', function (req, res) {
-  console.log(`[POST] Session save request: ${JSON.stringify(req.body.file)}`);
+  zconsole.logPost(req);
   
   if (req.body.file === undefined){
      res.status(400).end();
@@ -561,18 +566,19 @@ app.post('/binds/session/save', function (req, res) {
       res.end();
     });
   } catch (err) {
-    console.log(`<3> Cannot save file: ${err}`);
+    zconsole.error(`Cannot save file: ${err}`);
+    
     res.statusMessage='Cannot save!';
     res.status(500).end();
   }
 });
 
 app.on('open', () => {
-  console.log ("Opened web application");
+  zconsole.log ("Opened web application");
 });
 
 app.on('data', (data) =>{
-  console.log('data: ' + JSON.stringify(data));
+  zconsole.notice('data: ' + JSON.stringify(data));
 });
 
 var myArgv = process.argv.slice(2);
@@ -584,7 +590,7 @@ try {
     app.zyntho.open(`${OS.homedir()}/.zmania`);
   }
 } catch (err) {
-  console.error(`<1> ${err}`);
+  zconsole.critical(err);
   return;
 }
 

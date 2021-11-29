@@ -21,6 +21,7 @@ const EventEmitter = require('events');
 const {execSync, exec} = require("child_process");
 
 const ZynthoIO = require('./io.js');
+const zconsole = ZynthoIO.zconsole;
 
 const Osc = require('osc');
 const KNOT = require ('./knot/knot.js');
@@ -82,9 +83,9 @@ class ZynthoServer extends EventEmitter {
      * default configuration. this will NOT take into account cartridge_dir.
      */
     if (this.IO.workingDir.toLowerCase() != frameworkPath.toLowerCase()) {
-      console.log(`<6> New working path: ${this.IO.workingDir}`);
+      zconsole.log(`New working path: ${this.IO.workingDir}`);
       
-      console.log('<5> Reading new configuration file.');
+      zconsole.debug('Reading new configuration file.');
       try {
         let data = Fs.readFileSync(`${this.IO.workingDir}/config.json`, 'utf-8');
         this.config = JSON.parse(data);
@@ -97,16 +98,16 @@ class ZynthoServer extends EventEmitter {
     let favFile = `${this.IO.workingDir}/favorites.json`;
     let configFile = `${this.IO.workingDir}/config.json`;
     
-    console.log("opening client on port " + this.config.services.user.zyn_osc_port + "...");
+    zconsole.log("opening client on port " + this.config.services.user.zyn_osc_port + "...");
   
     //if favorites.json exists, try to read it
     if (Fs.existsSync(favFile)) {
-      console.log('<6> reading favorites...');
+      zconsole.debug('Reading favorites...');
       try {
         let data = Fs.readFileSync(favFile);
         this.favorites = JSON.parse(data);
       } catch (err) {
-        console.log (`Cannot read favorites: ${err}`);
+        zconsole.warning(`Cannot read favorites: ${err}`);
         this.favorites = [];
       }
     } else
@@ -123,13 +124,13 @@ class ZynthoServer extends EventEmitter {
     });
     
     this.osc.on('ready', () => {
-        console.log ("Opened OSC Server");
+        zconsole.log ("Opened OSC Server");
         registerOSC(this);
         
         /* Init midi service */
         this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.workingDir,
               this.config);
-        console.log ("Started midi service");
+        zconsole.log ("Started midi service");
         
         //MIDI Device update
         this.midiService.on('device-in', (name) =>{
@@ -155,17 +156,18 @@ class ZynthoServer extends EventEmitter {
         //MIDI connect to zyn && restore configs
         try {
           this.midiService.connectToZyn();
-          console.log("<6> Created zynthomania virtual port.");
+          zconsole.log("Created zynthomania virtual port.");
         } catch (err) {
-          console.log(`<3> Error on creating zynthomania virtual port: ${err}`);
+          zconsole.error(`Error on creating zynthomania virtual port: ${err}`);
         }
         
         if (this.config.uadsr != null && (this.config.uadsr.type != "none")) {
           try {
             this.midiService.loadUADSR(this.config.uadsr.type);
-            console.log("<6> UADSR loaded");
+            zconsole.log("UADSR loaded");
           } catch (err) {
-            console.log(`<3> UADSR loading failed: ${err}`);
+            zconsole.warning(`UADSR loading failed: ${err}`);
+            this.midiService.loadUADSR('none');
           }
         }
           
@@ -198,7 +200,7 @@ class ZynthoServer extends EventEmitter {
         */
         let defSes = `${this.IO.workingDir}/sessions/default.xmz`;
         if (Fs.existsSync(defSes)) {
-          console.log('<6> Loading default session.');
+          zconsole.log('Loading default session.');
           this.sessionLoad('default.xmz');
         }
     });
@@ -218,17 +220,18 @@ class ZynthoServer extends EventEmitter {
           //console.log("OSC query end.");
           this.emit('query-done', oscMsg);
         } else if (oscMsg.address.match(/^\/zmania/i)){
-          console.log("zyntho message on osc");
+          zconsole.debug("zyntho message on osc");
           let parsed = this.parser.translate(oscMsg.address);
           this.oscEmitter.on(parsed.address, this, parsed.args);
         } else {
-          console.log("OSC message: ", oscMsg);
+          
+          zconsole.log("OSC message: ", oscMsg);
         }
         this.emit(oscMsg.address, oscMsg);
     });
 
     this.on("error", (err) => {
-      console.log(`<3> Zynthomania Event error: ${err}`);
+      zconsole.warning(`Zynthomania Event error: ${err}`);
     });
 
     this.osc.open();
@@ -421,7 +424,7 @@ class ZynthoServer extends EventEmitter {
             ? this.IO.workingDir + "/banks/"+bank.substr(1)
             : this.config.bank_dir + "/" + bank;
     
-    console.log(fullpath);
+    zconsole.debug(fullpath);
     
     var files = Fs.readdirSync (fullpath)
                   .filter(function (file) {
@@ -446,7 +449,7 @@ class ZynthoServer extends EventEmitter {
    */
   save() {
     if (this.IO.readOnlyMode) {
-      console.log('<5> aborting disk write request.');
+      zconsole.notice('Aborting disk write request.');
       return;
     }
     
@@ -454,7 +457,7 @@ class ZynthoServer extends EventEmitter {
     try {
       Fs.writeFileSync(`${this.IO.workingDir}/favorites.json`, JSON.stringify(this.favorites));
     } catch (err) {
-      console.log("Could not save favorites: "+ err);
+      zconsole.error("Could not save favorites: "+ err);
       return false;
     }
     
@@ -462,7 +465,7 @@ class ZynthoServer extends EventEmitter {
     try {
       Fs.writeFileSync(`${this.IO.workingDir}/config.json`, JSON.stringify(this.config, null, 2));
     } catch (err) {
-      console.log(`Could not save properties: ${err}`);
+      zconsole.error(`Could not save properties: ${err}`);
     }
   }
   
@@ -632,7 +635,7 @@ class ZynthoServer extends EventEmitter {
         let id = parseInt(add.match(/Pefxbypass(\d)/)[1]);
         returnObject.efx[id].bypass = bypass;
       } catch (err) {
-        console.log(`${add}: ${err} - ${id}`);
+        zconsole.debug(`queryPartFX: mismatch. ${add}: ${err} - ${id}`);
       }
     });
     
@@ -702,7 +705,7 @@ class ZynthoServer extends EventEmitter {
     const worker = new OSCWorker(this);
     
     worker.pushPacket(fxQuery, (add, args) => {
-      console.log(`${add} : ${JSON.stringify(args)}`)
+      zconsole.debug(`${add} : ${JSON.stringify(args)}`)
       let efftype = args[0].value;
       let id = parseInt(add.match(/sysefx(\d)/)[1]);
       let name = exports.typeToString(efftype);
@@ -823,18 +826,18 @@ class ZynthoServer extends EventEmitter {
             for (let fxChanID = 0; fxChanID < 3; fxChanID++) {
               pefxType = resultObject.part[partID][fxChanID];
               if ( pefxType == masterType) {  
-                console.log(`ZynthoServer: routing part ${partID} fx ${fxChanID} to system fx ${sysID}`);
+                zconsole.log(`Routing part ${partID} fx ${fxChanID} to system fx ${sysID}`);
                 bundle.push ( `/part${partID}/Pefxbypass${fxChanID} T`);
                 bundle.push ( `/Psysefxvol${sysID}/part${partID} ${_route.send}`);
               } else if (_dry.indexOf(pefxType) > -1) {
-                console.log(`ZynthoServer: drying  part ${partID} of fx ${fxChanID}`);
+                zconsole.log(`Drying  part ${partID} of fx ${fxChanID}`);
                 bundle.push ( `/part${partID}/Pefxbypass${fxChanID} T`);
               }
             }
           }
         }
       } catch (err) {
-        console.log (`<3> ::route: error on executing query: ${err}`)
+        zconsole.error (`Error on executing query: ${err}`)
       }
     
       if (bundle.length > 0) {
@@ -864,7 +867,7 @@ class ZynthoServer extends EventEmitter {
     
     OSCFile.load(scriptPath, (err, data) => {
       if (err)
-        console.error(`<4> Script error on ${scriptFile}: ${err}`);
+        zconsole.error(`<4> Script error on ${scriptFile}: ${err}`);
       else {
        this.sendOSC(data);
       }
@@ -896,7 +899,7 @@ class ZynthoServer extends EventEmitter {
     
     let sessionPath = `${this.IO.workingDir}/sessions/${file}`;
     if (!Fs.existsSync(sessionPath)) {
-      console.log(`<4> cannot find session ${sessionPath}.`);
+      zconsole.warning(`Cannot find session ${sessionPath}.`);
       return;
     }
     
@@ -910,11 +913,11 @@ class ZynthoServer extends EventEmitter {
     if (file != 'default.xmz') {
       let bindPath = `${this.IO.workingDir}/binds/${file.replaceAll('.xmz','.json')}`;
       if (Fs.existsSync(bindPath)) {
-        console.log('<6> found session bind file.');
+        zconsole.log('Found session bind file.');
         try {
           this.midiService.addBind(bindPath);
         } catch (err) {
-          console.log(`<3> Cannot add bind session file: ${err}`);
+          zconsole.warning(`> Cannot add bind session file: ${err}`);
         }
       }
     }
@@ -922,7 +925,7 @@ class ZynthoServer extends EventEmitter {
     try {
       this.midiService.refreshFilterMap(true);
     } catch (err) {
-      console.log(`<3> Cannot refresh filter map upon session load.`);
+      zconsole.error(`Cannot refresh filter map upon session load.`);
     }
     
     this.lastSession = file;
@@ -942,7 +945,7 @@ class ZynthoServer extends EventEmitter {
    */
   sessionSave(file) {
     if (this.IO.readOnlyMode) {
-      console.log('<5> Session save aborted due to read only mode.');
+      zconsole.notice('Session save aborted due to read only mode.');
       return;
     }
     

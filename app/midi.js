@@ -24,6 +24,8 @@ const MIDI = require('midi');
 
 const KNOT = require('./knot/knot.js');
 const ZynthoIO = require('./io.js');
+const zconsole = ZynthoIO.zconsole;
+
 const {UADSR4, UADSR8} = require ('./uadsr.js');
 
 var exports = module.exports = {};
@@ -69,7 +71,7 @@ class ZynthoMidi extends EventEmitter {
    */
   addBind(path) {
     if (!Fs.existsSync(path) || this.filterList.indexOf(path)>=0){
-      console.log(`<5> ZMidi::addBind: missing file or file already present ${path}`);
+      zconsole.notice(`addBind: missing file or file already present ${path}`);
       return false;
     }
     
@@ -106,13 +108,13 @@ class ZynthoMidi extends EventEmitter {
         let index = -1;
         
         this.midiInputRequests.forEach( (req) => {
-          console.log(`<6> Attemping reconnection to midi device ${req}`);
+          zconsole.log(`Attemping reconnection to midi device ${req}`);
           index = mapName.indexOf(req);
           if (index != -1) {
             try {
               this.setConnection(req, 1);
             } catch (err) {
-              console.log(`<5> Failed to reconnect ${req} : ${err}`);
+              zconsole.notice(`Failed to reconnect ${req} : ${err}`);
             }
           }
         });
@@ -179,13 +181,13 @@ class ZynthoMidi extends EventEmitter {
         || (this.instrumentMap != null && instrument == null)) {
       this.instrumentMap = null;
     } else if (fileExists){
-      console.log(`Loading instrument bind ${bindFile}`);
+      zconsole.log(`Loading instrument bind ${bindFile}`);
       try {
         this.instrumentMap = new KNOT.FilterMap(JSON.parse(
           Fs.readFileSync(bindFile) ));
       } catch (err) {
         this.instrumentMap = null;
-        console.log(`<3> ZynthoMidi: failed loading bindings ${bindFile}:${err}`);
+        zconsole.warning(`Failed loading bindings ${bindFile}:${err}`);
       }
     }
     
@@ -209,7 +211,7 @@ class ZynthoMidi extends EventEmitter {
       throw (`ZynthoMIDI: cannot configure UADSR with undefined config.`);
       
     if (type == config.type && this._uadsr != null) {
-      console.log('<6> ZMIDI: Skipping uadsr load as the type is the same.');
+      zconsole.notice('Skipping uadsr load as the type is the same.');
       return;
     }
     
@@ -266,7 +268,7 @@ class ZynthoMidi extends EventEmitter {
     if (index == -1) return false;
     this.filterList.splice(index,1);
     this.refreshFilterMap(true);
-    console.log(`<6> Removed bind ${path}`);
+    zconsole.debug(`Removed bind ${path}`);
     return true;
   }
   
@@ -314,7 +316,7 @@ class ZynthoMidi extends EventEmitter {
         this.sessionMap = new KNOT.FilterMap(this.sessionConfig, false)
         mapMerge.push(this.sessionMap);
       } catch (err) {
-        console.log(`<3> Invalid session filter map : ${err}`);
+        zconsole.error(`Invalid session filter map : ${err}`);
       }
     }
     
@@ -362,7 +364,7 @@ class ZynthoMidi extends EventEmitter {
       delete this.midiInputs[devicePort];
       
       this.emit('device-out', inputs[deviceID].name);
-      console.log(`<6> Released midi connection from ${devicePort}.`);
+      zconsole.log(`Released midi connection from ${devicePort}.`);
     } else {
       let newInput = new MIDI.Input();
       newInput.on('message', (delta, msg) =>{
@@ -374,10 +376,10 @@ class ZynthoMidi extends EventEmitter {
        try {
         newInput.openPort(deviceID);
       } catch (err) {
-        throw `<3> Midi: cannot connect to ${deviceID}`;
+        throw `Midi: cannot connect to ${deviceID}`;
       }
       
-      console.log(`<6> Midi: Connected to ${devicePort}.`);
+      zconsole.log(`Connected to ${devicePort}.`);
       this.emit('device-in', inputs[deviceID].name);
     }
     
@@ -395,7 +397,7 @@ class ZynthoMidi extends EventEmitter {
         else
           this.removeBind(deviceBindPath);
       } catch (err) {
-            console.log(`<3> Something went wrong while managing bind: ${err}`);
+           zconsole.warning(`Something went wrong while managing bind: ${err}`);
       }
     }
   }

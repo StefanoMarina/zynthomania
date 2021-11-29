@@ -86,8 +86,6 @@ class OSCWorker extends EventEmitter {
         this.push(pack.address, callback)
     } );
   }
-  
-  
 }
 
 module.exports.OSCWorker = OSCWorker;

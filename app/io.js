@@ -95,3 +95,48 @@ module.exports.createIOConfig = function (config) {
   
   return IO;
 }
+
+var zconsole = {};
+module.exports.zconsole = zconsole;
+/**
+ * zconsole is a simple console wrapper for systemd messages
+ * 2: [critical] - aborting stuff.
+ * 3: [error] - errors
+ * 4: [warning] - warnings
+ * 5: [notice] unusual/important stuff
+ * 6: [info] standard stuff
+ * 7: [debugging] verbose level
+ */
+
+zconsole.logGet = function(req) {
+  console.log(`<6> [GET] ${req.baseUrl}: ${JSON.stringify(req.query)}`);
+}
+
+zconsole.logPost = function(req) {
+  console.log(`<6> [POST] ${req.baseUrl}: ${JSON.stringify(req.body)}`);
+}
+
+zconsole.debug = function(msg) {
+  console.log(`<7> ${msg}`);
+}
+
+zconsole.log = function(msg) {
+  console.log(`<6> ${msg}`);
+}
+
+zconsole.notice = function(msg) {
+  console.log(`<5> {msg}`);
+}
+
+zconsole.warning = function(msg) {
+  console.log(`<4> ${msg}`);
+}
+
+zconsole.error = function(msg) {
+  console.error(`<3> ${msg}`);
+}
+
+zconsole.critical = function(msg) {
+  console.error(`<2> ${msg}`);
+}
+
