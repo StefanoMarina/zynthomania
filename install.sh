@@ -25,7 +25,7 @@ echo "Node.js found on $NODE_PATH"
 
 NODE_VER=`$NODE_PATH -v`
 if [[ "$NODE_VER" != v16* ]]; then
-  echo "Node version '$NODE_VER' seems to be under 16. please install node v16 or higher.\n";
+  echo "Node version '$NODE_VER' seems to be under 16. please install node.js (nodejs) v16 or higher.\n";
   exit 1;
 fi
 
@@ -72,7 +72,6 @@ fi
 rm install.json
 
 # Zynthomania utils
-
 if ! [[ -f ~/.zmania/zmania.source ]]; then
   echo "Installing source helpers..."
 
