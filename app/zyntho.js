@@ -220,13 +220,13 @@ class ZynthoServer extends EventEmitter {
           //console.log("OSC query end.");
           this.emit('query-done', oscMsg);
         } else if (oscMsg.address.match(/^\/zmania/i)){
-          zconsole.debug("zyntho message on osc");
+          zconsole.debug(`zyntho message on osc: ${oscMsg.address}`);
           let parsed = this.parser.translate(oscMsg.address);
           this.oscEmitter.on(parsed.address, this, parsed.args);
         } else {
-          
-          zconsole.log("OSC message: ", oscMsg);
+          zconsole.log(`OSC message: ${oscMsg.address} ${JSON.stringify(oscMsg.args.map( (e) => e.value))}`);
         }
+        
         this.emit(oscMsg.address, oscMsg);
     });
 
