@@ -45,17 +45,7 @@ class ZynthoServer extends EventEmitter {
      * arguments are the ZynthoServer object, parsed arguments
      */
     this.oscEmitter = new EventEmitter();
-    
-    /**
-     * default 'done' query
-     * this query is used to signal that all OSC get mesagges have been
-     * received and thus the result can be returned.
-     * This is because there is no guarantee AFAIK that bundle or messages
-     * will return in the same order they are sent.
-     * this done query should *NEVER* be used in a bundle or for real
-     * purposes.
-     */
-    this.defaultDoneQuery = this.parser.translate('/part0/self');
+   
   }
   
   /**
@@ -201,12 +191,18 @@ class ZynthoServer extends EventEmitter {
         let defSes = `${this.IO.workingDir}/sessions/default.xmz`;
         if (Fs.existsSync(defSes)) {
           zconsole.log('Loading default session.');
-          this.sessionLoad('default.xmz');
+          try {
+            this.sessionLoad('default.xmz');
+          } catch (err) {
+            zconsole.warning(`Error on loading default session : ${err}`);
+          }
         }
     });
     
     this.osc.on('error', (err) => {
-      throw `OSC ERROR: ${err}`;
+      //throw `OSC ERROR: ${err}`;
+      zconsole.error(`OSC ERROR: ${err}`);
+      zconsole.log(err.stack);
     });
     
     /*
@@ -216,10 +212,7 @@ class ZynthoServer extends EventEmitter {
      * triggered before to handle the message.
      */
     this.osc.on("osc", (oscMsg) => {
-        if (oscMsg.address == this.defaultDoneQuery.address) {
-          //console.log("OSC query end.");
-          this.emit('query-done', oscMsg);
-        } else if (oscMsg.address.match(/^\/zmania/i)){
+        if (oscMsg.address.match(/^\/zmania/i)){
           zconsole.debug(`zyntho message on osc: ${oscMsg.address}`);
           let parsed = this.parser.translate(oscMsg.address);
           this.oscEmitter.on(parsed.address, this, parsed.args);
@@ -283,59 +276,6 @@ class ZynthoServer extends EventEmitter {
     return result;
   }
   
-   /**
-    * ZynthoServer::injects
-    * injects an internal get message and binds it to a callback
-    * this should work if the OSC 1.0 bundle rule is respected - packets
-    * are handled one at time, but no order is guaranteed on bundles.
-    */
-    
-   injectDone(message, onDone) {
-      if (Object.prototype.toString.call(message)!=='[object Object]') {
-         message = this.parser.translate(message);
-      }
-       
-      if (message.packets === undefined) {
-         let bundle = this.parser.emptyBundle();
-         bundle.packets.push(message);
-         message = bundle;
-      } 
-      
-      message.packets.push(this.defaultDoneQuery);
-      this.once('query-done', (msg) => {onDone();})
-      return message;
-    }
-    
-  /**
-   * ZynthoServer::send
-   * sends OSC messages to the synth
-   * message: string, object or bundle
-   * onDone: if set, a query-done will be send to trigger the event end
-   * this is useful if OSC is required to wait for the event but the event
-   * does not send anything.
-   */
-   send(message, onDone) {
-     
-     if (Object.prototype.toString.call(message)!=='[object Object]') {
-       message = this.parser.translate(message);
-     }
-     
-     if (onDone !== undefined) {
-       message = this.injectDone(message, onDone);
-     }
-     
-     if (message.address != null && message.address.match(/^\/zmania/)) {
-       this.oscEmitter.emit(message.address, this, message.args);
-     } else if (message.packets != null 
-            && message.packets[0].address.match(/^\/zmania/)){
-       //filter packages
-       message.packets.forEach( 
-        (packet) => this.oscEmitter.emit(packet.address, this, packet.args)
-        );
-     } else 
-      this.osc.send.call(this.osc, message);
-   }
-   
    
    /**
     * ZynthoServer::bundleBind
@@ -344,45 +284,10 @@ class ZynthoServer extends EventEmitter {
     bundleBind(bundle, callback) {
       var _this = this;
       bundle.packets.forEach( (message) => {
-        if (message.address == _this.defaultDoneQuery.address)
-          return;
-        
         _this.on(message.address, (msg) => {callback(msg)});
       })
     }
     
-   /**
-    * Zynthoserver::query
-    * sends get messages to the synth, triggering each message
-    * message: string, object or bundle
-    * onQuery: if defined, all messages will be bind to this callback. arguments are same of event?
-    * onDone: if defined, doneMessage will be send to (supposedly) trigger the event end
-    */
-   query(message, onQuery, onDone) {
-     if (message === undefined)
-      throw '::query: undefined message';
-     if (Object.prototype.toString.call(message)!=='[object Object]') {
-       message = this.parser.translate(message);
-     }
-     
-     var _this = this;
-     
-     if(onQuery !== undefined && onQuery != null) {
-       if (message.packets === undefined) {
-         _this.once (message.address, (msg) => {onQuery(msg)});
-       } else {
-         message.packets.forEach( (address) => {
-           _this.once (address, (msg) => {onQuery(msg)});
-         });
-       }
-     }
-    
-    if (onDone !== undefined && onDone != null) {
-      message = this.injectDone(message, onDone);
-    }
-    this.osc.send(message);
-   }
-   
    /**
     * Zynthoserver::getBanks
     * retrieve all banks name with path
@@ -880,6 +785,7 @@ class ZynthoServer extends EventEmitter {
    * @param packet single osc message or bundle
    */
   sendOSC(packet) {
+ 
     if (packet.address === undefined) { //bundle
       if (packet.packets[0].address.match(/^\/zmania/i))
         packet.packets.forEach( (p) => {this.oscEmitter.emit(p.address, this, p.args)} );
@@ -932,8 +838,13 @@ class ZynthoServer extends EventEmitter {
     this.once(`/damage`, () =>{
       //see if you need to apply route
       if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
+        try {
          this.route(undefined, undefined);
+        } catch (err) {
+          zconsole.notice(`Error while handling routing in session loading:${err}`);
+        }
        }
+       zconsole.log('Loaded session.');
     });
     
     this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));

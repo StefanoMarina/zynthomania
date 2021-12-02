@@ -108,6 +108,12 @@ app.post('/loadInstrument', function (req, res) {
 app.post('/setFavorite', function (req, res) {
   zconsole.logPost(req);
   
+  if (req.body.instrument == null || Object.keys(req.body.instrument).length ==0) {
+    res.statusMessage = 'Invalid instrument';
+    res.status(400).end();
+    return;
+  }
+  
   result = ('set' == req.body.action)
     ? app.zyntho.addFavorite(req.body.instrument)
     : app.zyntho.removeFavorite(req.body.instrument);
@@ -128,7 +134,7 @@ app.post('/script', function(req, res) {
     return;
   }
   
-  app.zyntho.send(req.body.script);
+  app.zyntho.sendOSC(req.body.script);
   
   res.end();
 });
@@ -289,93 +295,11 @@ app.get('/status/session', function (rq, res) {
   zconsole.logGet(rq);
   
   let result = {};
-  result.sessionList = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"sessions");
+  result.sessionList = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"sessions")
+    .filter ( (e) => e.match(/\.xmz$/i)) ;
   result.currentSession = app.zyntho.lastSession;
   res.json(result);
 });
-
-/**
- * /fx/part/next_fx
- * POST
- * changes a part efx
- * body {part: part id, efx: efx id}
- */
-app.post('/fx/part/next_fx', function (req, res) {
-  zconsole.logPost(req);
-  
-  let partID = req.body.partID;
-  let efxID = req.body.efxID;
-  
-  app.zyntho.query(app.zyntho.parser.translate(`/part${partID}/partefx${efxID}/efftype`),
-  (msg) => {
-    let value = msg.args[0].value;
-    app.zyntho.changeFX(partID, efxID, ++value, (result) =>{
-     // console.log(`result: ${result}`);
-      res.json(result);
-    });
-  });
-})
-
-/**
- * /fx/part/prev_fx
- * POST
- * changes a part efx
- * body {part: part id, efx: efx id}
- */
-app.post('/fx/part/prev_fx', function (req, res) {
-  zconsole.logPost(req);
-  
-  let partID = req.body.partID;
-  let efxID = req.body.efxID;
-  
-  app.zyntho.query(app.zyntho.parser.translate(`/part${partID}/partefx${efxID}/efftype`),
-  (msg) => {
-    let value = msg.args[0].value;
-    app.zyntho.changeFX(partID, efxID, --value, (result) =>{
-      res.json(result);
-    });
-  });
-})
-
-/**
- * /fx/system/next_fx
- * POST
- * changes a system efx
- * body { efx: efx id}
- */
-app.post('/fx/system/next_fx', function (req, res) {
-  zconsole.logPost(req);
-  
-  let efxID = req.body.efxID;
-  
-  app.zyntho.query(app.zyntho.parser.translate(`/sysefx${efxID}/efftype`),
-  (msg) => {
-    let value = msg.args[0].value;
-    app.zyntho.changeFX(undefined, efxID, ++value,null, (result) =>{
-      res.json(result);
-    });
-  });
-})
-
-/**
- * /fx/system/prev_fx
- * POST
- * changes a system efx
- * body { efx: efx id}
- */
-app.post('/fx/system/prev_fx', function (req, res) {
-  zconsole.logPost(req);
-  
-  let efxID = req.body.efxID;
-  
-  app.zyntho.query(app.zyntho.parser.translate(`/sysefx${efxID}/efftype`),
-  (msg) => {
-    let value = msg.args[0].value;
-    app.zyntho.changeFX(undefined, efxID, --value, null, (result) =>{
-      res.json(result);
-    });
-  });
-})
 
 /**
 * /fx/set

@@ -109,11 +109,11 @@ module.exports.zconsole = zconsole;
  */
 
 zconsole.logGet = function(req) {
-  console.log(`<6> [GET] ${req.baseUrl}: ${JSON.stringify(req.query)}`);
+  console.log(`<6> [GET] ${req.path}: ${JSON.stringify(req.query)}`);
 }
 
 zconsole.logPost = function(req) {
-  console.log(`<6> [POST] ${req.baseUrl}: ${JSON.stringify(req.body)}`);
+  console.log(`<6> [POST] ${req.path}: ${JSON.stringify(req.body)}`);
 }
 
 zconsole.debug = function(msg) {
