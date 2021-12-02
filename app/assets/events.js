@@ -51,7 +51,7 @@ function onBanksBankSelect(selectedBank) {
       window.zsession.banks[selectedBank] = data;
       
       if (data.length == 0) {
-        $('#instrumentName').text('Empty!');
+        displayMessage('Empty!');
         return;
       }
       
@@ -84,7 +84,7 @@ function onBanksInstrumentClick(instrument) {
   doAction("loadInstrument", {'instrument': instrument, 
     'id': window.zsession.partID}, (data) => {
       console.log('done');
-//             $('#instrumentName').text(instrument.name);
+//             displayMessage(instrument.name);
         window.zsession.instrument = instrument;    
         $('#btnDoFavorite i').removeClass('far fas');
         $('#btnDoFavorite i').addClass( (isFavorite(instrument)) 
@@ -326,7 +326,7 @@ function onBindEditMidilearn() {
     let dataType = (data[0] >> 4);
     
     if (dataType != 9 && dataType != 11) {
-      $('#instrumentName').text('Only CC or Note events');
+      displayMessage('Only CC or Note events');
       return;
     }
     window.zsession.bind.info.channel = (data[0] & 0xf)+1;
@@ -390,12 +390,12 @@ function bindSetOSC(osc) {
 function bindUpdateRemoteSession() {
   let session = window.zsession.bind.session;
   if (session == null || Object.keys(session).length == 0) {
-    $('#instrumentName').text('No session to save');
+    displayMessage('No session to save');
     return;
   }
   
   doAction('binds/session/set', {'session': session}, (data) =>{
-    $('#instrumentName').text('Session updated');
+    displayMessage('Session updated');
   });
 }
 
@@ -734,7 +734,7 @@ function onSystemSessionLoadClick() {
     return;
   
   doAction('script', {script :`/zmania/load_xmz '${filename}'`}, () =>{
-    $('#instrumentName').text('Loaded session.');
+    displayMessage('Loaded session.');
     onSystemSession();
   });
 }
@@ -778,23 +778,26 @@ function onSystemUADSR(type) {
 }
 
 function onToolbarChangePart(index) {
-  if (window.zsession.partID+index < 0)
-    window.zsession.partID = 15;
-  else if (window.zsession.partID+index > 15)
-    window.zsession.partID = 0;
-  else
-    window.zsession.partID += index;
-  $('#currentPart').text( ('0'+window.zsession.partID).substr(-2) );
+  if (index !== undefined)
+    window.zsession.partID = index;
   
   //retrieve part info
   doQuery('status/part', {id: window.zsession.partID}, (data) => {
-    console.log(data);
+    //console.log(data);
     if (data.name == '') data.name = 'Unloaded';
-    $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
+    
+    if (data.enabled)
+      $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
+    else
+      $('#instrumentName').text('Disabled');
+    
+    window.knobs['kpvol'].setValue(data.volume);
+    window.knobs['kppan'].setValue(data.panning);
+    $('#btnEditChan').val(data.rcvchn);
   });
   
-  //any active panel must be re-triggered
-  $('.controlPanel tab-header.btn-selected').trigger('click');
+  //TODO: any active panel must be re-triggered
+  //$('.controlPanel tab-header.btn-selected').trigger('click');
 }
 
 

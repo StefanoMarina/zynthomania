@@ -96,7 +96,10 @@ function registerSwipeables(query, enableClickSelect) {
         console.error(`swipeable click error: no elements`);
         return;
     }
-    dialogBox('Select:', elements, (i) =>{
+    
+    dialogBox('Select:', elements, select.val(), (i) =>{
+      console.log (`select: ${i}, ${elements[i]}`);
+      
       select.val(elements[i]);
       select.trigger({type: 'change', e: e, value: select.val()});
     });
@@ -114,31 +117,43 @@ function registerSwipeables(query, enableClickSelect) {
   
 }
 
-function dialogBox(title, elements, onOk, onCancel) {
+function dialogBox(title, elements, defValue, onOk, onCancel) {
   $('.dialogBox').removeClass('hidden');
+  $('main').addClass('hidden');
   let dialog = $('.dialogBox > div');
   let content = $(dialog).find('> div');
   
   $(dialog).find('h4').text(title);
   $(content).empty();
   elements.forEach( (element) => {
-    let html = `<div class="col-12"><button style="width:100%" data-i="${elements.indexOf(element)}" class="big-btn dialog-button">${element}</button></div>`;
+    let isSelected = (element == defValue) ? 'btn-selected' : '';
+    let html = `<div class="col-12"><button style="width:100%" data-i="${elements.indexOf(element)}" class="${isSelected} big-btn dialog-button">${element}</button></div>`;
     $(content).append(html);
   });
   
   $(content).find('button').on('click', (e)=>{
-    $(content).find('button').removeClass('btn-selected');
-    $(e.target).addClass('btn-selected');
+    if ($(e.target).hasClass('btn-selected')) {
+      $('#btnOk').trigger('click');
+    } else {
+      $(content).find('button').removeClass('btn-selected');
+      $(e.target).addClass('btn-selected');
+    }
   });
   
   $('#btnOk').one('click', () =>{
+    $('main').removeClass('hidden');
     $('.dialogBox').addClass('hidden');
-    if ($(content).find('.btn-selected'))
-        onOk($(content).find('.btn-selected').attr('data-i'));
+    window.scrollTo(0,0);
+    if ($(content).find('.btn-selected').length>0) {
+      console.log('ok trigger');
+      onOk($(content).find('.btn-selected').attr('data-i'));
+    }
   });
   
   $('#btnCancel').one('click', () =>{
+    window.scrollTo(0,0);
     $('.dialogBox').addClass('hidden');
+    $('main').removeClass('hidden');
     if (onCancel)
       onCancel();
   });

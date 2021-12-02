@@ -25,10 +25,6 @@ class LCDKnob {
   constructor(id) {
     this.value = 0;
     this.divID = id;
-    //let svg = $(`#${this.divID} svg`);
-    //$(svg).attr('height', 50).attr('width', 50);
-    //$(svg).append('<line x1="25" y1="25" x2="25" y2="0" style="stroke:rgb(128,128,128); stroke-width:2" />');
-    
   }
   
   setValue(value) {
@@ -43,8 +39,9 @@ class LCDKnob {
     return this.value;
   }
   
-  next() {
-    return this.setValue(this.getValue()+32);
+  next(val) {
+    val = (val === undefined) ? 32 : val;
+    return this.setValue(this.getValue()+val);
   }
   
   render() {

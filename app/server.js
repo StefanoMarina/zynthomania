@@ -21,10 +21,10 @@ const EXPRESS = require('express');
 const Fs = require('fs');
 const OS = require('os'); 
 const Util = require ('util');
-const OSCParser = require ('./parser.js')
 const ZynthoIO = require ('./io.js');
 const zconsole = ZynthoIO.zconsole;
 const ZynthoMania = require ('./zyntho.js');
+const OSCWorker = require ('./oscworker.js').OSCWorker;
 
 const app = EXPRESS();
 
@@ -129,6 +129,7 @@ app.post('/script', function(req, res) {
   }
   
   app.zyntho.send(req.body.script);
+  
   res.end();
 });
 
@@ -200,8 +201,27 @@ app.get('/status/part', function( req, res, next) {
     return;
   }
 
-  app.zyntho.query(`/part${req.query.id}/Pname`, (result) => {
-    res.json({name: result.args[0].value})
+  const result = {};
+  let partInfo = [
+    `/part${req.query.id}/Pname`,
+    `/part${req.query.id}/Pvolume`,
+    `/part${req.query.id}/Ppanning`,
+    `/part${req.query.id}/Penabled`,
+    `/part${req.query.id}/Prcvchn`
+  ];
+  
+  const worker = new OSCWorker(app.zyntho);
+  
+  let bundle = app.zyntho.parser.translateLines(partInfo);
+  worker.pushPacket( bundle , (add, args) => {
+    let property = add.match(/\/P(\w+)$/)[1];
+    result[property] = args[0].value;
+  });
+  
+  app.zyntho.osc.send(bundle);
+  
+  worker.listen().then(()=>{
+    res.json(result);
   });
 });
 
