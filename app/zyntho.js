@@ -862,11 +862,17 @@ class ZynthoServer extends EventEmitter {
       let bindPath = `${this.IO.workingDir}/binds/${file.replaceAll('.xmz','.json')}`;
       if (Fs.existsSync(bindPath)) {
         zconsole.log('Found session bind file.');
+        
         try {
-          this.midiService.addBind(bindPath);
+          this.midiService.sessionConfig = JSON.parse(Fs.readFileSync(bindPath));
+          //this.midiService.addBind(bindPath);
         } catch (err) {
-          zconsole.warning(`> Cannot add bind session file: ${err}`);
+          zconsole.warning(`Cannot read bind session file: ${err}`);
         }
+      } else {
+        //remove configuration
+        this.midiService.sessionConfig =  null;
+        this.midiService.sessionMap = null;
       }
     }
     
@@ -877,8 +883,9 @@ class ZynthoServer extends EventEmitter {
     }
     
     this.lastSession = file;
-    this.once(`/damage`, () =>{
-      //see if you need to apply route
+    this.once(`/damage`, (msg) =>{
+      
+      //See if you need to apply route
       if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
         try {
          this.route(undefined, undefined);
@@ -888,17 +895,17 @@ class ZynthoServer extends EventEmitter {
        }
        zconsole.log('Loaded session.');
        
-       let extDataPath = sessionPath.replace(/xmz$/,'json');
-       if (Fs.existsSync(extDataPath)) {
+      let sessionJson = sessionPath.replace(/xmz$/,'json');
+      if (Fs.existsSync(sessionJson)) {
          zconsole.log('Loading extended data...');
          try {
-           this.session = JSON.parse(Fs.readFileSync(extDataPath));
+           this.session = JSON.parse(Fs.readFileSync(sessionJson));
          } catch (err) {
-           zconsole.warning(`File ${extDataPath} was not readable: ${err}. Skipping.`);
+           zconsole.warning(`File ${sessionJson} was not readable: ${err}. Skipping.`);
            this.session = ZynthoServer.defaultExtendedSession();
          }
-       } else
-         this.session = ZynthoServer.defaultExtendedSession();
+      } else
+         this.session = ZynthoServer.defaultExtendedSession();      
     });
     
     this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));
@@ -919,12 +926,23 @@ class ZynthoServer extends EventEmitter {
     this.osc.send(this.parser.translate(
       `/save_xmz '${this.IO.workingDir}/sessions/${file}'`
     ));
-    
+   
+    // Extra session data   
     let extfile = file.replace(/xmz$/,'json');
     try {
       Fs.writeFileSync(`${this.IO.workingDir}/sessions/${extfile}`, JSON.stringify(this.session));
     } catch (err) {
       zconsole.warning(`Could not save extended session data: ${err}`);
+    }
+    
+    //Session binds
+    if (this.midiService.sessionConfig != null) {
+      zconsole.notice('Session binds found and will be saved.s');
+      try {
+        Fs.writeFileSync(`${this.IO.workingDir}/binds/${extfile}`, JSON.stringify(this.midiService.sessionConfig));
+      } catch (err) {
+        zconsole.warning(`Could not save session bind: ${err}`);
+      }
     }
   }
 
