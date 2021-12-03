@@ -113,6 +113,74 @@ class ZynthoServer extends EventEmitter {
     } else
       this.favorites = [];
     
+    /* Init midi service */
+    this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.workingDir,
+          this.config);
+    zconsole.log ("Started midi service");
+    
+    //Register MIDI Device update events
+    this.midiService.on('device-in', (name) =>{
+      
+      if (this.config['plugged_devices'] == null)
+        this.config['plugged_devices'] = [];
+      
+      if (this.config['plugged_devices'].indexOf(name) == -1) {
+        this.config['plugged_devices'].push(name);
+        this.save();
+      }
+    });
+    this.midiService.on('device-out', (name) =>{
+      if (this.config['plugged_devices'] != null) {
+        let index = this.config['plugged_devices'].indexOf(name);
+        if (index != -1)
+          this.config['plugged_devices'].splice(index,1);
+        
+        this.save();
+      }
+    });
+    
+    /* UADSR */
+    if (this.config.uadsr != null && (this.config.uadsr.type != "none")) {
+      try {
+        this.midiService.loadUADSR(this.config.uadsr.type);
+        zconsole.log("UADSR loaded");
+      } catch (err) {
+        zconsole.warning(`UADSR loading failed: ${err}`);
+        this.midiService.loadUADSR('none');
+      }
+    }
+          
+    /*
+     * Capture all /zmania/ osc messages from binds
+     * all other binds goes to regular osc
+    */
+    this.midiService.knot.on('osc', (packet) => {
+      if (!Array.isArray(packet))
+        packet = [packet];
+      
+      //console.log(`midi osc : ${JSON.stringify(packet)}`);
+      
+      let zmaniaHandler = packet.filter( (path) => path.match(/^\/zmania/));
+      packet = (zmaniaHandler.length > 0)
+          ? packet.filter( (path) => (zmaniaHandler.indexOf(path)>-1))
+          : packet;
+      
+      this.osc.send.call(this.osc, this.parser.translate(packet));
+      
+      //send internally osc messages
+      zmaniaHandler.forEach( (path) => {
+        let tPath = this.parser.translate(path);
+        this.oscEmitter.emit(tPath.address, this, tPath.args);
+      });
+    });
+
+    //Capture damage events
+    this.on('/damage', (msg)=> {
+      let match = msg.args[0].value.match(/^\/part(\d+)/);
+      if (match != null)
+        this.resetPartData(match[1]);
+    }) 
+       
     //Init osc, bind to custom emitter, try to open
     this.osc = new Osc.UDPPort({
       localAddress: "127.0.0.1",
@@ -123,38 +191,13 @@ class ZynthoServer extends EventEmitter {
       metadata: true
     });
     
+    
     /*
       POST-OSC initialization
     */
     this.osc.on('ready', () => {
         zconsole.log ("Opened OSC Server");
         registerOSC(this);
-        
-        /* Init midi service */
-        this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.workingDir,
-              this.config);
-        zconsole.log ("Started midi service");
-        
-        //Register MIDI Device update events
-        this.midiService.on('device-in', (name) =>{
-          
-          if (this.config['plugged_devices'] == null)
-            this.config['plugged_devices'] = [];
-          
-          if (this.config['plugged_devices'].indexOf(name) == -1) {
-            this.config['plugged_devices'].push(name);
-            this.save();
-          }
-        });
-        this.midiService.on('device-out', (name) =>{
-          if (this.config['plugged_devices'] != null) {
-            let index = this.config['plugged_devices'].indexOf(name);
-            if (index != -1)
-              this.config['plugged_devices'].splice(index,1);
-            
-            this.save();
-          }
-        });
         
         //MIDI connect to zyn && restore configs
         try {
@@ -164,47 +207,6 @@ class ZynthoServer extends EventEmitter {
           zconsole.error(`Error on creating zynthomania virtual port: ${err}`);
         }
         
-        if (this.config.uadsr != null && (this.config.uadsr.type != "none")) {
-          try {
-            this.midiService.loadUADSR(this.config.uadsr.type);
-            zconsole.log("UADSR loaded");
-          } catch (err) {
-            zconsole.warning(`UADSR loading failed: ${err}`);
-            this.midiService.loadUADSR('none');
-          }
-        }
-          
-        /*
-         * Capture all /zmania/ osc messages from binds
-         * all other binds goes to regular osc
-        */
-        this.midiService.knot.on('osc', (packet) => {
-          if (!Array.isArray(packet))
-            packet = [packet];
-          
-          //console.log(`midi osc : ${JSON.stringify(packet)}`);
-          
-          let zmaniaHandler = packet.filter( (path) => path.match(/^\/zmania/));
-          packet = (zmaniaHandler.length > 0)
-              ? packet.filter( (path) => (zmaniaHandler.indexOf(path)>-1))
-              : packet;
-          
-          this.osc.send.call(this.osc, this.parser.translate(packet));
-          
-          //send internally osc messages
-          zmaniaHandler.forEach( (path) => {
-            let tPath = this.parser.translate(path);
-            this.oscEmitter.emit(tPath.address, this, tPath.args);
-          });
-        });
-       
-       //Capture damage events
-       this.on('/damage', (msg)=> {
-          let match = msg.args[0].value.match(/^\/part(\d+)/);
-          if (match != null)
-            this.resetPartData(match[1]);
-       })
-       
        /*
         * See if the default session is present
         */
@@ -247,6 +249,7 @@ class ZynthoServer extends EventEmitter {
       zconsole.warning(`Zynthomania Event error: ${err}`);
     });
 
+    //Let's go!
     this.osc.open();
   }
   
