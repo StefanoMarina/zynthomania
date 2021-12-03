@@ -82,15 +82,7 @@ function onBanksBankSelect(selectedBank) {
 
 function onBanksInstrumentClick(instrument) {
   doAction("loadInstrument", {'instrument': instrument, 
-    'id': window.zsession.partID}, (data) => {
-      console.log('done');
-//             displayMessage(instrument.name);
-        window.zsession.instrument = instrument;    
-        $('#btnDoFavorite i').removeClass('far fas');
-        $('#btnDoFavorite i').addClass( (isFavorite(instrument)) 
-                                  ? 'fas' : 'far');
-        onToolbarChangePart(0);
-    })
+    'id': window.zsession.partID}, onToolbarChangePart);
   }
 
 function onBindChain() {
@@ -116,7 +108,7 @@ function onBindChain() {
           : $(e.target).text();
           
       doAction('binds/remove', {file : value}, (data) =>{
-            onBind();
+            onBindChain();
       });
         
     });
@@ -124,9 +116,6 @@ function onBindChain() {
 }
 
 function onBindFile() {
-  
-    
-  
   doQuery("status/binds", null, (data) =>{
   
     window.zsession.bind.session = data.sessionConfig;
@@ -710,11 +699,11 @@ function onSystemSessionSaveClick() {
     filename = prompt ("New session name:", "default.xmz");
     if (filename == null)
       return;
-    if (!filename.match(/\.xmz$/)) {
+    if (!filename.match(/\.xmz$/i)) {
       alert('Please save as .xmz file.');
       return;
     }
-    if ($('#sysCurSession').find(`li:contains(${filename})`)) {
+    if ($('#sysCurSession').find(`li:contains(${filename})`).length>0) {
       let res = confirm(`${filename} exists! Overwrite?`)
       if (!res) return;
     }
@@ -734,7 +723,8 @@ function onSystemSessionLoadClick() {
     return;
   
   doAction('script', {script :`/zmania/load_xmz '${filename}'`}, () =>{
-    displayMessage('Loaded session.');
+    //displayMessage('Loaded session.');
+    onToolbarChangePart(0);
     onSystemSession();
   });
 }
@@ -777,6 +767,43 @@ function onSystemUADSR(type) {
   });
 }
 
+function onToobarFavoriteClick() {
+  let status = $('#btnDoFavorite').hasClass('fas');
+  let request = !status;
+  
+  
+  let action = (value) ? 'set' : 'unset';
+        
+        //First, we update server
+        doAjax({method:'post', url: window.location.href+"setFavorite",
+                data: JSON.stringify({"instrument": instrument, "action": action}), 
+                contentType: 'application/json; charset=utf-8'},
+        function() {
+          
+          //Then we update client, without ajax
+          if (!value) {
+            window.zsession.banks['Favorites']= 
+            window.zsession.banks.Favorites.filter( (entry) => {
+              return (entry.path != instrument.path);});
+          } else {
+            window.zsession.banks.Favorites.push(instrument);
+          }
+          
+          //last we update display
+          if (instrument.name == window.zsession.getInstrument().name) {
+            $('#btnDoFavorite i').removeClass('far fas');
+            $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
+          }
+          
+          let li = $('#selInstruments li.btn-selected');
+          if (li !== undefined && li.attr('data-instrument') == instrument.path) {
+            $(li).empty();
+            $(li).text(instrument.name);
+            if (value)
+              $(li).append('<span style="float:right"><i class="fas fa-star"></i></span>');
+          }
+        });
+}
 function onToolbarChangePart(index) {
   if (index !== undefined)
     window.zsession.partID = index;
@@ -786,14 +813,34 @@ function onToolbarChangePart(index) {
     //console.log(data);
     if (data.name == '') data.name = 'Unloaded';
     
-    if (data.enabled)
-      $('#instrumentName').text(`#${window.zsession.partID}: ${data.name}`);
-    else
-      $('#instrumentName').text('Disabled');
+    displayMessage ( (data.enabled
+            ? `#${window.zsession.partID+1}: ${data.name}`
+            : `Disabled`), true);
     
     window.knobs['kpvol'].setValue(data.volume);
     window.knobs['kppan'].setValue(data.panning);
     $('#btnEditChan').val(data.rcvchn);
+    
+    if (data.enabled)
+      $('h3 > a').addClass('hidden');
+    else
+      $('h3 > a').removeClass('hidden');
+    
+    //if undefined will reset
+    window.zsession.setInstrument(undefined, data.instrument);
+    
+    let isInstrumentFavorite = (data.instrument != null && data.name != ""
+          && isFavorite(data.instrument));
+    
+    if (isInstrumentFavorite) {
+      $('#btnDoFavorite > i').removeClass('far');
+      $('#btnDoFavorite > i').addClass('fas');
+    } else {
+      $('#btnDoFavorite > i').removeClass('fas');
+      $('#btnDoFavorite > i').addClass('far');
+      window.zsession.setInstrument(null);
+    }
+    
   });
   
   //TODO: any active panel must be re-triggered

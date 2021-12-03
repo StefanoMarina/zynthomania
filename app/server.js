@@ -134,8 +134,16 @@ app.post('/script', function(req, res) {
     return;
   }
   
-  app.zyntho.sendOSC(req.body.script);
+  let bundle = null;
+  try {
+    bundle = app.zyntho.parser.translate(req.body.script)
+  } catch (err) {
+    res.statusMessage = 'Invalid syntax.';
+    res.status(400).end();
+    return;
+  }
   
+  app.zyntho.sendOSC(bundle);
   res.end();
 });
 
@@ -150,8 +158,8 @@ app.post('/script', function(req, res) {
 app.get('/status/partfx', function (req, res, next) {
  zconsole.logGet(req);
  
- if (req.query.id === undefined) {
-   res.status(400).json({});
+ if (req.query.id === undefined || req.query.id.match(/\d+/)==null) {
+   res.status(400).end();
    return;
  }
 
@@ -227,6 +235,10 @@ app.get('/status/part', function( req, res, next) {
   app.zyntho.osc.send(bundle);
   
   worker.listen().then(()=>{
+    let instrument = app.zyntho.session.instruments[req.query.id];
+    if (instrument != null) {
+      result.instrument = instrument;
+    }
     res.json(result);
   });
 });
@@ -298,6 +310,7 @@ app.get('/status/session', function (rq, res) {
   result.sessionList = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"sessions")
     .filter ( (e) => e.match(/\.xmz$/i)) ;
   result.currentSession = app.zyntho.lastSession;
+  result.sessionData = app.zyntho.session;
   res.json(result);
 });
 

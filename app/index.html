@@ -39,15 +39,21 @@
           <tr>
             <td><button id="btnDoFavorite"><i class="far fa-star big-icon"></i></button></td>
             <td><div class="swipeable"></div></td>
-            <td><span class="d-none d-md-inline fa fa-volume-up" style="margin-right:2px"></span><button id="kpvol" class="knob"></button> </td>
-            <td><span class="d-none d-md-inline fa fa-arrows-alt-h" style="margin-right:2px"></span><button id="kppan" class="knob"></button> </td>
+            <td>
+              <i class="fa fa-volume-up big-icon"></i><button id="kpvol" class="knob"></button> 
+            </td>
+            <td><i class="fa fa-arrows-alt-h big-icon"></i><button id="kppan" class="knob"></button> </td>
             <td><button id="btnEditChan" class="big-btn"><i class="fa fa-edit"></i></button></td>
             <td><button id="btnClearPart" class="big-btn"><i class="fa fa-trash-alt"></i></button></td>
           </tr>
         </table>
       
         <div class="col-12">
-          <h3><span id="instrumentName">Welcome to Zynthomania! </span><span id="q-status" class="fa" style="float: right"></span></h3>
+          <h3>
+            <a class="hidden"><i class="fa fa-power-off"></i></a>
+            <span id="instrumentName">Welcome to Zynthomania! </span>
+            <span id="q-status" class="fa" style="float: right"></span>
+          </h3>
         </div>
       
         <div class="row">
@@ -143,11 +149,11 @@
               </header>
               <div class="col-8">  
                 <div id="pnlBindIO" class="bindPanel panel hidden">
-                  <ul id="selBinds" class="select col-12" style=" height:280 !important"></ul>
+                  <div class="col-12"><ul id="selBinds" class="select" style=" height:280 !important"></ul></div>
                   <div class="row">
-                    <button class="big-btn send-btn col-12 col-lg-4" onclick="onBindFileAddClick(this);">Add to chain</button>
-                    <button class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileEditClick();">Edit</button>
-                    <button id="bindSave" class="big-btn send-btn col-6 col-lg-4" onclick="onBindFileSaveClick();">Save</button>
+                    <div class="col-12 col-lg-4"><button class="big-btn send-btn col-12" onclick="onBindFileAddClick(this);">Add to chain</button></div>
+                    <div class="col-6 col-lg-4"><button class="big-btn send-btn col-12" onclick="onBindFileEditClick();">Edit</button></div>
+                    <div class="col-6 col-lg-4"><button id="bindSave" class="big-btn send-btn col-12" onclick="onBindFileSaveClick();">Save</button></div>
                   </div>
                 </div>
                 <div id="pnlBindChain" class="bindPanel panel hidden">
@@ -257,7 +263,7 @@
                   </div>
                 </div>
                 <div id="pnlSession" class="sysPanel panel hidden">
-                  <p id="sysCurSession"></p>
+                  <p class="bb tc" id="sysCurSession"></p>
                   <ul id="sysSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
                   <div class="row">
                     <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionLoadClick()">Load</button></div>
@@ -352,16 +358,46 @@
           window.zsession.partefx[window.zsession.partID].fx[id] = object;
       }
       
-      function displayMessage(msg) {
+      window.zsession.getInstrument = function (partID) {
+        if (partID === undefined)
+          partID = window.zsession.partID;
+          
+        if (window.zsession.instruments === undefined)
+          window.zsession.instruments = [];
+        
+        return (window.zsession.instruments[partID] == null)
+                ? {name : 'Unloaded', path: ''}
+                : window.zsession.instruments[partID];
+      }
+      
+      window.zsession.setInstrument = function (partID, instrument) {
+        if (partID === undefined)
+          partID = window.zsession.partID;
+          
+        if (window.zsession.instruments === undefined)
+          window.zsession.instruments = [];
+          
+        window.zsession.instruments[window.zsession.partID] = instrument;
+      }
+      
+      
+      function displayMessage(msg, force) {
+        force = (force === undefined) ? false : force;
+        
+        window.zsession.oldMessage = $('#instrumentName').text();
+        
         //remove Ajax timer
         clearInterval(window.timers['ajax']);
         clearTimeout(window.timers['msg']);
         $('#instrumentName').text(msg);
         
-        window.timers['msg'] = setTimeout ( function() {
-          onToolbarChangePart(window.zsession.partID);
-          clearTimeout(window.timers['msg']);
-        }, 5000);
+        if (!force) {
+          window.timers['msg'] = setTimeout ( function() {
+            //onToolbarChangePart();
+            $('#instrumentName').text(window.zsession.oldMessage);    
+            clearTimeout(window.timers['msg']);
+          }, 5000);
+        }
       }
       
       /* create a Instrument object */
@@ -378,7 +414,8 @@
       
       /* Quickie to check if instrument if favorite */
       function isFavorite(instrument) {
-        if (window.zsession.banks['Favorites'] === undefined ||
+        if (instrument == null ||
+            window.zsession.banks['Favorites'] === undefined ||
             window.zsession.banks['Favorites'].length == 0)
         return false;
         
@@ -412,37 +449,38 @@
       function doAjax(params, onDone) {
       
         let text = $('#instrumentName').text();
-        if (text.match(/^[ \.]+$/) == null)
+        clearTimeout(window.timers['msg']);
+        
+        //Run loading animation if not already
+        if (text.match(/^[ \.]+$/) == null) {
           window.zsession.beforeQueryText = text;
           
-        const oldValue = $('#instrumentName').text();
-        $('#instrumentName').text('.');
-        $('#q-status').removeClass('fa fas fa-hourglass fa-check-circle fa-times-circle');
-        $('#q-status').addClass('fa fa-hourglass');
-        
-        clearTimeout(window.timers['msg']);
-        window.timers['ajax'] = setInterval ( () =>{
-          
-          let text = $('#instrumentName').text();
-          
-          if (text.length < 8)
-            text += "..";
-          else {
-            padding = parseInt( /(\d+)px/.exec($('#instrumentName').css('padding-left'))[1] )
-            if (padding < 100)
-              $('#instrumentName').css('padding-left', padding+10);
-            else {
-              $('#instrumentName').css('padding-left', 0);
-              text = "..";
-            }
-          }
+          $('#instrumentName').text('.');
+          $('#q-status').removeClass('fa fas fa-hourglass fa-check-circle fa-times-circle');
+          $('#q-status').addClass('fa fa-hourglass');
             
-          $('#instrumentName').text(text);
-        }, 500);
+          window.timers['ajax'] = setInterval ( () =>{
+            let text = $('#instrumentName').text();
+            if (text.length < 8)
+              text += "..";
+            else {
+              padding = parseInt( /(\d+)px/.exec($('#instrumentName').css('padding-left'))[1] )
+              if (padding < 100)
+                $('#instrumentName').css('padding-left', padding+10);
+              else {
+                $('#instrumentName').css('padding-left', 0);
+                text = "..";
+              }
+            }
+              
+            $('#instrumentName').text(text);
+          }, 500);
+        }
         
         $.ajax(params)
         .done(function(data) {
             clearInterval(window.timers['ajax']);
+            window.timers['ajax'] = null;
             $('#q-status').removeClass('fa-hourglass');
             $('#q-status').addClass('fas fa-check-circle');
             $('#instrumentName').text(window.zsession.beforeQueryText);
@@ -455,9 +493,12 @@
           })
         .fail( function(jqXHR, textStatus, errorThrown) {
           clearInterval(window.timers['ajax']);
+          clearInterval(window.timers['ajax']);
+          window.timers['ajax'] = null;
           $('#q-status').removeClass('fa-hourglass');
           $('#q-status').addClass('fas fa-times-circle');
-          $('#instrumentName').text(`Error #${errorThrown}`);  
+          displayMessage(errorThrown);
+          //$('#instrumentName').text(errorThrown);
         });
       }
       
@@ -478,7 +519,7 @@
         
         //First, we update server
         doAjax({method:'post', url: window.location.href+"setFavorite",
-                data: JSON.stringify({"instrument":instrument, "action": action}), 
+                data: JSON.stringify({"instrument": instrument, "action": action}), 
                 contentType: 'application/json; charset=utf-8'},
         function() {
           
@@ -492,7 +533,7 @@
           }
           
           //last we update display
-          if (instrument.name == window.zsession.instrument.name) {
+          if (instrument.name == window.zsession.getInstrument().name) {
             $('#btnDoFavorite i').removeClass('far fas');
             $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
           }
@@ -619,19 +660,26 @@
           /**
           Button actions
           */
+          $('h3 > a').on('click', () => {
+            doAction('script', {script: `/part${window.zsession.partID}/Penabled T`},
+             () => {
+              onToolbarChangePart();
+             });
+          });
+          
           $('#btnClearPart').on('click', ()=>{
-            doAction('script', {script: `/part${window.zsession.partID}/clear`},
-              () => {
-                $('#instrumentName').text('Cleared');
-              });
+            doAction('script', {script: [`/part${window.zsession.partID}/clear`, 
+              `/part${window.zsession.partID}/Penabled F`
+              ]},onToolbarChangePart);
           });
           
           $('#btnBanks').on('click', function() { onBanks(); });
           $('#selBanks').on('click', 'li', function(e) {
             onBanksBankSelect($(e.target).attr('data-bank'));
           });
+          
+          // Instrument / Unset favorite click
           $('#selInstruments').on('click', 'li', function(e) {
-            
             if ('span' == $(e.target).prop('tagName').toLowerCase()
                   || 'i' == $(e.target).prop('tagName').toLowerCase()) {
                     
@@ -641,8 +689,8 @@
               onBanksInstrumentClick(listToInstrument($(e.target)));
           });
           
-          $('#btnDoFavorite').on('click', function(){
-            let instrument = window.zsession.instrument;
+          $('#btnDoFavorite').on('click', function() {
+            let instrument = window.zsession.getInstrument();
             setFavorite(instrument, (!isFavorite(instrument)));
           });
              
@@ -656,6 +704,8 @@
             //console.log(route);
             doAction('fx/route', {route: route});
           })
+          
+          
           $('#applyDry').on('click', function() {
             const dry = $.makeArray(
               $('.btnDrySelection.btn-selected').map( function() {return $(this).text()})
@@ -680,7 +730,11 @@
               [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], parseInt(e.currentTarget.value)+1,
             (value) => {
               doAction('script', 
-              {script: `/part${window.zsession.partID}/Prcvchn ${index}`});
+              {script: `/part${window.zsession.partID}/Prcvchn ${value}`},
+              ()=> {
+                displayMessage(`Channel changed to ${value+1}`);
+                $('#btnEditChan').val(value);
+              });
             });
           });
         /*
@@ -751,13 +805,13 @@
           let bec = $('#bindEditChannel');
           bec.append('<option value="all">all</option>');
           for (let i = 1; i < 17; i++)
-            bec.append(`<option value="${i}">${i}</option>`);
+            bec.append(`<option value="${i}">${i}`+'</option>');
           
           /*
           Swipeables
           */
           //build part swipeables
-          createSwipeable('#partBar .swipeable',[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+          createSwipeable('#partBar .swipeable',[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
                 .map( e => String(e).padStart(2,'0')) );
           
           //build bind edit swipeables
@@ -771,9 +825,9 @@
           //register selectable swipeables
           registerSwipeables('.fx-btn .swipeable', true);
           
-          //register actions
+          //register change part
           $('#partBar .swipeable > select').on('change', (e)=> {
-            onToolbarChangePart(parseInt(e.target.value));
+            onToolbarChangePart(parseInt(e.target.value)-1);
           });
           
           /**

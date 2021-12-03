@@ -45,9 +45,10 @@ function createSwipeable(query, elements) {
     select.val(elements[0]);
     sid.find('label').text(elements[0]);
   } else {
-    sid.find('label').text(select.val(select.children().get()[0].value).val())
+    let val = select.children().get()[0].value;
+    select.val(val);
+    sid.find('label').text(val);
   }
-  
   
   select.on('change', (e) =>{
     sid.find('label').text(e.target.value);
@@ -127,7 +128,7 @@ function dialogBox(title, elements, defValue, onOk, onCancel) {
   $(content).empty();
   elements.forEach( (element) => {
     let isSelected = (element == defValue) ? 'btn-selected' : '';
-    let html = `<div class="col-12"><button style="width:100%" data-i="${elements.indexOf(element)}" class="${isSelected} big-btn dialog-button">${element}</button></div>`;
+    let html = `<div class="col-12"><button style="width:100%" value="${elements.indexOf(element)}" class="${isSelected} big-btn dialog-button">${element}</button></div>`;
     $(content).append(html);
   });
   
@@ -146,7 +147,7 @@ function dialogBox(title, elements, defValue, onOk, onCancel) {
     window.scrollTo(0,0);
     if ($(content).find('.btn-selected').length>0) {
       console.log('ok trigger');
-      onOk($(content).find('.btn-selected').attr('data-i'));
+      onOk($(content).find('.btn-selected').val());
     }
   });
   

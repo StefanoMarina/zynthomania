@@ -227,6 +227,10 @@ ul li.selected, .select li.selected {
   height:40px;
 }
 
+i + .knob {
+  margin-left: 10%;
+}
+
 /*Swipeable selects*/
 .swipeable > label::before { content : '< '; }
 .swipeable > label::after { content : ' >'; }
@@ -239,14 +243,14 @@ ul li.selected, .select li.selected {
 .swipeable > select {display: none;}
 
 /*Checkboxes*/
-input[type=checkbox].check {display:hidden;}
+input[type=checkbox] {display:none;}
 input[type=checkbox] + label {
   border: none !important;
   margin-left: 5px !important;
 }
 
 input[type=checkbox] + label::before {content: '[ ] '; }
-input[type=checkbox][checked] + label::before { content: '[X]';}
+input[type=checkbox][value=checked] + label::before { content: '[X]';}
 
 .itext {
   background-color: transparent;

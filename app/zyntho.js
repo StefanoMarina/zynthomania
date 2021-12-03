@@ -46,8 +46,18 @@ class ZynthoServer extends EventEmitter {
      */
     this.oscEmitter = new EventEmitter();
    
+    /*
+    * advanced data for new session
+    */
+    this.session = ZynthoServer.defaultExtendedSession();
   }
   
+  static defaultExtendedSession() {
+    return {
+      instruments : [],
+      tempo : 120
+    };
+  }
   /**
    * ZynthoServer::open
    * open preferences file and OSC connection
@@ -113,6 +123,9 @@ class ZynthoServer extends EventEmitter {
       metadata: true
     });
     
+    /*
+      POST-OSC initialization
+    */
     this.osc.on('ready', () => {
         zconsole.log ("Opened OSC Server");
         registerOSC(this);
@@ -122,7 +135,7 @@ class ZynthoServer extends EventEmitter {
               this.config);
         zconsole.log ("Started midi service");
         
-        //MIDI Device update
+        //Register MIDI Device update events
         this.midiService.on('device-in', (name) =>{
           
           if (this.config['plugged_devices'] == null)
@@ -184,6 +197,13 @@ class ZynthoServer extends EventEmitter {
             this.oscEmitter.emit(tPath.address, this, tPath.args);
           });
         });
+       
+       //Capture damage events
+       this.on('/damage', (msg)=> {
+          let match = msg.args[0].value.match(/^\/part(\d+)/);
+          if (match != null)
+            this.resetPartData(match[1]);
+       })
        
        /*
         * See if the default session is present
@@ -412,30 +432,52 @@ class ZynthoServer extends EventEmitter {
       }
     }
     
+    /**
+    * Reset any extended info on part
+    * This is called by listening to a part damage
+    */
+    resetPartData(partID) {
+      zconsole.log(`Resetting part ${partID}`);
+      this.session.instruments[partID] = null;
+    }
   /**
    * loadInstrument(part, instrumentPath)
    * loads an instrument into a part, then routes all FX
    * if necessary, will enable the instrument
    * if keyboard mode, instrument channel will be routed
-   * @partID : part id (0,15)
-   * @intrumentPath: file to load
-   * @onDone: done callback
+   * @param part : part id (0,15)
+   * @param intrumentPath: file to load
+   * @param onDone: done callback
    */
    loadInstrument(part, instrumentPath, onDone) {
-     let load_xiz = this.parser.translate(`/load_xiz ${part} "${instrumentPath}"`);
      
-     this.once('/damage', function (msg) {
+    let load_xiz = this.parser.translateLines(
+      [`/load_xiz ${part} "${instrumentPath}"`, `/part${part}/Penabled T`]
+    );
+     
+    this.once('/damage', function (msg) {
        let partID = parseInt(/part(\d+)/.exec(msg.args[0].value)[1]);
        
-       //apply routing to this part
-       if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
-         this.route(partID, undefined, onDone);
-       } else if (onDone !== undefined)
-        onDone(msg);
-     });
+       this.on(`/part${part}/Pname`, (msg) => {
+         this.session.instruments[part].name = msg.args[0].value;
+         
+         //apply routing to this part
+         if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
+           this.route(partID, undefined, onDone);
+         } else if (onDone !== undefined)
+          onDone(msg);
+       });
+       
+       this.osc.send(this.parser.translate(`/part${part}/Pname`));
+    });
      
-     this.osc.send(load_xiz);
-     this.midiService.loadInstrumentBind(instrumentPath);
+    this.session.instruments[part] = {
+        path : instrumentPath
+    }
+     
+    this.osc.send(load_xiz);
+    this.midiService.loadInstrumentBind(instrumentPath);
+     
    }
    
   
@@ -845,6 +887,18 @@ class ZynthoServer extends EventEmitter {
         }
        }
        zconsole.log('Loaded session.');
+       
+       let extDataPath = sessionPath.replace(/xmz$/,'json');
+       if (Fs.existsSync(extDataPath)) {
+         zconsole.log('Loading extended data...');
+         try {
+           this.session = JSON.parse(Fs.readFileSync(extDataPath));
+         } catch (err) {
+           zconsole.warning(`File ${extDataPath} was not readable: ${err}. Skipping.`);
+           this.session = ZynthoServer.defaultExtendedSession();
+         }
+       } else
+         this.session = ZynthoServer.defaultExtendedSession();
     });
     
     this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));
@@ -861,10 +915,19 @@ class ZynthoServer extends EventEmitter {
     }
     
     file = (file === undefined) ? 'default.xmz' : file;
+    
     this.osc.send(this.parser.translate(
       `/save_xmz '${this.IO.workingDir}/sessions/${file}'`
     ));
+    
+    let extfile = file.replace(/xmz$/,'json');
+    try {
+      Fs.writeFileSync(`${this.IO.workingDir}/sessions/${extfile}`, JSON.stringify(this.session));
+    } catch (err) {
+      zconsole.warning(`Could not save extended session data: ${err}`);
+    }
   }
+
 }
 
 exports.ZynthoServer = ZynthoServer;
