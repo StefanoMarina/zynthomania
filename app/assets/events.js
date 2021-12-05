@@ -311,13 +311,14 @@ function onBindEditChange(e) {
 }
 
 function onBindEditMidilearn() {
-  doQuery('midilearn', null, (data)=>{
+doQuery('midilearn', {force: [9,11]}, (data)=>{
     let dataType = (data[0] >> 4);
     
     if (dataType != 9 && dataType != 11) {
       displayMessage('Only CC or Note events');
       return;
     }
+    
     window.zsession.bind.info.channel = (data[0] & 0xf)+1;
     
     let current = window.zsession.bind.current;
@@ -336,7 +337,7 @@ function onBindEditMidilearn() {
     else if (current['switch'] && undefined === current['switch'][data[2]])
       current['switch'][data[2]] = "";
       
-    onBindEdit();
+    onBindEdit(current);
   });
 }
 
@@ -628,11 +629,25 @@ function onScript() {
       
 
 function onScriptSendClick() {
-  let data = $('#commandLine').val();
+  let data = $('#commandLine').val().split('\n')
+  .filter( e=> e != "");
+  
+  if (data.length == 1)
+      data = data[0];
+   
   doAction('script', {script: data});
 }
   
-
+function onSystemInfo() {
+    doQuery('status/system', null, (data) => {
+      let space = $('#pnlSystemInfo > div:first-child');
+      space.empty();
+      space.append(`<p class='col-12'>Temp: ${data.cpuTemp}</p>`);
+      space.append(`<p class='col-12'>JACK<span class="d-none d-md-block"> process status</span>: <i class="${(data.jackProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
+      space.append(`<p class='col-12'>ZynAddSubFX<span class="d-none d-md-block"> status</span>: <i class="${(data.zynProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
+      space.append(`<p class='col-12'>Cartridge: ${data.workingDir}</p>`);
+    });
+}
 function onSystemMIDI() {
   doQuery('status/midi', null, (data) => {
     
@@ -669,6 +684,16 @@ function onSystemMIDI() {
     });
   });
 }
+
+function onSystemInfoReconnect() {
+  doAction('reconnect', (data) => {
+    displayMessage('Reconnected!');
+    let icon = $('#pnlSystemInfo > div:first-child').find('p > i');
+    icon.removeClass('fa-times-circle');
+    icon.addClass('fa-check-circle');
+  });
+}
+
 
 function onSystemSession() {
   doQuery('status/session', null, (data) =>{
@@ -729,6 +754,131 @@ function onSystemSessionLoadClick() {
   });
 }
 
+const NOTE_LIST = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function splitValueToKey(value) {
+  if (value <= 0) return 'C-1';
+  
+  let channel = Math.floor(value/12)-1;
+  let note = NOTE_LIST[value-((channel+1)*12)];
+  return `${note}${channel}`;
+}
+
+function keyToSplitValue(key) {
+  let match = key.match(/(\w\#?)(\d+)/);
+  let note = match[1], octave = parseInt(match[2])+1;
+  return (octave*12)+NOTE_LIST.indexOf(note);
+}
+
+function onSystemSplit() {
+  doQuery('status/split', null, (data) =>{
+    $('#sysSplitChannel > select').val(data.channel+1);
+    window.zsession.splitdata = data;
+    
+    let table = $('#sysSplitTable');
+    
+    for (let i = 0; i < 16; i++) {
+      let split = data.split[i];
+      let entry = `<div class="col-2">${i+1}</div><div class="col-2">${splitValueToKey(split.min)}</div> 
+<div class="col-2">${splitValueToKey(split.max)}</div>
+<div class="col row no-gutters">
+  <button class="col-4" onclick='onSystemSplitEdit(${i})'><i class='fa fa-edit'></i></button>
+  <button class="col-4"  onclick='onSystemSplitClear(${i})'><i class='fa fa-trash-alt'></i></button>
+  <button class="col-4"  onclick='onSystemSplitLearn(${i})'><span class="i-send"></span></button>
+</div>`;
+      table.append(`<div class="row no-gutters">${entry}</div>`);
+    }
+    
+  });
+}
+
+function onSystemSplitClear(part) {
+   doAction('script', {script: [
+    `/part${part}/Pminkey 0`,
+    `/part${part}/Pmaxkey 127`
+   ]}, ()=>{
+      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text('C-1');
+      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text('G9');
+   });
+}
+
+function onSystemSplitEdit(part) {
+  let split = window.zsession.splitdata.split[part];
+  let available_notes = [], available_scores = [];
+  
+  for (let i = 0; i < split.max; i++) {
+    available_notes.push(splitValueToKey(i));
+    available_scores.push(i);
+  }
+  
+  let data = { 'title' : 'Select lower key' , 
+        'buttonClass': 'col-3 col-md-2',
+        'scores' : available_scores,
+        'defValue' : splitValueToKey(split.min)
+  };
+  
+  dialogBox(available_notes, data, (minValue) => {
+    console.log(`split: min value ${minValue}`);
+    
+    available_notes = [];
+    available_scores = [];
+    
+    for (let i = parseInt(minValue)+1; i < 127; i++){
+      available_notes.push(splitValueToKey(i));
+      available_scores.push(i);
+    }
+    
+    data.title = 'Select higher key';
+    data.defValue = splitValueToKey(split.max);
+    data.scores = available_scores;
+    
+    dialogBox(available_notes, data, (maxValue) => {
+      split.min = parseInt(minValue);
+      split.max = parseInt(maxValue);
+      
+      doAction('script', {script: [
+        `/part${part}/Pminkey ${split.min}`,
+        `/part${part}/Pmaxkey ${split.max}`
+      ]});
+      
+      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
+        splitValueToKey(minValue));
+      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
+        splitValueToKey(maxValue));
+    });
+  });
+}
+
+function onSystemSplitLearn(part) {
+doQuery('midilearn', {force: [9]}, (data)=> {
+    const minValue = data[1];
+    
+    doQuery('midilearn', {force: [9]}, (data) => {
+      const maxValue = data[1];
+      
+      let split = window.zsession.splitdata.split[part];
+      split.min = minValue;
+      split.max = maxValue;
+      
+      doAction('script', {script: [
+        `/part${part}/Pminkey ${split.min}`,
+        `/part${part}/Pmaxkey ${split.max}`
+      ]});
+      
+      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
+        splitValueToKey(minValue));
+      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
+        splitValueToKey(maxValue));
+        
+    }, ()=>{
+      displayMessage('Aborted', true)
+    });
+    
+    displayMessage('Enter highest key', true);
+  }, ()=>{
+    displayMessage('Aborted', true);
+  });
+  displayMessage('Enter lowest key', true);
+}
 function onSystemUADSR(type) {
   doQuery("status/options", null, (data) => {
     let uadsr = data.uadsr;
@@ -804,9 +954,15 @@ function onToobarFavoriteClick() {
           }
         });
 }
+/*
+TODO:
+Passing this as a direct ajax callback will result in index being the
+callback result
+*/
 function onToolbarChangePart(index) {
-  if (index !== undefined)
-    window.zsession.partID = index;
+  
+  if (index !== undefined && index !== '')
+    window.zsession.partID = parseInt(index);
   
   //retrieve part info
   doQuery('status/part', {id: window.zsession.partID}, (data) => {

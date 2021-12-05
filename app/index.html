@@ -19,10 +19,10 @@
   </head>
 
   <body>
-    <div id="dialogBox" class="dialogBox hidden">
+     <div id="dialogBox" class="dialogBox hidden">
       <div>
         <h4 class="header"></h4>
-        <div class="container">
+        <div class="container row">
         </div>
         <footer class="container row">
           <div class="col-6"><button class="btn-selected col-12" id="btnOk">Ok</button></div>
@@ -67,6 +67,10 @@
             </header>
           
           <!--panels-->
+            <div class="tab row controlPanel">
+              <p class="col-12">Welcome to Zynthomania!</p>
+            </div>
+            
             <div id="pnlBanks" class="tab row controlPanel no-gutters hidden">
                 <ul id="selBanks" class="select col-6 col-xs-6"></ul>
                 <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
@@ -215,7 +219,7 @@
                   </div>
                   <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
                   <div class="row">
-                    <div class="col-12 col-md-6"><button class="send-btn col-12" onclick="onBindEditMidilearn()">Midi Learn</button></div>
+                    <div class="col-12 col-md-6"><button class="btn-selected col-12" onclick="onBindEditMidilearn()">Midi Learn <span class="i-send-alt"> </span></button></div>
                     <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
                   </div>
                 </div>
@@ -258,8 +262,10 @@
                 <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
                 <button class="tab-header" data-tab="sysPanel" data-open="pnlSession" onclick="onSystemSession();">Session</button>
                 <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemSplit" onclick="onSystemSplit();">Split</button>
               </header>
-              <div class="col-8"> <!-- fx content container -->
+              <div class="col-8"> <!-- sys content container -->
                 <div id="pnlMIDI" class="sysPanel panel hidden row">
                   <div class="col-12" id="sysMidiContainer">
                   </div>
@@ -308,13 +314,35 @@
                   <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
                   </div>
                 </div>
-                
+                <div id="pnlSystemInfo"  class="sysPanel panel hidden row">
+                  <div class="container">
+                  </div>
+                  <div class="container">
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12" onclick="onSystemInfoReconnect()">Reconnect Zyn</button></div>
+                  </div>
+                </div>
+                <div id="pnlSystemSplit" class="sysPanel panel hidden">
+                  <div class="row">
+                    <div class="col-6">Midi Channel</div>
+                    <div class="col-6"><div id="sysSplitChannel" class="col-12 swipeable"></div></div>
+                  </div>
+                  <div class="row no-gutters table">
+                    <div class="header col-2 tc">Prt</div>
+                    <div class="header col-2 tc">From</div>
+                    <div class="header col-2 tc">To</div>
+                    <div class="header col tc">Edit</div>
+                  </div>
+                  <div class="table" id="sysSplitTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
+                  </div>
+                </div>
               </div>
           </div> 
         </div> 
       </div> <!--col-10 -->        
     </main><!-- main row -->
-
+    <footer>
+      <a href="http://www.onlinewebfonts.com"><small> some icons from oNline Web Fonts</small></a>
+    </footer>
     <script src="events.js"></script>
     <script type="text/javascript">
       
@@ -728,8 +756,11 @@
           });
           
           $('#btnEditChan').on('click', (e) => {
-            dialogBox('Change part MIDI channel:', 
-              [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], parseInt(e.currentTarget.value)+1,
+            dialogBox([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], 
+              { title: 'Change part MIDI channel:',
+                defValue: parseInt(e.currentTarget.value)+1,
+                buttonClass: 'col-6 col-md-4 col-lg-3'
+              },
             (value) => {
               doAction('script', 
               {script: `/part${window.zsession.partID}/Prcvchn ${value}`},
@@ -745,7 +776,7 @@
         */
           $('.check').on('click', function() {
             $(this).attr('data-check', $(this).attr('data-check') == 'true' ? 'false' : 'true');
-            console.log('check!');
+            
           });
           
           /*
@@ -788,7 +819,7 @@
                 $('#u8config input').map ( function() {return $(this).val()}).get()
               );
               break;
-              default: console.log(`Unknown type ${type} for uadsr`); return; break;
+              default: console.error(`Unknown type ${type} for uadsr`); return; break;
             }
             
             doAction('script', {script: `/zmania/${type}/bind ${array.join(' ')}`},
@@ -812,8 +843,9 @@
           /*
           Swipeables
           */
+          const CHAN_ARRAY = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
           //build part swipeables
-          createSwipeable('#partBar .swipeable',[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+          createSwipeable('#partBar .swipeable',CHAN_ARRAY
                 .map( e => String(e).padStart(2,'0')) );
           
           //build bind edit swipeables
@@ -821,15 +853,18 @@
             createSwipeable(this);
           });
           
-          //register all swipeable events
-          registerSwipeables('#pnlBindEdit .swipeable, #partBar .swipeable', false);
+          createSwipeable('#sysSplitChannel',CHAN_ARRAY);
           
-          //register selectable swipeables
+          //register all swipeable events without selection
+          registerSwipeables('#pnlBindEdit .swipeable, #partBar .swipeable, #sysSplitChannel', false);
+          
+          //register selectable swipeables with selection
           registerSwipeables('.fx-btn .swipeable', true);
           
           //register change part
           $('#partBar .swipeable > select').on('change', (e)=> {
-            onToolbarChangePart(parseInt(e.target.value)-1);
+            let part = parseInt(e.target.value)-1;
+            onToolbarChangePart(part);
           });
           
           /**

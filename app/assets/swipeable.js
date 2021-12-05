@@ -60,9 +60,10 @@ function swipeableGetElements(select) {
           function(){return this.value}).get();
 }
 
-function registerSwipeables(query, enableClickSelect) {
-  if (query===undefined)
-     query = '.swipeable';
+function registerSwipeables(query, enableClickSelect, dialogData) {
+  query = (query!==undefined) ? query : '.swipeable';
+  enableClickSelect= (enableClickSelect !== undefined) ? enableClickSelect : true;
+  dialogData = (dialogData !== undefined) ? dialogData : { title :'Select' };
   
   let qLabel = $(query).find('label');
   
@@ -94,13 +95,13 @@ function registerSwipeables(query, enableClickSelect) {
     let select = $(e.target).siblings('select');
     let elements = swipeableGetElements(select);
     if (elements.length == 0) {
-        console.error(`swipeable click error: no elements`);
+        console.error('swipeable click error: no elements');
         return;
     }
     
-    dialogBox('Select:', elements, select.val(), (i) =>{
-      console.log (`select: ${i}, ${elements[i]}`);
-      
+    dialogData.defValue = select.val();
+    
+    dialogBox(elements, dialogData , (i) =>{     
       select.val(elements[i]);
       select.trigger({type: 'change', e: e, value: select.val()});
     });
@@ -118,7 +119,11 @@ function registerSwipeables(query, enableClickSelect) {
   
 }
 
-function dialogBox(title, elements, defValue, onOk, onCancel) {
+function dialogBox(elements, data, onOk, onCancel) { 
+  let title = (data != null && data.title != null) ? data.title : 'Selection';
+  let defValue = (data != null && data.defValue != null) ? data.defValue : null;
+  let buttonClass = (data != null && data.buttonClass != null) ? data.buttonClass : 'col-12';
+  
   $('.dialogBox').removeClass('hidden');
   $('main').addClass('hidden');
   let dialog = $('.dialogBox > div');
@@ -126,11 +131,16 @@ function dialogBox(title, elements, defValue, onOk, onCancel) {
   
   $(dialog).find('h4').text(title);
   $(content).empty();
-  elements.forEach( (element) => {
-    let isSelected = (element == defValue) ? 'btn-selected' : '';
-    let html = `<div class="col-12"><button style="width:100%" value="${elements.indexOf(element)}" class="${isSelected} big-btn dialog-button">${element}</button></div>`;
+  
+  let isSelected = false,  html = "", value="", element = null;
+  
+  for (let i = 0; i < elements.length; i++) {
+    element = elements[i];
+    isSelected = (element == defValue) ? 'btn-selected' : '';
+    value = (data.scores != null) ? data.scores[i] : i;
+    html = `<div class="${buttonClass}"><button style="width:100%" value="${value}" class="${isSelected} big-btn dialog-button">${element}</button></div>`;
     $(content).append(html);
-  });
+  }
   
   $(content).find('button').on('click', (e)=>{
     if ($(e.target).hasClass('btn-selected')) {
@@ -146,7 +156,6 @@ function dialogBox(title, elements, defValue, onOk, onCancel) {
     $('.dialogBox').addClass('hidden');
     window.scrollTo(0,0);
     if ($(content).find('.btn-selected').length>0) {
-      console.log('ok trigger');
       onOk($(content).find('.btn-selected').val());
     }
   });

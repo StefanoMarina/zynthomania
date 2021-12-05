@@ -50,12 +50,28 @@ class ZynthoServer extends EventEmitter {
     * advanced data for new session
     */
     this.session = ZynthoServer.defaultExtendedSession();
+    
+    /*
+    * Adds all zynthomania's internal OSC commands
+    */
+    registerOSC(this);
   }
-  
+   /**
+    * ZynthoServer::bundleBind
+    * Utility that binds a bundle to a single callback
+    */
+    bundleBind(bundle, callback) {
+      var _this = this;
+      bundle.packets.forEach( (message) => {
+        _this.on(message.address, (msg) => {callback(msg)});
+      })
+    }
+    
   static defaultExtendedSession() {
     return {
       instruments : [],
-      tempo : 120
+      tempo : 120,
+      splitChannel : 0
     };
   }
   /**
@@ -176,11 +192,25 @@ class ZynthoServer extends EventEmitter {
 
     //Capture damage events
     this.on('/damage', (msg)=> {
-      let match = msg.args[0].value.match(/^\/part(\d+)/);
-      if (match != null)
+      let match = msg.args[0].value.match(/^\/part(\d+)\/$/);
+      if (match != null) {
+        console.log('Request for part clearance')
         this.resetPartData(match[1]);
-    }) 
-       
+      }
+    })
+    
+    this.on("error", (err) => {
+      zconsole.warning(`Zynthomania Event error: ${err}`);
+    });
+    
+    this.connectToZyn();
+  }
+  
+  /*
+    Attemps a connection with ZynAddSubFX and starts
+      listening.
+  */
+  connectToZyn() {
     //Init osc, bind to custom emitter, try to open
     this.osc = new Osc.UDPPort({
       localAddress: "127.0.0.1",
@@ -191,13 +221,11 @@ class ZynthoServer extends EventEmitter {
       metadata: true
     });
     
-    
     /*
       POST-OSC initialization
     */
     this.osc.on('ready', () => {
         zconsole.log ("Opened OSC Server");
-        registerOSC(this);
         
         //MIDI connect to zyn && restore configs
         try {
@@ -219,6 +247,8 @@ class ZynthoServer extends EventEmitter {
             zconsole.warning(`Error on loading default session : ${err}`);
           }
         }
+        
+        this.emit('ready');
     });
     
     this.osc.on('error', (err) => {
@@ -245,14 +275,21 @@ class ZynthoServer extends EventEmitter {
         this.emit(oscMsg.address, oscMsg);
     });
 
-    this.on("error", (err) => {
-      zconsole.warning(`Zynthomania Event error: ${err}`);
-    });
+    
 
     //Let's go!
     this.osc.open();
   }
-  
+  /**
+    * getDryMode
+    * returns dry mode
+    */
+    getDryMode() {
+      if (this.config.dry === undefined)
+        this.config.dry = [];
+      return this.config.dry;
+    }
+    
   /**
    * getRouteMode
    * returns route mode
@@ -267,16 +304,48 @@ class ZynthoServer extends EventEmitter {
      
      return this.config.route;
    }
-   
-   /**
-    * getDryMode
-    * returns dry mode
-    */
-    getDryMode() {
-      if (this.config.dry === undefined)
-        this.config.dry = [];
-      return this.config.dry;
-    }
+  
+  
+  getSplit(onDone) {
+    const result = [];
+    
+    for (let i = 0; i < 16; i++)
+        result[i] = {};
+    
+    const worker = new OSCWorker(this);
+    
+    let bundle = this.parser.translate('/part[0-15]/Penabled');
+    worker.pushPacket(bundle,(add,args) =>{
+      let part = parseInt(add.match(/part(\d+)/)[1]);
+      result[part].enabled = args[0].value;
+    });
+    
+    let minBundle = this.parser.translate('/part[0-15]/Pminkey');
+    worker.pushPacket(minBundle,(add,args) =>{
+      let part = parseInt(add.match(/part(\d+)/)[1]);
+      result[part].min = args[0].value;
+    });
+    bundle = this.merge(bundle, minBundle);
+    
+    let maxBundle = this.parser.translate('/part[0-15]/Pmaxkey');
+    worker.pushPacket(maxBundle,(add,args) =>{
+      let part = parseInt(add.match(/part(\d+)/)[1]);
+      result[part].max = args[0].value;
+    });
+    bundle = this.merge(bundle, maxBundle);
+    
+    this.osc.send(bundle);
+    
+    worker.listen().then(()=>{
+      var splitConfig = {};
+      splitConfig.channel = ((this.session.splitChannel != null)
+                    ? this.session.splitChannel : 1),
+      splitConfig.split = result;
+      
+      if (onDone != null)
+          onDone(splitConfig);
+    });
+  }
     
   /**
   * ZynthoServer::merge
@@ -300,17 +369,7 @@ class ZynthoServer extends EventEmitter {
   }
   
    
-   /**
-    * ZynthoServer::bundleBind
-    * Utility that binds a bundle to a single callback
-    */
-    bundleBind(bundle, callback) {
-      var _this = this;
-      bundle.packets.forEach( (message) => {
-        _this.on(message.address, (msg) => {callback(msg)});
-      })
-    }
-    
+  
    /**
     * Zynthoserver::getBanks
     * retrieve all banks name with path
@@ -442,7 +501,9 @@ class ZynthoServer extends EventEmitter {
     resetPartData(partID) {
       zconsole.log(`Resetting part ${partID}`);
       this.session.instruments[partID] = null;
+      this.emit('part-reset', partID);
     }
+    
   /**
    * loadInstrument(part, instrumentPath)
    * loads an instrument into a part, then routes all FX
@@ -457,32 +518,33 @@ class ZynthoServer extends EventEmitter {
     let load_xiz = this.parser.translateLines(
       [`/load_xiz ${part} "${instrumentPath}"`, `/part${part}/Penabled T`]
     );
-     
-    this.once('/damage', function (msg) {
-       let partID = parseInt(/part(\d+)/.exec(msg.args[0].value)[1]);
+    
+    this.on('part-reset', (partID) => {
+      this.session.instruments[part] = {
+          path : instrumentPath
+      }
+      this.once(`/part${part}/Pname`, (msg) => {
+       this.session.instruments[part].name = msg.args[0].value;
        
-       this.on(`/part${part}/Pname`, (msg) => {
-         this.session.instruments[part].name = msg.args[0].value;
-         
-         //apply routing to this part
-         if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
-           this.route(partID, undefined, onDone);
-         } else if (onDone !== undefined)
-          onDone(msg);
-       });
+       //apply routing to this part
+       if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
+         this.route(partID, undefined, onDone);
+       } else if (onDone !== undefined)
+        onDone(msg);
+      });
        
        this.osc.send(this.parser.translate(`/part${part}/Pname`));
     });
      
-    this.session.instruments[part] = {
-        path : instrumentPath
-    }
-     
     this.osc.send(load_xiz);
     this.midiService.loadInstrumentBind(instrumentPath);
-     
    }
    
+   _getInstruments(index) {
+      if (this.session.instruments[index] == null)
+        this.session.instruments[index] = {};
+      return this.session.instruments[index];
+   }
   
 
   /**
@@ -534,7 +596,7 @@ class ZynthoServer extends EventEmitter {
   /**
   * Prepare a worker with a request for enabled parts, then send
   * the OSC bundle request.
-  * @return a worker ready to listen. The worker's availableParts array
+  * @return a worker ready to listen. The worker's *availableParts* array
   * property will contain the results.
   */
   _getEnabledPartsWorker() {
@@ -632,8 +694,7 @@ class ZynthoServer extends EventEmitter {
       }
     
     }).then ( ()=>{
-    
-        onDone(returnObject)
+        onDone(returnObject);
     });
   }
   
@@ -830,14 +891,22 @@ class ZynthoServer extends EventEmitter {
    * @param packet single osc message or bundle
    */
   sendOSC(packet) {
- 
-    if (packet.address === undefined) { //bundle
-      if (packet.packets[0].address.match(/^\/zmania/i))
+    if (packet == null) {
+      zconsole.error('Invalid packet');
+      return;
+    }
+    
+    if (packet.address === undefined) {
+      if (packet.packets[0].address.match(/^\/zmania/i)) {
         packet.packets.forEach( (p) => {this.oscEmitter.emit(p.address, this, p.args)} );
-    } else if (packet.address.match(/^\/zmania/i))
-      this.oscEmitter.emit(packet.address, this, packet.args)
-    else
-      this.osc.send.call(this.osc, packet);
+        return;
+      }
+    } else if (packet.address.match(/^\/zmania/i)) {
+      this.oscEmitter.emit(packet.address, this, packet.args);
+      return;
+    }
+      
+    this.osc.send.call(this.osc, packet);
   }
   
   /**
@@ -888,30 +957,33 @@ class ZynthoServer extends EventEmitter {
     this.lastSession = file;
     this.once(`/damage`, (msg) =>{
       
-      //See if you need to apply route
-      if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
-        try {
-         this.route(undefined, undefined);
-        } catch (err) {
-          zconsole.notice(`Error while handling routing in session loading:${err}`);
-        }
-       }
-       zconsole.log('Loaded session.');
-       
-      let sessionJson = sessionPath.replace(/xmz$/,'json');
-      if (Fs.existsSync(sessionJson)) {
-         zconsole.log('Loading extended data...');
-         try {
-           this.session = JSON.parse(Fs.readFileSync(sessionJson));
-         } catch (err) {
-           zconsole.warning(`File ${sessionJson} was not readable: ${err}. Skipping.`);
-           this.session = ZynthoServer.defaultExtendedSession();
+      let match = msg.args[0].value.match(/^\/part(\d+)\/$/);
+      if (match) {
+        let partID = match[1];
+        
+        //See if you need to apply route
+        if (this.getRoute().fx.length > 0 || this.getDryMode().length > 0) {
+          try {
+           this.route(partID, undefined);
+          } catch (err) {
+            zconsole.notice(`Error while handling routing in session loading:${err}`);
+          }
          }
-      } else
-         this.session = ZynthoServer.defaultExtendedSession();      
+      }      
     });
     
     this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));
+    let sessionJson = sessionPath.replace(/xmz$/,'json');
+    if (Fs.existsSync(sessionJson)) {
+       zconsole.log('Loading extended data...');
+       try {
+         this.session = JSON.parse(Fs.readFileSync(sessionJson));
+       } catch (err) {
+         zconsole.warning(`File ${sessionJson} was not readable: ${err}. Skipping.`);
+         this.session = ZynthoServer.defaultExtendedSession();
+       }
+    } else
+       this.session = ZynthoServer.defaultExtendedSession();
   }
   
   /**

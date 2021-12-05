@@ -28,6 +28,10 @@ table td, table th {text-align: center}
 
 /*FONT SIZE*/
 @media only screen and (max-width: 768px) {
+  :root {
+    --base-size:14px;
+  }
+  
   body, body * {  
     font-size: 14px
   }
@@ -38,6 +42,9 @@ table td, table th {text-align: center}
   body, body * {  
     font-size: 20px
   }  
+  :root {
+    --base-size:20px;
+  }
 }
 
 #pnlBanks * { font-size: 12px }
@@ -149,14 +156,31 @@ button + button, .btn+.btn {
 }
 .fx-btn button { border: none !important}
 
+.i-send, .i-send-alt {
+  display: inline-block;
+  width: var(--base-size);
+  height: var(--base-size);
+  vertical-align: bottom;
+}
+.i-send {
+ background-image: url('piano.svg');
+ background-repeat: no-repeat;
+}
+
+.i-send-alt {
+ background-color: var(--color-lcd) !important;
+ mask: url('piano.svg');
+}
+
 .send-btn::after {
   font-family: "Font Awesome 5 Free";
-  content: "  \f3be";
   display: inline-block;
-  padding-right: 3px;
   /*vertical-align: middle;*/
   font-weight: 900;
+  padding-left: 3px;
+  content: "  \f3be"; 
 }
+  
 
 /**
  * head tab headers look and feel
@@ -173,7 +197,7 @@ button + button, .btn+.btn {
  }
 
 button:hover, .send-btn, .btn-selected, .btn-selected *, button:hover *, .fx-btn:hover, .fx-btn:hover * {
-  background-color: black !important;
+  background-color: black;
   color: var(--color-lcd) !important;
 }
 
@@ -299,3 +323,4 @@ input[type=checkbox][value=checked] + label::before { content: '[X]';}
   }
 }
 
+div.table div { text-align:center} 

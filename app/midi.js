@@ -94,14 +94,21 @@ class ZynthoMidi extends EventEmitter {
     if (force === undefined) force = false;
     
     let midi = this.getMidiOutput();
-    if (midi.isPortOpen()) {
-      if (!force) return;
+    
+    if (midi == null) {
+      zconsole.crtical('Virtual midi port is not allocated');
+      throw 'Virtual midi port is not allocated';
+    }
+    
+    //no need to recreate midi
+    if (midi.isPortOpen() && force)
       midi.closePort();
-    } else {
+      
+    if (!midi.isPortOpen()) {
       midi.openVirtualPort('Zynthomania');
-      exec("aconnect 'RtMidi Output Client:Zynthomania' 'ZynAddSubFX'");
       this.knot.setMidiOut(midi);
       
+      // Start-up midi devices
       if (this.midiInputRequests != null) {
         const inputs = this.enumerateInputs(); 
         let mapName = inputs.map (obj => obj.name);
@@ -120,6 +127,9 @@ class ZynthoMidi extends EventEmitter {
         });
       }
     }
+    
+    // Connect midi to ZynAddSubFX
+    exec("aconnect 'RtMidi Output Client:Zynthomania' 'ZynAddSubFX'");
   }
   
   
@@ -240,21 +250,34 @@ class ZynthoMidi extends EventEmitter {
   * when a midi message is received, 'learn' is emitted.
   * @param onlyNotesAndCc 'true' will force noteon/cc.
   */
-  midiLearn(onlyNotesAndCc) {
-    onlyNotesAndCc = (onlyNotesAndCc === undefined) ? true :onlyNotesAndCc;
+  midiLearn(filter) {
+    //onlyNotesAndCc = (onlyNotesAndCc === undefined) ? true :onlyNotesAndCc;
     
-    const learnCallback = (delta, msg) => {
-      if (onlyNotesAndCc) {
-        let evType = (msg[0] >> 4);
-        if (evType != 9 && evType != 11)
-          return;
-      }
+    if (filter !== undefined && !Array.isArray(filter))
+      filter = [filter];
+    
+    //sanitize
+    filter = filter.map ( e=> parseInt(e));
+    
+    if (this.learnCallback === undefined) {
+      this.learnCallback = (delta, msg) => {
+        if (filter !== undefined) {
+          if (filter.indexOf(msg[0] >> 4) == -1) {
+            for (let input in this.midiInputs)
+              this.midiInputs[input].once('message', this.learnCallback);
+            
+            return;
+          }
+        }
         
-      this.emit('learn', msg);
+        this.emit('learn', msg);
+        for (let input in this.midiInputs)
+          this.midiInputs[input].off('message', this.learnCallback);
+      }
     }
     
     for (let input in this.midiInputs) {
-      this.midiInputs[input].once('message', learnCallback);
+      this.midiInputs[input].once('message', this.learnCallback);
     }
   }
   

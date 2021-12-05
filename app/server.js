@@ -25,6 +25,7 @@ const ZynthoIO = require ('./io.js');
 const zconsole = ZynthoIO.zconsole;
 const ZynthoMania = require ('./zyntho.js');
 const OSCWorker = require ('./oscworker.js').OSCWorker;
+const {execSync, exec, spawn} = require("child_process");
 
 const app = EXPRESS();
 
@@ -136,7 +137,10 @@ app.post('/script', function(req, res) {
   
   let bundle = null;
   try {
-    bundle = app.zyntho.parser.translate(req.body.script)
+    bundle = (Array.isArray(req.body.script))
+            ? app.zyntho.parser.translateLines(req.body.script)
+            :app.zyntho.parser.translate(req.body.script);
+    
   } catch (err) {
     res.statusMessage = 'Invalid syntax.';
     res.status(400).end();
@@ -289,7 +293,7 @@ app.get('/midilearn', function(rq, res) {
       res.json(msg);
   });
   
-  app.zyntho.midiService.midiLearn(true);
+  app.zyntho.midiService.midiLearn(rq.query.force);
   setInterval( ()=> {
     if (!res._headerSent) {
       res.statusMessage='Midi learn timeout';
@@ -312,6 +316,35 @@ app.get('/status/session', function (rq, res) {
   result.currentSession = app.zyntho.lastSession;
   result.sessionData = app.zyntho.session;
   res.json(result);
+});
+
+/**
+ * /status/session
+ * GET grabs system info
+ */
+app.get('/status/system', function (rq, res) {
+  zconsole.logGet(rq);  
+  let result = {};
+  
+  result.cpuTemp = execSync('cat /sys/class/thermal/thermal_zone0/temp').toString();
+  if (result.cpuTemp != null && result.cpuTemp.match(/\d+/)) {
+    result.cpuTemp = parseInt(result.cpuTemp)/1000 + " °";
+  } else
+  result.cpuTemp = "N/A";
+  
+  try { result.zynProcess = execSync('pgrep zynaddsubfx').toString()}
+  catch (e) {result.zynProcess = null}
+  try {result.jackProcess = execSync('pgrep jackd').toString()}
+  catch (e) {result.jackProcess = null}
+  result.workingDir = app.zyntho.IO.workingDir;
+  	
+  res.json(result);
+});
+
+app.get('/status/split', function (req, res) {
+  app.zyntho.getSplit( (result) => {
+    res.json(result);
+  });
 });
 
 /**
@@ -477,6 +510,12 @@ app.post('/binds/session', function (req, res) {
   }
 });
 
+/**
+ * POST /bindss/session/set
+ * add a new file to the bind chain.
+ * @body : {file}
+ */
+ 
 app.post('/binds/session/set', function (req, res) {
   zconsole.logPost(req);
   
@@ -498,6 +537,12 @@ app.post('/binds/session/set', function (req, res) {
   }
 });
 
+/**
+ * POST /binds/session/save
+ * add a new file to the bind chain.
+ * @body : {file}
+ */
+ 
 app.post('/binds/session/save', function (req, res) {
   zconsole.logPost(req);
   
@@ -529,6 +574,49 @@ app.post('/binds/session/save', function (req, res) {
     res.status(500).end();
   }
 });
+
+/**
+* POST restarts connection with zynaddsubfx
+*/
+app.post('/reconnect', (req, res) => {
+  zconsole.logPost(req);
+  
+  try {
+    execSync('pgrep zynaddsubfx');
+  } catch (err) {
+    zconsole.notice('ZynAddSubFX not running, trying to manually run...');
+    try {
+      outcome = execSync(`../sysjack/install.pl config=${app.zyntho.IO.workingDir}/config.json key=services -y -s zynaddsubfx`)
+                        .toString();
+                        
+      //split args
+      let match = outcome.match(/^(.*)\/zynaddsubfx (.*)/);
+      
+      zconsole.log(`Launching zynaddsubfx with line ${outcome}...`);
+      let args = match[2].split(/ +/);
+      spawn(`${match[1]}/zynaddsubfx`,args);
+      
+    } catch (err) {
+      zconsole.error(err);
+      res.statusMessage='Cannot launch Zyn!';
+      res.status(503).end();
+    }
+  }
+  
+  
+  app.zyntho.osc.once('close', ()=> {
+    zconsole.log('Relaunching osc connection...');
+    
+    app.zyntho.once('ready', () =>{
+      res.status(200).end();
+    });
+    
+    app.zyntho.connectToZyn();
+  });
+  
+  app.zyntho.osc.close();
+});
+
 
 app.on('open', () => {
   zconsole.log ("Opened web application");
