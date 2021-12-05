@@ -1,5 +1,15 @@
 # Zynthomania
 
+## Features
+
+- ZynAddSubFX, one of the most heavy-duty synths out there;
+- Simplified JACKD control as a system process;
+- Mobile-first web interface: manage everything from your device;
+- Extended midi binding engine: you can now bind multiple controls, even shell scripts, in any way you want. Control your raspberry from your midi controller;
+- Dry/Route FX: put some global FX and automatically route any similar instrument fx to your choice!
+- Unified ADSR: sync up to 5 ADSR (volume, cutoff, amplitude, cutoff values, amplitude values) to just 5 controls, sensible to channel;
+- Extended sessions: customize midi binds just by selecting a session, a keyboard or even an instrument.
+
 ## Requirements
 
 ### Operating system
@@ -68,6 +78,20 @@ git clone --recurse-submodules  ~/zynthomania
 ```
 the --recurse submodule will install KNOT and SYSJACK under the zynthomania dir in HOME.
 
+### Build ZynAddSubFX
+Now, as a first step, we will build ZynAddSubFX from scratch, using information found on this
+[Great blog entry](https://lucidbeaming.com/blog/setting-up-a-raspberry-pi-3-to-run-zynaddsubfx-in-a-headless-configuration/):
+
+```bash
+cd ~/zynthomania/install
+chmod +x *.sh
+chmod +x install_synth.sh
+./install_synth.sh
+```
+
+### Build Zynthomania
+After this, we may install the Zynthomania server:
+
 ```bash
 cd ~/zynthomania
 chmod +x install.sh
@@ -120,6 +144,30 @@ if your raspberry pi is connected to a local network, run the following address 
 *http://{your\_raspberry\_address}:7000*
 
 replace with your real address. Zynthomania should start!
+
+### Enable midi device
+If the zynthomania interface loads, go to "System" > "MIDI" and click on your MIDI device name (may be multiple).
+This will plug your device to Zynthomania. You're ready to go!
+
+### Testing, testing
+
+Try out some sounds, expecially pads (they are cpu consuming). If there is too much latency and/or sound quality is
+bad (xruns), run ``zyn-configure-jack`` or edit config.json, tweak some params and apply with ``zyn-update-services``
+until you find your comfort zone. If you haven't tried, try to apply the cpu perfomance and check it out.
+
+### Setting up startup
+
+Zynthomania will load any filename with 'default' as a name. So default.xmz under the session/ folder will be loaded as
+the default session, default.json under binds/ will be loaded as the default midi bind, default.osc under scripts/ will
+be launched after everything is loaded.
+
+If you want a **specific midi binding for your keyboard**, create a midi bind then name it after your keyboard name. Use
+the **EXACT** (case sensitive) name that appears under System > MIDI. The binding will be loaded automatically everytime
+you plug your device into zynthomania.
+
+I.E. if your controller shows up as "AKAI Mono II MIDI Input" create a file under binds/ called "AKAI Mono II MIDI Input.json".
+
+Check out the manual and KNOT's OSC syntax for major details.
 
 ## Enable connection
 
