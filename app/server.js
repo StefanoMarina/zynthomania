@@ -265,7 +265,7 @@ app.get('/status/part', function( req, res, next) {
   app.zyntho.osc.send(bundle);
   
   worker.listen().then(()=>{
-    let instrument = app.zyntho.session.instruments[req.query.id];
+    let instrument = app.zyntho._getInstruments(req.query.id);
     if (instrument != null) {
       result.instrument = instrument;
     }
@@ -314,12 +314,13 @@ app.get('binds/session', function (rq, res) {
 app.get('/midilearn', function(rq, res) {
   zconsole.logGet(rq);
   
-  app.zyntho.midiService.on('learn', (msg) => {
+  app.zyntho.midiService.once('learn', (msg) => {
     if (!res._headerSent)
       res.json(msg);
   });
   
   app.zyntho.midiService.midiLearn(rq.query.force);
+  
   setInterval( ()=> {
     if (!res._headerSent) {
       res.statusMessage='Midi learn timeout';
@@ -331,7 +332,7 @@ app.get('/midilearn', function(rq, res) {
 
 /**
  * /status/session
- * GET returns session info
+ * GET returns XMZ session info and extended session data
  */
 app.get('/status/session', function (rq, res) {
   zconsole.logGet(rq);
@@ -643,6 +644,20 @@ app.post('/reconnect', (req, res) => {
   app.zyntho.osc.close();
 });
 
+
+/**
+* Updates any extended session parameter
+*/
+app.post('/session/set', function (req, res) {
+  zconsole.logPost(req);
+  for (let key in app.zyntho.session) {
+    if (req.body[key] !== undefined) {
+      console.log(`changing ${key} to ${req.body[key]}`)
+      app.zyntho.session[key] = req.body[key];
+    }
+  }
+  res.end();
+});
 
 app.on('open', () => {
   zconsole.log ("Opened web application");

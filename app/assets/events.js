@@ -630,7 +630,7 @@ function onScript() {
 
 function onScriptSendClick() {
   let data = $('#commandLine').val().split('\n')
-  .filter( e=> e != "");
+    .filter( e=> e != "");
   
   if (data.length == 1)
       data = data[0];
@@ -638,13 +638,41 @@ function onScriptSendClick() {
   doAction('script', {script: data});
 }
   
+function onScriptQueryClick() {
+  let data = $('#commandLine').val().split('\n')
+    .filter( e=> e != "");
+  
+  if (data.length == 1)
+      data = data[0];
+  doAction('script', {script: data, requestResult: 1}, (data) =>{
+    let output = $('#pnlConsole div');
+    let button = $(output.siblings('button').get()[0]);
+    
+    output.removeClass('hidden');
+    $('#pnlConsole button, #pnlConsole textarea').addClass('hidden');
+    button.removeClass('hidden');
+    
+    output.empty();
+    for (let add in data) {
+      let args = JSON.stringify(data[add]);
+      output.append(`<p><strong>${add}</strong>:${args}</p>`);
+    }
+  });
+}
+
+function onScriptOK() {
+  $('#pnlConsole div').addClass('hidden');
+  $('#pnlConsole button, #pnlConsole textarea').removeClass('hidden');
+  $('#pnlConsole button[value=ok]').addClass('hidden')
+}
+
 function onSystemInfo() {
     doQuery('status/system', null, (data) => {
       let space = $('#pnlSystemInfo > div:first-child');
       space.empty();
       space.append(`<p class='col-12'>Temp: ${data.cpuTemp}</p>`);
-      space.append(`<p class='col-12'>JACK<span class="d-none d-md-block"> process status</span>: <i class="${(data.jackProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
-      space.append(`<p class='col-12'>ZynAddSubFX<span class="d-none d-md-block"> status</span>: <i class="${(data.zynProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
+      space.append(`<p class='col-12'>JACK<span class="d-none d-md-inline"> process status</span>: <i class="${(data.jackProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
+      space.append(`<p class='col-12'>ZynAddSubFX<span class="d-none d-md-inline"> status</span>: <i class="${(data.zynProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
       space.append(`<p class='col-12'>Cartridge: ${data.workingDir}</p>`);
     });
 }
@@ -772,18 +800,31 @@ function keyToSplitValue(key) {
 function onSystemSplit() {
   doQuery('status/split', null, (data) =>{
     $('#sysSplitChannel > select').val(data.channel+1);
+    $('#sysSplitChannel > label').text(data.channel+1);
+    
     window.zsession.splitdata = data;
     
     let table = $('#sysSplitTable');
+    let btnClass = "", iconClass= null, split = null, entry = null;
     
+    table.empty();
     for (let i = 0; i < 16; i++) {
-      let split = data.split[i];
-      let entry = `<div class="col-2">${i+1}</div><div class="col-2">${splitValueToKey(split.min)}</div> 
+      split = data.split[i];
+      if (split.channel == data.channel) {
+        iconClass='i-midi-alt';
+        btnClass='btn-selected';
+      } else {
+        iconClass='i-midi';
+        btnClass='';
+      }
+      
+      entry = `<div class="col-2">${i+1}</div><div class="col-2">${splitValueToKey(split.min)}</div> 
 <div class="col-2">${splitValueToKey(split.max)}</div>
 <div class="col row no-gutters">
-  <button class="col-4" onclick='onSystemSplitEdit(${i})'><i class='fa fa-edit'></i></button>
-  <button class="col-4"  onclick='onSystemSplitClear(${i})'><i class='fa fa-trash-alt'></i></button>
-  <button class="col-4"  onclick='onSystemSplitLearn(${i})'><span class="i-send"></span></button>
+  <button class="col-3" onclick='onSystemSplitEdit(${i})'><i class='fa fa-edit'></i></button>
+  <button class="col-3"  onclick='onSystemSplitClear(${i})'><i class='fa fa-trash-alt'></i></button>
+  <button class="col-3"  onclick='onSystemSplitLearn(${i})'><span class="icon i-send"></span></button>
+  <button class="col-3 ${btnClass}"  onclick='onSystemMidi(${i})'><span class="icon ${iconClass}"></span></button>
 </div>`;
       table.append(`<div class="row no-gutters">${entry}</div>`);
     }
@@ -879,6 +920,64 @@ doQuery('midilearn', {force: [9]}, (data)=> {
   });
   displayMessage('Enter lowest key', true);
 }
+
+function onSystemMidi(part) {
+  let split = window.zsession.splitdata.split[part];
+  let midiChan = parseInt($('#sysSplitChannel > select').val())-1;
+  
+  if (midiChan != split.channel) {
+    doAction('script', {script: `/part${part}/Prcvchn ${midiChan}`}, ()=>{
+      displayMessage(`Part #${part+1} chan set to ${midiChan}`);
+      split.channel = midiChan;
+      
+      let btn = $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
+      let span = btn.find('span');
+      btn.addClass('btn-selected');
+      span.removeClass('i-midi');
+      span.addClass('i-midi-alt');
+    });
+  } else {
+    doAction('script', {script: `/part${part}/Prcvchn ${part}`}, ()=>{
+      displayMessage(`Part #${part+1} chan restored.`);
+      split.channel = part;
+      
+      let btn = $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
+      let span = btn.find('span');
+      btn.removeClass('btn-selected');
+      span.removeClass('i-midi i-midi-alt');
+      
+      if (part == midiChan) {
+        btn.addClass('btn-selected');
+        span.addClass('i-midi-alt');
+      } else {
+        span.addClass('i-midi');
+      }
+      
+    });
+  }
+}
+
+function onSystemSplitChange(val) {
+  let btns = $(`#sysSplitTable >  .row > div:nth-child(4) > button:nth-child(4)`);
+  let split = null, button = null;
+  
+  for (let i = 0; i < 16; i++) {
+    button = $(btns.get()[i]);
+    split = window.zsession.splitdata.split[i];
+    button.find('span').removeClass('i-midi i-midi-alt');
+    button.removeClass('btn-selected');
+    
+    if (split.channel == val) {
+      button.addClass('btn-selected');
+      button.find('span').addClass('i-midi-alt');
+    } else {
+      button.find('span').addClass('i-midi');
+    }
+  }
+  
+  doAction('session/set', {splitChannel : val });
+}
+
 function onSystemUADSR(type) {
   doQuery("status/options", null, (data) => {
     let uadsr = data.uadsr;

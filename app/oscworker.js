@@ -30,19 +30,33 @@ class OSCWorker extends EventEmitter {
     this.stack = [];
     this.emitter = emitter;
   }
+  
   /**
    * creates a promise bound on the 'done' internal event
+   * @param timeout (optional) a timeout in ms, after that the 'done' event
+   * will be triggered no matter what. you should run this only if you are
+   * not sure that a promise will be honored, i.e. with external OSC.
    * @returns a Promise that will be triggered when the last osc call
    * is made
    * @throws if called with an empty stack
    */
-  listen() {
+  listen(timeout) {
     if (this.stack.length == 0)
       throw "OscWorker required to listen with an empty stack";
-      
-    return new Promise( (resolve) => {
+    
+    if (timeout !== undefined) {
+      setTimeout(() =>{
+        if (this.stack.length > 0) {
+          this.emit('abort');
+        }
+      }, timeout);
+    }
+    
+    return new Promise( (resolve,reject) => {
         this.once('done', resolve);
-    });
+        if (timeout !== undefined)
+          this.once('abort',reject);
+    })
   }
   
   /**

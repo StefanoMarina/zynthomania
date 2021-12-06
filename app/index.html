@@ -43,7 +43,7 @@
               <i class="fa fa-volume-up big-icon"></i><button id="kpvol" class="knob"></button> 
             </td>
             <td><i class="fa fa-arrows-alt-h big-icon"></i><button id="kppan" class="knob"></button> </td>
-            <td><button id="btnEditChan" class="big-btn"><i class="fa fa-edit"></i></button></td>
+            <td><button id="btnEditChan" class="big-btn"><span class="big-icon icon i-midi"></span></button></td>
             <td><button id="btnClearPart" class="big-btn"><i class="fa fa-trash-alt"></i></button></td>
           </tr>
         </table>
@@ -67,8 +67,10 @@
             </header>
           
           <!--panels-->
-            <div class="tab row controlPanel">
+            <div class="tab controlPanel">
               <p class="col-12">Welcome to Zynthomania!</p>
+              <p class="col-12"><small> 2021 build by Stefano Marina under GPLv3</small></p>
+              <p class="col-12"><small>Piano, midi icons<a href="http://www.onlinewebfonts.com">from oNline Web Fonts </a> under CC-3</small></p>
             </div>
             
             <div id="pnlBanks" class="tab row controlPanel no-gutters hidden">
@@ -77,13 +79,13 @@
             </div>
             
             <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
-              <header class="col-4 no-gutters tab-v br">
+              <header class="col-3 no-gutters tab-v br">
                 <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()">Dry</button>
                 <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="onFxPart()">Part</button>
                 <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onFxRoute()">Route</button>
                 <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="onFxSystem()">System</button>
               </header>
-              <div class="col-8"> <!-- fx content container -->
+              <div class="col-9"> <!-- fx content container -->
                 
                 <div id="pnlDry" class="panel fxPanel hidden row">
                   <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Reverb</button></div>
@@ -147,13 +149,13 @@
             
             <!-- BINDS -->
             <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
-              <header class="col-4 tab-v br">
+              <header class="col-3 tab-v br">
                 <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain" onclick="onBindChain()">Chain</button>
                 <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindFile()">File</button>
                 <button class="tab-header" data-tab="bindPanel" data-open="pnlBindEdit" onclick="onBindEdit()">Edit</button>
                 <button class="tab-header" data-tab="bindPanel" data-open="pnlBindSession" onclick="onBindSession()">Session</button>
               </header>
-              <div class="col-8">  
+              <div class="col-9">  
                 <div id="pnlBindIO" class="bindPanel panel hidden">
                   <div class="col-12"><ul id="selBinds" class="select" style=" height:280 !important"></ul></div>
                   <div class="row">
@@ -219,7 +221,7 @@
                   </div>
                   <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
                   <div class="row">
-                    <div class="col-12 col-md-6"><button class="btn-selected col-12" onclick="onBindEditMidilearn()">Midi Learn <span class="i-send-alt"> </span></button></div>
+                    <div class="col-12 col-md-6"><button class="btn-selected col-12" onclick="onBindEditMidilearn()">Midi Learn <span class="icon i-send-alt"> </span></button></div>
                     <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
                   </div>
                 </div>
@@ -240,15 +242,19 @@
             </div> <!-- /binds -->
             
             <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
-              <header class="col-4 tab-v br">
+              <header class="col-3 tab-v br">
                 <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScript()">File</button>
                 <button class="tab-header" data-tab="scrPanel" data-open="pnlConsole">Console</button>
               </header>
-              <div class="col-8">
+              <div class="col-9">
                 <div id="pnlConsole" class="scrPanel panel hidden">
                   <textarea class="col-12" style="min-height: 200px !important" 
                       id="commandLine" placeholder="Input parameter..."></textarea>
-                  <button class="send-btn col-12 big-btn" onclick="onScriptSendClick();">Send</button>
+                  <div class="col-12 hidden" style="height: 280px; overflow-y: auto">
+                  </div>
+                  <button class="send-btn col-12 big-btn hidden" value="ok" onclick="onScriptOK();">OK</button>
+                  <button class="send-btn col-12 col-md-6 big-btn" onclick="onScriptSendClick();">Send</button>
+                  <button class="send-btn col-12 col-md-6 big-btn" onclick="onScriptQueryClick();">Query result</button>
                 </div>
                 <div id="pnlFile" class="scrPanel panel hidden">
                   <ul id="selScripts" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
@@ -258,14 +264,14 @@
             </div>
             
             <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
-              <header class="col-4 no-gutters tab-v br">
+              <header class="col-3 no-gutters tab-v br">
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
                 <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
                 <button class="tab-header" data-tab="sysPanel" data-open="pnlSession" onclick="onSystemSession();">Session</button>
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
                 <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemSplit" onclick="onSystemSplit();">Split</button>
+                <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
               </header>
-              <div class="col-8"> <!-- sys content container -->
+              <div class="col-9"> <!-- sys content container -->
                 <div id="pnlMIDI" class="sysPanel panel hidden row">
                   <div class="col-12" id="sysMidiContainer">
                   </div>
@@ -340,9 +346,6 @@
         </div> 
       </div> <!--col-10 -->        
     </main><!-- main row -->
-    <footer>
-      <a href="http://www.onlinewebfonts.com"><small> some icons from oNline Web Fonts</small></a>
-    </footer>
     <script src="events.js"></script>
     <script type="text/javascript">
       
@@ -414,7 +417,7 @@
       function displayMessage(msg, force) {
         force = (force === undefined) ? false : force;
         
-        window.zsession.oldMessage = $('#instrumentName').text();
+        //window.zsession.oldMessage = $('#instrumentName').text();
         
         //remove Ajax timer
         clearInterval(window.timers['ajax']);
@@ -424,7 +427,12 @@
         if (!force) {
           window.timers['msg'] = setTimeout ( function() {
             //onToolbarChangePart();
-            $('#instrumentName').text(window.zsession.oldMessage);    
+            if ($('main h3 > a > i').hasClass('hidden')) {
+              let iname = window.zsession.getInstrument(0);
+              $('#instrumentName').text(`#${window.zsession.partID}: ${iname.name}`);
+            } else {
+              $('#instrumentName').text('Disabled');
+            }
             clearTimeout(window.timers['msg']);
           }, 5000);
         }
@@ -523,10 +531,10 @@
           })
         .fail( function(jqXHR, textStatus, errorThrown) {
           clearInterval(window.timers['ajax']);
-          clearInterval(window.timers['ajax']);
           window.timers['ajax'] = null;
           $('#q-status').removeClass('fa-hourglass');
           $('#q-status').addClass('fas fa-times-circle');
+          $('#instrumentName').css('padding-left' , 0);
           displayMessage(errorThrown);
           //$('#instrumentName').text(errorThrown);
         });
@@ -860,6 +868,10 @@
           
           //register selectable swipeables with selection
           registerSwipeables('.fx-btn .swipeable', true);
+          
+          $('#sysSplitChannel > select').on('change', (e) => {
+            onSystemSplitChange(parseInt(e.currentTarget.value)-1);
+          });
           
           //register change part
           $('#partBar .swipeable > select').on('change', (e)=> {

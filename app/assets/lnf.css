@@ -116,8 +116,16 @@ body::after {
    }
    
    .tab-header, .big-btn, .big-btn * {font-size: 14px !important;}
-   .big-icon { font-size: 20 px !important}
-   small {font-size: 8px !important}
+   .big-icon { 
+      font-size: 20 px !important
+   }
+   
+   .big-icon.icon {
+     width: 20px !important;
+     height: 20px !important;
+   }
+   
+   small, small > * {font-size: 8px !important}
   .header, th { padding: 2px !important }
 }
 
@@ -132,7 +140,12 @@ body::after {
    .tab-header, .big-btn, .big-btn * {font-size: 24px !important;}
    
   .big-icon {font-size: 32px !important;}
-  small {font-size: 12px !important}
+  .big-icon.icon {
+     width: 32px !important;
+     height: 32px !important;
+   }
+   
+  small, small > * {font-size: 12px !important}
   
   .header, th { padding: 4px !important }
 }
@@ -156,20 +169,30 @@ button + button, .btn+.btn {
 }
 .fx-btn button { border: none !important}
 
-.i-send, .i-send-alt {
+.icon {
   display: inline-block;
   width: var(--base-size);
   height: var(--base-size);
   vertical-align: bottom;
-}
-.i-send {
- background-image: url('piano.svg');
- background-repeat: no-repeat;
+  background-repeat: no-repeat;
 }
 
-.i-send-alt {
+.i-send {
+ background-image: url('piano.svg');
+}
+
+.i-send-alt, .i-send:hover {
  background-color: var(--color-lcd) !important;
  mask: url('piano.svg');
+}
+
+.i-midi {
+ background-image: url('midi.svg');
+}
+
+.i-midi-alt {
+ background-color: var(--color-lcd) !important;
+ mask: url('midi.svg');
 }
 
 .send-btn::after {

@@ -320,6 +320,13 @@ class ZynthoServer extends EventEmitter {
       result[part].enabled = args[0].value;
     });
     
+    let chBundle = this.parser.translate('/part[0-15]/Prcvchn');
+    worker.pushPacket(chBundle,(add,args) =>{
+      let part = parseInt(add.match(/part(\d+)/)[1]);
+      result[part].channel = args[0].value;
+    });
+    bundle = this.merge(bundle, chBundle);
+    
     let minBundle = this.parser.translate('/part[0-15]/Pminkey');
     worker.pushPacket(minBundle,(add,args) =>{
       let part = parseInt(add.match(/part(\d+)/)[1]);
