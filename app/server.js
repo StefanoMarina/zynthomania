@@ -125,7 +125,9 @@ app.post('/setFavorite', function (req, res) {
 /**
  * script
  * POST parse script
- * Body { script : "" }
+ * Body { script : "", requestResult: 1 }
+ * @note if requestResult is present, but no OSC is
+ * returned, the worker will hang on a undefined state.
  */
 app.post('/script', function(req, res) {
   zconsole.logPost(req);
@@ -147,8 +149,32 @@ app.post('/script', function(req, res) {
     return;
   }
   
-  app.zyntho.sendOSC(bundle);
-  res.end();
+  if (req.body.requestResult) {
+    const worker = new OSCWorker(app.zyntho);
+    const result = {};
+    
+    worker.pushPacket(bundle, (add, args) => {
+      let index = 0;
+      let key = add;
+      
+      while (result[key] !== undefined) {
+        key = `${add}_${++index}`;
+      }
+      
+      result[key] = args.map( (e) => e.value);
+    });
+    
+    app.zyntho.sendOSC(bundle);
+    worker.listen(5000).then(()=>{
+      res.json(result);
+    }).catch( ()=> {
+      res.statusMessage='No OSC Response';
+      res.status(402).end();
+    });
+  } else {
+    app.zyntho.sendOSC(bundle);
+    res.end();
+  }
 });
 
 /**
