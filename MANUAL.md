@@ -13,7 +13,33 @@ to select your value, or click on them to make a list selection appear;
 - **Knobs** are 3 digit numbers under a black round background. Those controls will
 raise by 32 if clicked, or raise/lower by 8 if swiped. Going over 127 resets them to 0.
 
-## Top bar
+## OSC commands
+
+Some OSC commands are presented here. KNOT notation is used:
+
+| Symbol | Meaning | Usage Example|
+|:------:|:--------------:|:------|
+|   i   | Integer | /part0/PVolume **64** | 
+|   s   | String  | /zmania/load_xiz 0 **'/home/pi/my_instrument.xiz'** | 
+|   b   | Blob    | /sysefx0/paste **'base64;SGVsbG8gV29ybGQ='** |
+|   f   | Float   | /part0/Volume **0.40** |
+|   T   | True    | /part0/Penabled **T** |
+|   F   | False   | /part0/Penabled **F** |
+
+An OSC message is but a path and some parameters. An OSC **bundle** is a bunch of commands
+send together, expecting to be handled simultaneusly but in non-guaranteed order.
+
+write ``zynaddsubfx -D=output.xml`` or ``zynaddsubfx -d=output.json`` for a list of zynaddsubfx's osc commands. That list is huge!!
+
+Note: There are multiple versions of the same control. For example, ``/part0/Volume`` takes a float,
+``/part0/Pvolume`` takes a integer, where 0 is minimum and 127 is max. As a general rule, paths with 'P' in their
+last element take either an integer or the T/F boolean pair.
+
+See the second chapter, "OSC Cookbook", for more info.
+
+# Interface
+
+## Top bars
 1. **Favorite** (star icon): this will put your currently selected instrument inside your Favorites' list.
 2. **Part selection** is a swipeable select that allows you to set the current part.
 3. **Volume and pan knobs** knobs. Remember central panning is 64.
@@ -72,73 +98,6 @@ no cartridge is used. it is a system feature.
 |:---|:------|
 |/load_xiz i s | Unofficial - loads xiz. This won't update zynthomania. Parameters are part id and file with full path|
 |/zmania/load_xiz i s | Zynthomania's way of loading an instruments. parameters as above.
-
-## FX
-ZynAddSubFx sports 8 built-in FX. They can be routed in any way imaginable, similar to a DAW.
-Each instrument has some presets and a lot of controls for customization.
-
-There are 3 layers of FX management:
-- Part FX: those are the instrument's built in fx and are loaded when you load the instrument. You have up to 3
-part fx slots.
-- Insert FX: there are 8 slots for effects which can be used as insert fxes.
-- System FX: 4 fx slots can be used as classic 'master' effects.
-
-Zynthomania focuses on the 'keyboard' way of handling fx, so insertion effects are disregarded. You can still use
-them, but you cannot change them via the ZM interface.
-
-### Routing
-As for part effects, they are useful when you work one instrument at a time. But what if you load two instruments,
-each with is own Reverb? what if you have a Reverb or a Delay on a master FX and an instruments gets in the way?
-
-Enter Dry and Route mode. Dry mode will automatically turn off (bypass) a Part FX from a list of blacklisted fxes.
-This is useful if you want to avoid huge consumption fx such as distortion or reverb, or you have your own external
-fxes.
-
-Route mode is more complicated. When an instrument is loaded, ZM will check what System FX you are using. If any system fx
-matches a part fx in his type, the part fx is bypassed, and the parts' send to that fx is automatically raised to a number
-of your choice. This is good if you want to 'replace' any part fx with your own.
-
-### Dry Panel
-
-The dry panel is pretty straightforeward: Turn on/off any fx you want dried, and click 'apply'. This will apply to
-the current instrument and any future instrument you load.
-
-Drying is saved as a global feature.
-
-### Part/System FX
-The Part FX is composed by 3 FX panels and the Part to System FX Send.
-
-Each FX panel allows:
-- Bypass or not the fx (volume icon);
-- Select the fx (swipeable selection);
-- Select the preset (the number on the right - touch to advance).
-
-The 4 knobs representing system fx send tells how much you want the part to be send to the system fx.
-Touch/Click on 'Send all to Max' if you want to use System FX as insertion.
-
-System FXes do not allow bypass.
-
-System/Part fx are saved as a session feature.
-
-### Route
-
-FX Route panel is similar to the dry panel, only you can set how much a part fx should go to the
-routed effect using the knob in the first row.
-
-FX Route is saved as a global feature.
-
-### Sported OSC
-
-I'll be using {FXNAME} as a placeholder for the FX name.
-
-|OSC | Value |
-|:---|:------|
-|/part\[0-15\]/partefx\[0-2\]/efftype i| sets the FX by using its id (0-8) |
-|/part\[0-15\]/Pefxbypass\[0-2\] TF | Enable/Disable bypass on part fx |
-|/Psysefxvol\[0-3\]/part\[0-15\] i | Part send to System FX |
-|/part\[0-15\]/partefx\[0-2\]/*{FXNAME}*/preset i| Set preset for that part/partefx effect |
-|/sysefx\[0-3\]/efftype i| FX id for system fx |
-|/sysefx\[0-3\]/*{FXNAME}*/preset i| Set preset for that systemfx effect |
 
 ## Binds
 
@@ -223,7 +182,7 @@ again to add a new bind.
 
 **Note**: Zynthomania interface does not enable shell scripts, although they are supported. You have
 to create a bind file manually for that.
- 
+
 ### Session
 
 This is the session bind's list. It will show a summery of the session's current bindings.
@@ -237,62 +196,110 @@ The table will show:
 event value;
 - Edit toolbar, where you can edit the current bind or remove it.
 
-### Sported OSC
+### Employed OSC
 
 |OSC | Value |
 |:---|:------|
 |/zmania/bind/load s| Add a bind to the chain
 |/zmania/bind/remove s | Remove a bind from the chain
 
-## Script
+ 
+## FX
+ZynAddSubFx sports 8 built-in FX. They can be routed in any way imaginable, similar to a DAW.
+Each instrument has some presets and a lot of controls for customization.
 
-Zynthomania allows OSC scripts to be readed and parsed. This is useful if you need big packages of
-messages to be sent, or if you want an OSC bundle to be reusable. Scripts can be triggered using
-the ``/zmania/run_script`` osc command.
+There are 3 layers of FX management:
+- Part FX: those are the instrument's built in fx and are loaded when you load the instrument. You have up to 3
+part fx slots.
+- Insert FX: there are 8 slots for effects which can be used as insert fxes.
+- System FX: 4 fx slots can be used as classic 'master' effects.
 
-OSC syntax is the same as KNOT, only two rules are added:
+Zynthomania focuses on the 'keyboard' way of handling fx, so insertion effects are disregarded. You can still use
+them, but you cannot change them via the ZM interface.
 
-1. Messages are separated by newlines;
-2. If you want to send a bundle, put **\[** into a line, write each command then close with **\]**.
+### Routing
+As for part effects, they are useful when you work one instrument at a time. But what if you load two instruments,
+each with is own Reverb? what if you have a Reverb or a Delay on a master FX and an instruments gets in the way?
 
-Example:
+Enter Dry and Route mode. Dry mode will automatically turn off (bypass) a Part FX from a list of blacklisted fxes.
+This is useful if you want to avoid huge consumption fx such as distortion or reverb, or you have your own external
+fxes.
 
-```
-/part${ch}/Penabled T
-/part${ch}/Pvolume 127
-```
-This will execute Penabled first, then Pvolume.
+Route mode is more complicated. When an instrument is loaded, ZM will check what System FX you are using. If any system fx
+matches a part fx in his type, the part fx is bypassed, and the parts' send to that fx is automatically raised to a number
+of your choice. This is good if you want to 'replace' any part fx with your own.
 
-```
-[
-/part${ch}/Penabled T
-/part${ch}/Pvolume 127
-]
-```
+### Dry Panel
 
-This will send enabled and volume on the same package.
+The dry panel is pretty straightforeward: Turn on/off any fx you want dried, and click 'apply'. This will apply to
+the current instrument and any future instrument you load.
 
-The **console** follows the same parameters. Notice that on a console \[\] are not supported:
-Multiline osc commands will always be handled as a bundle.
+Drying is saved as a global feature.
 
-### Sported OSC
+### Part/System FX
+The Part FX is composed by 3 FX panels and the Part to System FX Send.
+
+Each FX panel allows:
+- Bypass or not the fx (volume icon);
+- Select the fx (swipeable selection);
+- Select the preset (the number on the right - touch to advance).
+
+The 4 knobs representing system fx send tells how much you want the part to be send to the system fx.
+Touch/Click on 'Send all to Max' if you want to use System FX as insertion.
+
+System FXes do not allow bypass.
+
+System/Part fx are saved as a session feature.
+
+### Route
+
+FX Route panel is similar to the dry panel, only you can set how much a part fx should go to the
+routed effect using the knob in the first row.
+
+FX Route is saved as a global feature.
+
+### Employed OSC
+
+I'll be using {FXNAME} as a placeholder for the FX name.
 
 |OSC | Value |
 |:---|:------|
-|/zmania/run_script s | execute *s* script (full path). |
+|/part\[0-15\]/partefx\[0-2\]/efftype i| sets the FX by using its id (0-8) |
+|/part\[0-15\]/Pefxbypass\[0-2\] TF | Enable/Disable bypass on part fx |
+|/Psysefxvol\[0-3\]/part\[0-15\] i | Part send to System FX |
+|/part\[0-15\]/partefx\[0-2\]/*{FXNAME}*/preset i| Set preset for that part/partefx effect |
+|/sysefx\[0-3\]/efftype i| FX id for system fx |
+|/sysefx\[0-3\]/*{FXNAME}*/preset i| Set preset for that systemfx effect |
 
-## System
-
-### MIDI
-
-This is where you can enable your midi devices. This will not connect the device to zynaddsubfx, it will
-connect it to zynthomania's own KNOT port, which in turn is connected to the synth. This should not really
-create latency problems, as virtual port are opened using real time midi engine.
+## Keyb
+This sections contains elements usefult to turn zynthomania into a classic keyboard OS.
 
 ### Session
 
 You can load/save sessions here. Click on ``(save to new session)`` then save to save on a new file.
 On the top of the file list, the current session file is presented.
+
+### Split
+ZynAddSubFX gives the chance to put multiple instruments by assigning them a note range. This can be done
+in a lot of ways, i.e. using part kits, Zynthomania will use the Part approach: multiple parts will be
+assigned the same MIDI channel, but a different key range.
+This means you will have i.e. Part 0 on notes ranging from C1 to C2, but Part 1 on notes ranging C#1 to G9.
+
+The interface consists of a swipeable select and a table. The Swipeable select allows you to see the **Midi assign status**
+on each part: when you select a channel, any part with that channel will be highlighted.
+
+Then, there is a table summarizing the keyboard split for each part:
+
+- Part id;
+- **From** : Starting note point. Notes range 0-127, or C-1 - G9, with C4 being 60.
+- **To** : Maximum note point.
+
+The toolbar for each part consist of the same buttons:
+- **Edit**: This will allow you to select manually From and To points;
+- **Clear**: This will reset the points;
+- **Learn**: This will ask you to trigger a note on your keyboard for lowest then highest point;
+- **Midi**: If highlighted, the part is on the channel you requested. Click on the non selected button
+to bind it to your midi channel, or to reset the part/channel binding (wich is part 1 = channel 1).
 
 ### Unified ADSR (UADSR)
 
@@ -320,6 +327,12 @@ So, moving the switch CC to the middle (64) will trigger filter values mode, put
 will trigger frequency tones.
 
 CCs can be customized, so I will refer them in order as 1,2,3,4.
+
+Note:: the paths listed below are just the last point of the full OSC path,
+which is ``/part\[0-15\]/kit\[0-15\]/adpars/Global`` for Adsynth global params,
+``/part\[0-15\]/kit\[0-15\]/subpars`` for SubSynth and ``/part\[0-15\]/kit\[0-15\]/padpars``
+for PADSynth. all OSC take one 'i' parameter , 0-127. 
+
 #### U4 Amplitude mode (0)
 | CC | Changes | OSC last path|
 |:--:|:------|:-------|
@@ -365,3 +378,51 @@ CCs can be customized, so I will refer them in order as 1,2,3,4.
 The core paths are inside bind files under the ``data`` directory into zynthomania dir.
 
 UADSR is a system setting. Future releases will make it keyboard specific.
+
+
+## Script
+
+Zynthomania allows OSC scripts to be readed and parsed. This is useful if you need big packages of
+messages to be sent, or if you want an OSC bundle to be reusable. Scripts can be triggered using
+the ``/zmania/run_script`` osc command.
+
+OSC syntax is the same as KNOT, only two rules are added:
+
+1. Messages are separated by newlines;
+2. If you want to send a bundle, put **\[** into a line, write each command then close with **\]**.
+
+Example:
+
+```
+/part${ch}/Penabled T
+/part${ch}/Pvolume 127
+```
+This will execute Penabled first, then Pvolume.
+
+```
+[
+/part${ch}/Penabled T
+/part${ch}/Pvolume 127
+]
+```
+
+This will send enabled and volume on the same package.
+
+The **console** follows the same parameters. Notice that on a console \[\] are not supported:
+Multiline osc commands will always be handled as a bundle.
+
+### Employed OSC
+
+|OSC | Value |
+|:---|:------|
+|/zmania/run_script s | execute *s* script (full path). |
+
+## System
+
+General system info.
+
+### MIDI
+
+This is where you can enable your midi devices. This will not connect the device to zynaddsubfx, it will
+connect it to zynthomania's own KNOT port, which in turn is connected to the synth. This should not really
+create latency problems, as virtual port are opened using real time midi engine.

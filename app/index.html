@@ -60,8 +60,9 @@
           <div class="col-12 tab">
             <header class="d-flex flex-row tab-h">
               <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks">Banks</button>
-              <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
               <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds"><a>Binds</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlKeyb">Keyb</button>
               <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
               <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem"><a>System</a></button>
             </header>
@@ -147,6 +148,74 @@
               </div> <!-- /fx content -->
             </div> <!-- /fx -->
             
+            <div id="pnlKeyb" class="tab row no-gutters controlPanel hidden">
+              <header class="col-3 no-gutters tab-v br">
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlSession" onclick="onKeybSession();">Session</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlKeybSplit" onclick="onKeybSplit();">Split</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlUADSR" onclick="onKeybUADSR();">UADSR</button>
+              </header>
+              <div class="col-9"> <!-- keyb content container -->
+                  <div id="pnlSession" class="keybPanel panel hidden">
+                  <p class="bb tc" id="keybCurSession"></p>
+                  <ul id="keybSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
+                  <div class="row">
+                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onKeybSessionLoadClick()">Load</button></div>
+                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onKeybSessionSaveClick()">Save</button></div>
+                  </div>
+                </div>
+                <div id="pnlUADSR" class="keybPanel panel hidden row">
+                  <div class="col-12 row no-gutters">
+                    <button class="btnUADSR col-4"  value="none" >Off</button>
+                    <button class="btnUADSR col-4"  value="uadsr4" >4</button>
+                    <button class="btnUADSR col-4"  value="uadsr8" >8</button>
+                  </div>
+                  <div id="u4config" class="uadsrControl hidden col-12 row">
+                    <p class="col-12 tc">ADSR</p>
+                    <div class="tc col-2 col-md-3">A</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4a"></div> 
+                    <div class="tc col-2 col-md-3">D</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4d"></div> 
+                    <div class="tc col-2 col-md-3">S</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4s"></div> 
+                    <div class="tc col-2 col-md-3">R</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4r"></div> 
+                  </div>
+                  <div id="u4switch" class="uadsrControl hidden col-12 row">
+                    <div class="col-4">Switch</div>
+                    <div class="col-8"><input class="itext col-12" type="number" id="iu4sw"></div>
+                  </div>
+                   <div id="u8config" class="uadsrControl hidden col-12 row">
+                    <p class="tc col-12">Filter</p>
+                    <div class="tc col-2 col-md-3">A</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8a"></div> 
+                    <div class="tc col-2 col-md-3">D</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8d"></div> 
+                    <div class="tc col-2 col-md-3">S</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8s"></div> 
+                    <div class="tc col-2 col-md-3">R</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
+                  </div>
+                  <div class="col-12">
+                  <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
+                  </div>
+                </div>
+                <div id="pnlKeybSplit" class="keybPanel panel hidden">
+                  <div class="row">
+                    <div class="col-6">Midi Channel</div>
+                    <div class="col-6"><div id="keybSplitChannel" class="col-12 swipeable"></div></div>
+                  </div>
+                  <div class="row no-gutters table">
+                    <div class="header col-2 tc">Prt</div>
+                    <div class="header col-2 tc">From</div>
+                    <div class="header col-2 tc">To</div>
+                    <div class="header col tc">Edit</div>
+                  </div>
+                  <div class="table" id="keybSplitTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- BINDS -->
             <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
               <header class="col-3 tab-v br">
@@ -265,82 +334,23 @@
             
             <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
               <header class="col-3 no-gutters tab-v br">
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlSession" onclick="onSystemSession();">Session</button>
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlSystemSplit" onclick="onSystemSplit();">Split</button>
-                <button class="tab-header" data-tab="sysPanel" data-open="pnlUADSR" onclick="onSystemUADSR();">UADSR</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
               </header>
-              <div class="col-9"> <!-- sys content container -->
-                <div id="pnlMIDI" class="sysPanel panel hidden row">
-                  <div class="col-12" id="sysMidiContainer">
+              <div class="col-9"> <!-- keyb content container -->
+                <div id="pnlMIDI" class="keybPanel panel hidden row">
+                  <div class="col-12" id="keybMidiContainer">
                   </div>
                 </div>
-                <div id="pnlSession" class="sysPanel panel hidden">
-                  <p class="bb tc" id="sysCurSession"></p>
-                  <ul id="sysSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
-                  <div class="row">
-                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionLoadClick()">Load</button></div>
-                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onSystemSessionSaveClick()">Save</button></div>
-                  </div>
-                </div>
-                <div id="pnlUADSR" class="sysPanel panel hidden row">
-                  <div class="col-12 row no-gutters">
-                    <button class="btnUADSR col-4"  value="none" >Off</button>
-                    <button class="btnUADSR col-4"  value="uadsr4" >4</button>
-                    <button class="btnUADSR col-4"  value="uadsr8" >8</button>
-                  </div>
-                  <div id="u4config" class="uadsrControl hidden col-12 row">
-                    <p class="col-12 tc">ADSR</p>
-                    <div class="tc col-2 col-md-3">A</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4a"></div> 
-                    <div class="tc col-2 col-md-3">D</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4d"></div> 
-                    <div class="tc col-2 col-md-3">S</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4s"></div> 
-                    <div class="tc col-2 col-md-3">R</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4r"></div> 
-                  </div>
-                  <div id="u4switch" class="uadsrControl hidden col-12 row">
-                    <div class="col-4">Switch</div>
-                    <div class="col-8"><input class="itext col-12" type="number" id="iu4sw"></div>
-                  </div>
-                   <div id="u8config" class="uadsrControl hidden col-12 row">
-                    <p class="tc col-12">Filter</p>
-                    <div class="tc col-2 col-md-3">A</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8a"></div> 
-                    <div class="tc col-2 col-md-3">D</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8d"></div> 
-                    <div class="tc col-2 col-md-3">S</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8s"></div> 
-                    <div class="tc col-2 col-md-3">R</div>
-                    <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
-                  </div>
-                  <div class="col-12">
-                  <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
-                  </div>
-                </div>
-                <div id="pnlSystemInfo"  class="sysPanel panel hidden row">
+            
+                <div id="pnlSystemInfo"  class="keybPanel panel hidden row">
                   <div class="container">
                   </div>
                   <div class="container">
                     <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12" onclick="onSystemInfoReconnect()">Reconnect Zyn</button></div>
                   </div>
                 </div>
-                <div id="pnlSystemSplit" class="sysPanel panel hidden">
-                  <div class="row">
-                    <div class="col-6">Midi Channel</div>
-                    <div class="col-6"><div id="sysSplitChannel" class="col-12 swipeable"></div></div>
-                  </div>
-                  <div class="row no-gutters table">
-                    <div class="header col-2 tc">Prt</div>
-                    <div class="header col-2 tc">From</div>
-                    <div class="header col-2 tc">To</div>
-                    <div class="header col tc">Edit</div>
-                  </div>
-                  <div class="table" id="sysSplitTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
-                  </div>
-                </div>
+                
               </div>
           </div> 
         </div> 
@@ -809,7 +819,7 @@
             $(e.target).addClass('btn-selected');
             doAction("script", {script: `/zmania/uadsr/type '${e.target.value}'`},
               (data) =>{
-                onSystemUADSR();
+                onKeybUADSR();
             });
           });
           
@@ -832,7 +842,7 @@
             
             doAction('script', {script: `/zmania/${type}/bind ${array.join(' ')}`},
               () =>{
-                onSystemUADSR();
+                onKeybUADSR();
               });
           });
           
@@ -861,16 +871,16 @@
             createSwipeable(this);
           });
           
-          createSwipeable('#sysSplitChannel',CHAN_ARRAY);
+          createSwipeable('#keybSplitChannel',CHAN_ARRAY);
           
           //register all swipeable events without selection
-          registerSwipeables('#pnlBindEdit .swipeable, #partBar .swipeable, #sysSplitChannel', false);
+          registerSwipeables('#pnlBindEdit .swipeable, #partBar .swipeable, #keybSplitChannel', false);
           
           //register selectable swipeables with selection
           registerSwipeables('.fx-btn .swipeable', true);
           
-          $('#sysSplitChannel > select').on('change', (e) => {
-            onSystemSplitChange(parseInt(e.currentTarget.value)-1);
+          $('#keybSplitChannel > select').on('change', (e) => {
+            onKeybSplitChange(parseInt(e.currentTarget.value)-1);
           });
           
           //register change part

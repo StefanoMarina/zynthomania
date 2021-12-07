@@ -598,7 +598,6 @@ function onFxRoute() {
 }
 
 function onFxPartSystemKnobChange(id) {
-  console.log('called!')
   let newValue = window.knobs[`kss${id}`].getValue();
   doAction('script', {script : `/Psysefxvol${id}/part${window.zsession.partID} ${newValue}` });
 }
@@ -687,7 +686,7 @@ function onSystemMIDI() {
     }
     
     //data is array
-    let midiCont = $('#sysMidiContainer');
+    let midiCont = $('#keybMidiContainer');
     $(midiCont).empty();
     
     
@@ -723,15 +722,15 @@ function onSystemInfoReconnect() {
 }
 
 
-function onSystemSession() {
+function onKeybSession() {
   doQuery('status/session', null, (data) =>{
     const currentSession = data.currentSession;
     const sessionList = data.sessionList;
     
-    $('#sysCurSession').text( (currentSession != null)
+    $('#keybCurSession').text( (currentSession != null)
         ? currentSession : 'New session' );
     
-    const list = $('#sysSessionList');
+    const list = $('#keybSessionList');
     
     $(list).empty();
     sessionList.unshift('(Save to new session)');
@@ -742,8 +741,8 @@ function onSystemSession() {
   });
 }
 
-function onSystemSessionSaveClick() {
-  let select = $('#sysSessionList').find('li.btn-selected');
+function onKeybSessionSaveClick() {
+  let select = $('#keybSessionList').find('li.btn-selected');
   if (select.length == 0)
     return;
   let filename = $(select).text();
@@ -756,19 +755,19 @@ function onSystemSessionSaveClick() {
       alert('Please save as .xmz file.');
       return;
     }
-    if ($('#sysCurSession').find(`li:contains(${filename})`).length>0) {
+    if ($('#keybCurSession').find(`li:contains(${filename})`).length>0) {
       let res = confirm(`${filename} exists! Overwrite?`)
       if (!res) return;
     }
   }
   
   doAction('script', {script : `/zmania/save_xmz '${filename}'`}, () =>{
-    onSystemSession();
+    onKeybSession();
   });
 }
 
-function onSystemSessionLoadClick() {
-  let select = $('#sysSessionList').find('li.btn-selected');
+function onKeybSessionLoadClick() {
+  let select = $('#keybSessionList').find('li.btn-selected');
   if (select.length == 0)
     return;
   let filename = $(select).text();
@@ -778,7 +777,7 @@ function onSystemSessionLoadClick() {
   doAction('script', {script :`/zmania/load_xmz '${filename}'`}, () =>{
     //displayMessage('Loaded session.');
     onToolbarChangePart(0);
-    onSystemSession();
+    onKeybSession();
   });
 }
 
@@ -797,14 +796,14 @@ function keyToSplitValue(key) {
   return (octave*12)+NOTE_LIST.indexOf(note);
 }
 
-function onSystemSplit() {
+function onKeybSplit() {
   doQuery('status/split', null, (data) =>{
-    $('#sysSplitChannel > select').val(data.channel+1);
-    $('#sysSplitChannel > label').text(data.channel+1);
+    $('#keybSplitChannel > select').val(data.channel+1);
+    $('#keybSplitChannel > label').text(data.channel+1);
     
     window.zsession.splitdata = data;
     
-    let table = $('#sysSplitTable');
+    let table = $('#keybSplitTable');
     let btnClass = "", iconClass= null, split = null, entry = null;
     
     table.empty();
@@ -821,10 +820,10 @@ function onSystemSplit() {
       entry = `<div class="col-2">${i+1}</div><div class="col-2">${splitValueToKey(split.min)}</div> 
 <div class="col-2">${splitValueToKey(split.max)}</div>
 <div class="col row no-gutters">
-  <button class="col-3" onclick='onSystemSplitEdit(${i})'><i class='fa fa-edit'></i></button>
-  <button class="col-3"  onclick='onSystemSplitClear(${i})'><i class='fa fa-trash-alt'></i></button>
-  <button class="col-3"  onclick='onSystemSplitLearn(${i})'><span class="icon i-send"></span></button>
-  <button class="col-3 ${btnClass}"  onclick='onSystemMidi(${i})'><span class="icon ${iconClass}"></span></button>
+  <button class="col-3" onclick='onKeybSplitEdit(${i})'><i class='fa fa-edit'></i></button>
+  <button class="col-3"  onclick='onKeybSplitClear(${i})'><i class='fa fa-trash-alt'></i></button>
+  <button class="col-3"  onclick='onKeybSplitLearn(${i})'><span class="icon i-send"></span></button>
+  <button class="col-3 ${btnClass}"  onclick='onKeybMidi(${i})'><span class="icon ${iconClass}"></span></button>
 </div>`;
       table.append(`<div class="row no-gutters">${entry}</div>`);
     }
@@ -832,17 +831,17 @@ function onSystemSplit() {
   });
 }
 
-function onSystemSplitClear(part) {
+function onKeybSplitClear(part) {
    doAction('script', {script: [
     `/part${part}/Pminkey 0`,
     `/part${part}/Pmaxkey 127`
    ]}, ()=>{
-      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text('C-1');
-      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text('G9');
+      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text('C-1');
+      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text('G9');
    });
 }
 
-function onSystemSplitEdit(part) {
+function onKeybSplitEdit(part) {
   let split = window.zsession.splitdata.split[part];
   let available_notes = [], available_scores = [];
   
@@ -881,15 +880,15 @@ function onSystemSplitEdit(part) {
         `/part${part}/Pmaxkey ${split.max}`
       ]});
       
-      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
+      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
         splitValueToKey(minValue));
-      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
+      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
         splitValueToKey(maxValue));
     });
   });
 }
 
-function onSystemSplitLearn(part) {
+function onKeybSplitLearn(part) {
 doQuery('midilearn', {force: [9]}, (data)=> {
     const minValue = data[1];
     
@@ -905,9 +904,9 @@ doQuery('midilearn', {force: [9]}, (data)=> {
         `/part${part}/Pmaxkey ${split.max}`
       ]});
       
-      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
+      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
         splitValueToKey(minValue));
-      $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
+      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
         splitValueToKey(maxValue));
         
     }, ()=>{
@@ -921,16 +920,16 @@ doQuery('midilearn', {force: [9]}, (data)=> {
   displayMessage('Enter lowest key', true);
 }
 
-function onSystemMidi(part) {
+function onKeybMidi(part) {
   let split = window.zsession.splitdata.split[part];
-  let midiChan = parseInt($('#sysSplitChannel > select').val())-1;
+  let midiChan = parseInt($('#keybSplitChannel > select').val())-1;
   
   if (midiChan != split.channel) {
     doAction('script', {script: `/part${part}/Prcvchn ${midiChan}`}, ()=>{
       displayMessage(`Part #${part+1} chan set to ${midiChan}`);
       split.channel = midiChan;
       
-      let btn = $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
+      let btn = $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
       let span = btn.find('span');
       btn.addClass('btn-selected');
       span.removeClass('i-midi');
@@ -941,7 +940,7 @@ function onSystemMidi(part) {
       displayMessage(`Part #${part+1} chan restored.`);
       split.channel = part;
       
-      let btn = $(`#sysSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
+      let btn = $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
       let span = btn.find('span');
       btn.removeClass('btn-selected');
       span.removeClass('i-midi i-midi-alt');
@@ -957,8 +956,8 @@ function onSystemMidi(part) {
   }
 }
 
-function onSystemSplitChange(val) {
-  let btns = $(`#sysSplitTable >  .row > div:nth-child(4) > button:nth-child(4)`);
+function onKeybSplitChange(val) {
+  let btns = $(`#KeybSplitTable >  .row > div:nth-child(4) > button:nth-child(4)`);
   let split = null, button = null;
   
   for (let i = 0; i < 16; i++) {
@@ -978,7 +977,7 @@ function onSystemSplitChange(val) {
   doAction('session/set', {splitChannel : val });
 }
 
-function onSystemUADSR(type) {
+function onKeybUADSR(type) {
   doQuery("status/options", null, (data) => {
     let uadsr = data.uadsr;
     
