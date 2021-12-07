@@ -176,9 +176,12 @@ function onBindEdit(config) {
   $('#bindEditType').val(current.type);
   $('#bindEditType').trigger('change');
   
+  
   //refresh switch list
   if (current['switch'] !== undefined) {
     let switchSource = $('#bindEditSwitch');
+    $('#bindEditTrigger button').addClass('hidden');
+    
     $(switchSource).empty();
     for (let key in current['switch']) {
       $(switchSource).append(`<li>${key}</li>`);
@@ -186,9 +189,20 @@ function onBindEdit(config) {
     
     $(switchSource).find('li').on('click', onBindEditSwitchTableListClick);
     
-  } else if (current['trigger'] !== undefined)
-    $('#bindEditData2').val(current['trigger']);
-  
+  } else if (current['trigger'] !== undefined) {
+    let value = current['trigger'];
+    if (typeof value == 'string') {
+      current.hmode = (current.hmode === undefined) 
+          ? value.match(/\^/) != null 
+          : current.hmode;
+      current.trigger = parseInt(value.match(/\d+/)[0]);
+    }
+    
+    $('#bindEditData2').val(current.trigger);
+    
+    $('#bindEditTrigger button').removeClass('btn-selected hidden').
+      addClass( (current['hmode']) ? 'btn-selected' : '');
+  }
   
   if (current['osc'] !== undefined)
     bindSetOSC(current['osc']);
@@ -274,6 +288,7 @@ function onBindEditChange(e) {
   switch (newMode) {
     case 'trigger' :
     $('#bindEditTrigger').removeClass('hidden');
+    $('#bindEditTrigger button').removeClass('hidden');
     $('#bindEditOSC').removeClass('hidden');
     if (undefined === current[newMode]) {
       if (current.fader) delete current.fader;
@@ -287,6 +302,7 @@ function onBindEditChange(e) {
     break;
     case 'switch':
     current.type = 'switch';
+     $('#bindEditTrigger button').addClass('hidden');
      $('#bindEditSwitch').removeClass('hidden');
      if (undefined === current[newMode]){
        if (current.fader) delete current.fader;
@@ -387,6 +403,16 @@ function bindUpdateRemoteSession() {
   doAction('binds/session/set', {'session': session}, (data) =>{
     displayMessage('Session updated');
   });
+}
+function onBindEditSetHigherMode(button) {
+  let qb = $(button);
+  if (qb.hasClass('btn-selected')) {
+    window.zsession.bind.current.hmode = 0;
+    qb.removeClass('btn-selected')
+  } else {
+    window.zsession.bind.current.hmode = 1;
+    qb.addClass('btn-selected')
+  }
 }
 
 function onBindEditSwitchAddClick() {

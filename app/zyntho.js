@@ -952,7 +952,7 @@ class ZynthoServer extends EventEmitter {
         //remove configuration
         this.midiService.sessionConfig =  null;
         this.midiService.sessionMap = null;
-      }
+      }	
     }
     
     try {

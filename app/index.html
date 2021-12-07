@@ -281,7 +281,8 @@
                   </div>
                   <div class="row hidden no-gutters bindSubEditor" id="bindEditTrigger">
                     <div class="col-6">Value:</div>
-                    <div class="col-6"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
+                    <div class="col-1"><button onclick="onBindEditSetHigherMode(this)">^</button></div>
+                    <div class="col"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
                   </div>
                   <div class="row" id="oscParameters">
                     <div class="col-12 col-md-2">OSC <span class="d-md-none">parameters:</span></div>
@@ -290,7 +291,7 @@
                   </div>
                   <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
                   <div class="row">
-                    <div class="col-12 col-md-6"><button class="btn-selected col-12" onclick="onBindEditMidilearn()">Midi Learn <span class="icon i-send-alt"> </span></button></div>
+                    <div class="col-12 col-md-6"><button class="btn-selected col-12" onclick="onBindEditMidilearn()">Midi Learn <span class="icon i-send-alt"></span></button></div>
                     <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
                   </div>
                 </div>
