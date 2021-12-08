@@ -17,6 +17,8 @@
 ***********************************************************************/
 module.exports = {};
 
+const {zconsole} = require('./io.js').zconsole;
+
 module.exports.registerOSC = function (zynServer) {
   let emitter = zynServer.oscEmitter;
   
@@ -25,7 +27,6 @@ module.exports.registerOSC = function (zynServer) {
    * ZynthoMidi binds
    */
   emitter.on('/zmania/bind/load', function (zyn, args) {
-    console.log("called zmania/bind/load");
     let midiService = zyn.midiService;
     if (midiService == null)
       return;
@@ -69,7 +70,7 @@ module.exports.registerOSC = function (zynServer) {
           zyn.midiService.uadsrConfig['uadsr4_binds'] = values;
         zyn.save();
       } catch (err) {
-        console.log(`<4> /zmania/uadsr4/bind: ${err}`);
+        zconsole.warning(`/zmania/uadsr4/bind: ${err}`);
       }
     }
   });
@@ -80,20 +81,20 @@ module.exports.registerOSC = function (zynServer) {
       try {
       zyn.midiService.getUADSR().setBinds(values);
       zyn.midiService.refreshFilterMap();
-      zyn.config.uadsr['uadsr4_binds'] = 
-          zyn.midiService.uadsrConfig['uadsr4_binds'] = values;
+      zyn.config.uadsr['uadsr8_binds'] = 
+          zyn.midiService.uadsrConfig['uadsr8_binds'] = values;
       zyn.save();
       } catch (err) {
-        console.log(`<4> /zmania/uadsr8/bind:${err}`);
+        zconsole.error(`/zmania/uadsr8/bind:${err}`);
       }
     }
   });
   
   emitter.on('/zmania/binds/dump', function (zyn) {
     if (zyn.midiService != null) {
-      console.log(JSON.stringify(zyn.midiService.knot.filterMap, null, 1));
+      zconsole.log(JSON.stringify(zyn.midiService.knot.filterMap, null, 1));
       if (zyn.midiService._uadsr != null)
-        console.log(JSON.stringify(
+        zconsole.log(JSON.stringify(
           zyn.midiService._uadsr.filters[zyn.config.uadsr.mode]));
     }
   });
@@ -114,7 +115,7 @@ module.exports.registerOSC = function (zynServer) {
      try {
        zyn.sessionLoad(args[0].value);
      } catch (err) {
-       console.log(`<3> session load error: ${err}`);
+       zconsole.error(`session load error: ${err}`);
      }
    });
    
@@ -122,7 +123,7 @@ module.exports.registerOSC = function (zynServer) {
      try {
        zyn.sessionSave(args[0].value);
      } catch (err) {
-       console.log(`<3> session save error: ${err}`);
+       zconsole.error(`session save error: ${err}`);
      }
    });
 }
