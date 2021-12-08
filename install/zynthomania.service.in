@@ -1,13 +1,11 @@
 [Unit]
 Description=Zynthomania launcher
-After=sound.target jackd.service zynaddsubfx.service
+After=network.target sound.target jackd.service zynaddsubfx.service
 
 [Service]
 User=USERNAME
 Group=audio
 ExecStart=COMMAND_LINE
-CPUSchedulingPolicy=rr
-CPUSchedulingPriority={user/sub_priority}
 
 Restart=on-failure
 RestartSec=2

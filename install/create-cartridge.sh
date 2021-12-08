@@ -20,4 +20,3 @@ echo "$CURRENT_CFG updated."
 cp $CURRENT_CFG $1/
 
 echo "a copy of $CURRENT_CFG was made on $1. Zynthomania will look for that when loading."
-

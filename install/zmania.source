@@ -29,4 +29,8 @@ zyn-update-services()
   (cd $ZYNTHO_DIR/sysjack; ./install.pl config=$CONFIG_FILE key=services user=$USER -y jackd)
   (cd $ZYNTHO_DIR/sysjack; ./install.pl config=$CONFIG_FILE key=services user=$USER -y zynaddsubfx)
   (cd $ZYNTHO_DIR/sysjack; ./install.pl config=$CONFIG_FILE key=services user=$USER -y zynthomania)
+
+  sudo systemctl start jackd
+  sudo systemctl start zynaddsubfx
+  sudo systemctl start zynthomania
 }

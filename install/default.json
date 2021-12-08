@@ -19,8 +19,8 @@
       "zyn_oscillator_size" : 256
     },
     "units" : {
-      "zynaddsubfx": "/usr/local/bin/zynaddsubfx -U -A=0 -o {user/zyn_oscillator_size} -r {card/samplerate} -b {jack/buffersize} -I alsa -O JACK -P {user/zyn_osc_port}",
-      "zynthomania" : "NODEJSDIR/node ZYNTHODIR/app/server.js /home/USERNAME/.zmania"
+      "zynaddsubfx": "/usr/local/bin/zynaddsubfx -U -A=0 -a -o {user/zyn_oscillator_size} -r {card/samplerate} -b {jack/buffersize} -I alsa -O JACK -P {user/zyn_osc_port}",
+      "zynthomania" : "NODEJS ZYNTHODIR/app/server.js /home/USERNAME/.zmania"
     }
   }
 }

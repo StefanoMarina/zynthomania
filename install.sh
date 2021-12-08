@@ -1,5 +1,7 @@
 #!/bin/bash
 
+function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+
 ZYNTHODIR=`pwd`
 echo "User: $USER, zynthomania dir: $ZYNTHODIR"
 
@@ -24,7 +26,7 @@ fi
 echo "Node.js found on $NODE_PATH"
 
 NODE_VER=`$NODE_PATH -v`
-if [[ "$NODE_VER" != v16* ]]; then
+if version_gt "16.0.0" "$NODE_VER"; then
   echo "Node version '$NODE_VER' seems to be under 16. please install node.js (nodejs) v16 or higher.\n";
   exit 1;
 fi
@@ -55,16 +57,20 @@ cd ..
 # copies/overrides service.in for zynthomania and zynaddsubfx
 cp -pa install/*.service.in sysjack/src/
 
-INSTALL=$(sed -e "s/USERNAME/${USER}/g" -e "s#ZYNTHODIR#${ZYNTHODIR}#g" -e "s#NODEJSDIR#${NODE_PATH}#g" ./install/default.json)
+INSTALL=$(sed -e "s/USERNAME/${USER}/g" -e "s#ZYNTHODIR#${ZYNTHODIR}#g" -e "s#NODEJS#${NODE_PATH}#g" ./install/default.json)
 echo "$INSTALL" 1> install.json
 
 # Zynthomania default cartridge
 if [[ ! -d ~/.zmania ]]; then 
   mkdir -p ~/.zmania
+fi
+
+if [[ ! -f ~/.zmania/config.json ]]; then
   ./install/create-cartridge.sh ~/.zmania install.json
 else
   read -p "Override ${HOME}/.zmania/config.json? (y)es, any other key exit:" answer
   if [[ answer =~ /[yY]/ ]]; then
+    rm ~/.zmania/config.json
     ./install/create-cartridge.sh ~/.zmania install.json
   fi
 fi

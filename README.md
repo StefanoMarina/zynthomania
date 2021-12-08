@@ -70,7 +70,27 @@ wifi is another resource-eater, so if you feel like you don't need zmania's inte
 
 # Installation
 
-clone this repo:
+## Node.js
+First thing first, let's install node.js, version 16 or better. I reccomend using [**nvm**](https://github.com/nvm-sh/nvm)
+as it allows simpler and better handling of node.js versions:
+
+```shell
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 16
+nvm use 16
+```
+or
+```shell
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 16
+nvm use 16
+```
+16.4.2 it's the minimum version required, better should be ok.
+
+
+## Zynthomania
+
+Clone this repo:
 
 ```bash
 sudo apt-get install git
