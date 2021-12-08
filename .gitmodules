@@ -5,3 +5,7 @@
 [submodule "sysjack"]
 	path = sysjack
 	url = https://github.com/StefanoMarina/sysjack
+[submodule "app/step-sequencer"]
+	path = app/step-sequencer
+	url = https://github.com/StefanoMarina/step-sequencer
+	branch = alt-step-event
