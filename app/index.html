@@ -60,11 +60,11 @@
           <div class="col-12 tab">
             <header class="d-flex flex-row tab-h">
               <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks">Banks</button>
-              <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds"><a>Binds</a></button>
-              <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id=""><a>FX</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds">Binds</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id="">FX</button>
               <button class="tab-header" data-tab="controlPanel" data-open="pnlKeyb">Keyb</button>
-              <button class="tab-header" data-tab="controlPanel" data-open="pnlScript"><a>Script</a></button>
-              <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem"><a>System</a></button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlScript">Script</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem">System</button>
             </header>
           
           <!--panels-->
@@ -107,15 +107,6 @@
                     <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx0"></div>
                     <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
                     <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
-                  </div>
-                  <div class="col-12"><p>Part System FX send</p></div>
-                   <div class="row col-12">
-                    <div class="col-3 col-lg-2"><button class="knob" id="kss0"></button></div>
-                    <div class="col-3 col-lg-2"><button class="knob" id="kss1"></button></div>
-                    <div class="col-3 col-lg-2"><button class="knob" id="kss2"></button></div>
-                    <div class="col-3 col-lg-2"><button class="knob" id="kss3"></button></div>
-                    <div class="col-12 col-lg-3">
-                      <button class="send-btn col-12" onclick="actionMaximizeSend()"><span class="d-lg-none">Send all to </span>Max</button></div>
                   </div>
                 </div>
                 <div id="pnlSystemFX" class="panel fxPanel hidden row">
@@ -551,17 +542,7 @@
           //$('#instrumentName').text(errorThrown);
         });
       }
-      
-     function actionMaximizeSend() {
-       let script = `/Psysefxvol[0-3]/part${window.zsession.partID} 127`;
-       doAction('script', {script: script}, (data) => {
-         window.knobs['kss0'].setValue(127);
-         window.knobs['kss1'].setValue(127);
-         window.knobs['kss2'].setValue(127);
-         window.knobs['kss3'].setValue(127);
-       })
-     }
-      
+       
       /* Bank button load */
  
       function setFavorite (instrument, value) {
@@ -604,54 +585,7 @@
       $(document).ready( init );
         
       function init() {
-        
-        /**
-         Knobs initialization
-         */
-        window.knobs = {};
-        //Create knobs
-        $('.knob').each( function () {
-          let id = $(this).attr('id')
-          let knob = new LCDKnob(id);
-          knob.setValue(0);
-          knob.render();
-          window.knobs[id] = knob;
-        })
-        
-        //Knob events
-        $('.knob').on('click', (e) => {
-            let id = e.currentTarget.id;
-            window.knobs[id].next();
-            $(`#${id}`).trigger({type:'knob-change', e: e});
-        });
-        
-        
-        $('.knob').on('swiperight', (e) => {
-            let id = e.currentTarget.id;
-            window.knobs[id].next(8);
-            $(`#${id}`).trigger({type:'knob-change', e: e});
-        });
-        
-        $('.knob').on('swipeleft', (e) => {
-            let id = e.currentTarget.id;
-            window.knobs[id].next(8);
-            $(`#${id}`).trigger({type:'knob-change', e: e});
-        });
-        
-        $('#kss0, #kss1, #kss2, #kss3').on('knob-change', (e) => {
-          onFxPartSystemKnobChange(/kss(\d)/.exec(e.id)[1]);
-        });
-        
-        $('#kpvol').on('knob-change', (e) =>{
-          doAction('script', {script : 
-            `/part${window.zsession.partID}/Pvolume ${window.knobs['kpvol'].getValue()}`
-          });
-        });
-        $('#kppan').on('knob-change', (e) =>{
-          doAction('script', {script : 
-            `/part${window.zsession.partID}/Ppanning ${window.knobs['kppan'].getValue()}`
-          });
-        });
+     
         /**
         FX buttons
         */
@@ -678,6 +612,57 @@
           let id = $(this).attr('id');
           window.buttons[id].base_path = '/sysefx';
         });
+        
+           
+        /**
+         Knobs initialization
+         */
+        window.knobs = {};
+        
+        //Create knobs
+        $('.knob').each( function () {
+          let id = $(this).attr('id')
+          let knob = new LCDKnob(id);
+          knob.setValue(0);
+          knob.render();
+          window.knobs[id] = knob;
+        })
+        
+        //Knob events
+        $(document).find('.knob').on('click', (e) => {
+            let id = e.currentTarget.id;
+            window.knobs[id].next();
+            $(`#${id}`).trigger({type:'knob-change', e: e});
+        });
+        
+        $(document).find('.knob').on('swiperight', (e) => {
+            let id = e.currentTarget.id;
+            window.knobs[id].next(8);
+            $(`#${id}`).trigger({type:'knob-change', e: e});
+        });
+        
+        $(document).find('.knob').on('swipeleft', (e) => {
+            let id = e.currentTarget.id;
+            window.knobs[id].next(8);
+            $(`#${id}`).trigger({type:'knob-change', e: e});
+        });
+        
+        $(document).find('#kss0, #kss1, #kss2, #kss3').on('knob-change', (e) => {
+          let id = e.currentTarget.id.match(/kss(\d)/)[1];
+          onFxPartSystemKnobChange(id);
+        });
+        
+        $('#kpvol').on('knob-change', (e) =>{
+          doAction('script', {script : 
+            `/part${window.zsession.partID}/Pvolume ${window.knobs['kpvol'].getValue()}`
+          });
+        });
+        $('#kppan').on('knob-change', (e) =>{
+          doAction('script', {script : 
+            `/part${window.zsession.partID}/Ppanning ${window.knobs['kppan'].getValue()}`
+          });
+        });
+        
         
         /**
         Tab button management

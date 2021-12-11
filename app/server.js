@@ -206,7 +206,7 @@ app.get('/status/partfx', function (req, res, next) {
  
 app.get('/status/systemfx', function (req, res, next) {
  zconsole.logGet(req);
- app.zyntho.querySystemFX((result) => { res.json(result) });
+ app.zyntho.querySystemFX((result) => { res.json(result) }, req.query.part);
 })
 
 

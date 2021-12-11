@@ -46,9 +46,16 @@ class FXButton {
         this.options = {};
     
     if (this.options.noBypass) {
-      qid.append(`<div class='col-10 text swipeable' style='text-align:center'></div>`);
-      qid.append(`<button class='col-2 fxPreset hidden'></button>`);
+      
+      //systemfx with knob
+      this.knobid = `kss${channel_id}`;
+      
+      qid.append(`<div class='col-2'><button class="knob" id="${this.knobid}"></button></div>`);
+      qid.append(`<div class='col-9 text swipeable' style='text-align:center'></div>`);
+      qid.append(`<button class='col-1 fxPreset hidden'></button>`);
+      window.knobs[this.knobid] = new LCDKnob(qid.find(`#${this.knobid}`));
     } else {
+      //partfx with bypass
       qid.append(`<button class='col-2 fxBypass'><i class="fa fa-volume-mute"></i></button>`);  
       qid.append(`<div class='col-8 text swipeable' style='text-align:center'></div>`);
       qid.append(`<button class='col-2 fxPreset hidden'></button>`);
@@ -86,10 +93,15 @@ class FXButton {
     
     //bypass status
     let btnBypass = qid.find('.fxBypass');
-    
     if (fx.bypass !== undefined && btnBypass.length > 0)  {
       let icon = (fx.bypass) ? 'fa-volume-mute' : 'fa-volume-up';
       qid.find ('.fxBypass > i').removeClass('fa-volume-mute fa-volume-up').addClass(icon);  
+    }
+    
+    //knob send
+    if (this.knobid !== undefined) {
+      window.knobs[this.knobid].setValue(fx.send);
+      window.knobs[this.knobid].render();
     }
     
     let btnPreset = qid.find('.fxPreset');
@@ -174,6 +186,7 @@ class FXButton {
      (data) => {
        //change fx does not return bypass status
        data.bypass = $(`${qid} .btnBypass`).hasClass('hidden');
+       data.send = (this.knobid !== undefined) ? window.knobs[this.knobid].value : null;
        this.setFX(data);
      })
   }

@@ -45,8 +45,9 @@ class LCDKnob {
   }
   
   render() {
-    //let percentage = (this.value / 127)*360;
-    //$(`#${this.divID} > div`).css('tranform', `rotate(${percentage})`);
-    document.getElementById(this.divID).innerHTML = `<b>${ ('000'+this.value).substr(-3) }</b>`;
+    if (this.divID instanceof jQuery)
+      this.divID.text(`000${this.value}`.substr(-3));
+    else
+      document.getElementById(this.divID).innerHTML = `000${this.value}`.substr(-3);
   }
 }

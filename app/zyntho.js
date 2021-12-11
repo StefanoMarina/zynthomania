@@ -576,7 +576,7 @@ class ZynthoServer extends EventEmitter {
     //fx change request
     if (preset == null) {
       let fxSetQuery = `${nameQueryString}/efftype ${efftype}`,
-      fxPresetListenQuery= `${nameQueryString}/${newEffName}/preset`;
+      fxPresetListenQuery= `${nameQueryString}/${newEffName}/preset`
       
       queries.push(fxSetQuery);
       queries.push(fxPresetListenQuery);
@@ -661,6 +661,7 @@ class ZynthoServer extends EventEmitter {
     fxQuery.packets = fxQuery.packets.concat(query.packets);
     
     //System send is handled as part
+    /*
     query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
     worker.pushPacket(query, (add,args) => {  
       if (returnObject.send === undefined)
@@ -670,7 +671,7 @@ class ZynthoServer extends EventEmitter {
       returnObject.send[id] = args[0].value;
     });
     fxQuery.packets = fxQuery.packets.concat(query.packets);
-    
+    */
     //run before testing preset name
     this.osc.send(fxQuery);
     worker.listen().then( () =>{
@@ -710,11 +711,10 @@ class ZynthoServer extends EventEmitter {
   * queries part fx info, such as effect name, bypass status and preset
   * Those are effectively 3 bundled queries
   * partID: part to query
-  * onDone: query to call when all is done
-  * 
-  * TODO: Rewrite with OSCWorker
+  * @param onDone  query to call when all is done
+  * @param part (optional) if set, retrieves part to system fx send
   */
-  querySystemFX(onDone) {
+  querySystemFX(onDone, part) {
    const returnObject = {
       efx : [{},{},{},{}]
     };
@@ -723,7 +723,7 @@ class ZynthoServer extends EventEmitter {
     const worker = new OSCWorker(this);
     
     worker.pushPacket(fxQuery, (add, args) => {
-      zconsole.debug(`${add} : ${JSON.stringify(args)}`)
+     // zconsole.debug(`${add} : ${JSON.stringify(args)}`)
       let efftype = args[0].value;
       let id = parseInt(add.match(/sysefx(\d)/)[1]);
       let name = exports.typeToString(efftype);
@@ -732,33 +732,49 @@ class ZynthoServer extends EventEmitter {
     
     this.osc.send(fxQuery);
     worker.listen().then(()=>{
-      let queries = [];
-      
-      const presetCallback = (add, args) => {
-        let regexp = /sysefx(\d)\/(\w+)/.exec(add);
-        let id = parseInt(regexp[1]);
-        let name = regexp[2];
-        
-        //if OSC 1.0 is respected, this should be already ready
-        if (name == returnObject.efx[id].name)
-          returnObject.efx[id].preset = args[0].value;
-      };
+      let presetQueries = [], sendQueries = [];
       
       for (let i = 0; i < 4; i++) {
         if (returnObject.efx[i].name != 'None') {
-          let query = `/sysefx${i}/${returnObject.efx[i].name}/preset`;
-          queries.push(query);
-          worker.push(query,presetCallback);
-        } else
+          presetQueries.push(`/sysefx${i}/${returnObject.efx[i].name}/preset`);
+          if (part !== undefined)
+            sendQueries.push(`/Psysefxvol${i}/part${part}`);
+        } else {
           returnObject.efx[i].preset = 0;
+          returnObject.efx[i].send = 0;
+        }
       }
       
-      if (queries.length > 0) {
-        fxQuery = this.parser.translateLines(queries);
-        this.osc.send(fxQuery);
-        return worker.listen();
+      
+      if (presetQueries.length > 0) {
+        let bundle = this.parser.translateLines(presetQueries);
+        const secondWorker = new OSCWorker(this);
+              
+        secondWorker.pushPacket(bundle, (add, args) => {
+          let regexp = /sysefx(\d)\/(\w+)/.exec(add);
+          let id = parseInt(regexp[1]);
+          let name = regexp[2];
+          
+          //if OSC 1.0 is respected, this should be already ready
+          if (name == returnObject.efx[id].name)
+            returnObject.efx[id].preset = args[0].value;
+        });
+        
+        if (part !== undefined) {
+          let sendBundle = this.parser.translateLines(sendQueries);
+            secondWorker.pushPacket(sendBundle, (add,args) => {
+            let id = parseInt(add.match(/Psysefxvol(\d)/)[1]);
+            returnObject.efx[id].send = args[0].value;
+          });
+          bundle.packets = bundle.packets.concat(sendBundle.packets);
+        }
+        
+        this.osc.send(bundle);
+        secondWorker.listen().then( ()=> {onDone(returnObject)});
+      } else {
+        onDone(returnObject);
       }
-    }).then(()=>{onDone(returnObject)});
+    });
   }
       
   /**

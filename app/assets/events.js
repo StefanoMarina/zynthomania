@@ -629,7 +629,7 @@ function onFxPartSystemKnobChange(id) {
 }
 
 function onFxSystem() {
-   doQuery('status/systemfx', undefined, (data) =>{
+   doQuery('status/systemfx', {part: window.zsession.partID}, (data) =>{
     console.log(data);
       //window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
       //onFXLoad('btnpfx', data);
