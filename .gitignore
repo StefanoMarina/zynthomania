@@ -6,3 +6,4 @@ app/package-lock.json
 nvm
 app/status.json
 test/*
+install.json
