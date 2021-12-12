@@ -148,7 +148,6 @@ function onBindEdit(config) {
       "osc" : []
     };
     $('#bindApply').text('Add');
-    
   } else {
     window.zsession.bind.current = config;
     $('#bindApply').text('Update');
@@ -162,18 +161,33 @@ function onBindEdit(config) {
   
   let item = $('#bindEditChannel');
   
-  if ($(item).find('option').length == 0) {
+  /*if ($(item).find('option').length == 0) {
     $(item).append('<option value="all">All</option>');
     for (let i = 1; i < 17; i++)
       $(item).append(`<option value="${i}">${i}</option>`);
-  }
+  }*/
   
   $(item).val(bind.info.channel);
   let current = bind.current;
+  
+  //We need to sanitize current to lowerCase, in case of hand written binds
+  let oldKeys = Object.keys(current);
+  oldKeys.forEach( (key) => {
+    if (key.match(/[A-Z]/)) {
+      let newKey = oldKeys.toLowerCase(), oldValue  = current[key];
+      delete current[key];
+      current[newKey] = oldValue;
+    }
+  });
+  
   let source = bind.info.source;
   $('#bindEditSource').val(source);
   $('#bindEditData1').val(current[source]);
-  $('#bindEditType').val(current.type);
+  $('#bindEditType').val( ( 'fader' == current.type.toLowerCase() ) 
+        ? current.fader : current.type );  
+  
+  
+  /* Note: triggering the change updates value */
   $('#bindEditType').trigger('change');
   
   
@@ -551,7 +565,7 @@ function onBindSession() {
 
 function onBindSessionEditClick(id) {
   let rx = id.match(/^bind-ses-(\d+|all)-(\d+)/);
-  let channel = rx[1], index = rx[2];
+  let channel = rx[1], index = parseInt(rx[2]);
   //emulate click
   $('#pnlBindSession').addClass('hidden');  
   $('#pnlBindEdit').removeClass('hidden');
