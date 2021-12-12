@@ -7,13 +7,14 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "node",
     "synth",
+    "raspberry",
+    "headless",
     "pi",
     "zynaddsubfx"
   ],
   "author": "Stefano Marina",
-  "license": "MIT",
+  "license": "GPLv3",
   "dependencies": {
     "body-parser": "^1.19",
     "events": "^3.3",

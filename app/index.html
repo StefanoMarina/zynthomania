@@ -340,7 +340,9 @@
                   <div class="container">
                   </div>
                   <div class="container">
-                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12" onclick="onSystemInfoReconnect()">Reconnect Zyn</button></div>
+                    <div class="col-12 col-md-6 col-lg-4">
+                      <button class="send-btn col-12" onclick="onSystemInfoReconnect()">Reconnect Zyn</button>
+                    </div>
                   </div>
                 </div>
                 
@@ -680,6 +682,13 @@
             }
           });
           
+          $('.tab > header button').on('click', (e) => {
+            let id = $(e.currentTarget).attr('data-open');
+            let subItem = $('#'+id + ' > header .btn-selected');
+            if (subItem.length > 0) {
+              subItem.trigger('click');
+            }
+          });
           /*
           Unordered lists
           */

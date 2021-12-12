@@ -473,7 +473,6 @@ function onBindFileAddClick (source) {
   if (file == "") return;
   doAction('binds/add', {file: file}, (data) =>{
     $(source).removeClass('btn-selected');
-    onBind();
   });
 }
 
