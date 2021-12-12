@@ -678,6 +678,21 @@ app.post('/session/set', function (req, res) {
   res.end();
 });
 
+
+app.post('/shutdown', function(req,res) {
+  zconsole.logPost(req);
+  let reboot=(req.body.reboot !== undefined) ?
+		req.body.reboot : true;
+  if (reboot) {
+   zconsole.notice('Rebooting system');
+   exec ('reboot');
+  } else {
+   zconsole.notice('Shutdown system');
+   exec ('shutdown 0');
+  }
+  res.end();
+});
+
 app.on('open', () => {
   zconsole.log ("Opened web application");
 });
@@ -692,7 +707,8 @@ try {
   if (myArgv.length > 0)
     app.zyntho.open(myArgv[0]);
   else {
-    app.zyntho.open(`${OS.homedir()}/.zmania`);
+    zconsole.critical('You must specify a working directory');
+    //app.zyntho.open(`${OS.homedir()}/.zmania`);
   }
 } catch (err) {
   zconsole.critical(err);

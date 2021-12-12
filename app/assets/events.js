@@ -761,7 +761,28 @@ function onSystemInfoReconnect() {
   });
 }
 
-
+function onSystemInfoShutdown(reboot) {
+  doAction('shutdown', {'reboot':reboot}, (data)=>{
+   $('main').addClass('hidden');
+   if (!reboot) {
+     $('body').append('<div class="center-screen"><h1 class="tc">Bye bye!</h1></div>');
+   } else {
+     $('body').append('<div class="center-screen"><div class="col-12"><h1>Rebooting...</h1><div id="rebar" style="background-color:black;height:50px;width:0px"></div></div></div>');
+     
+     let respan = $('body').find('#rebar').get()[0];
+     var width = 0;
+     setInterval( () => {
+        if (width < 100){
+         width = width + 1;
+  	 respan.style.width = `${width}%`;
+        }
+     },1200);
+     setTimeout( () => {
+       window.location.reload();
+     }, 120000);
+   }
+  });
+}
 function onKeybSession() {
   doQuery('status/session', null, (data) =>{
     const currentSession = data.currentSession;
