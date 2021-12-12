@@ -351,3 +351,11 @@ input[type=checkbox][value=checked] + label::before { content: '[X]';}
 }
 
 div.table div { text-align:center} 
+
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+}
