@@ -167,6 +167,8 @@ class FXButton {
     doAction('script', { script : `${path}/preset ${preset}`} , (data) => {
           //$('#'+id).text(`${fxName}/${preset}`);
           currentFX.preset = preset;
+          currentFX.bypass = $(`${qid} .btnBypass`).hasClass('hidden');
+          currentFX.send = (this.knobid !== undefined) ? window.knobs[this.knobid].value : null;
           this.setFX(currentFX);
       })
   }
