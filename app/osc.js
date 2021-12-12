@@ -17,7 +17,7 @@
 ***********************************************************************/
 module.exports = {};
 
-const {zconsole} = require('./io.js').zconsole;
+const zconsole = require('./io.js').zconsole;
 
 module.exports.registerOSC = function (zynServer) {
   let emitter = zynServer.oscEmitter;
@@ -93,9 +93,6 @@ module.exports.registerOSC = function (zynServer) {
   emitter.on('/zmania/binds/dump', function (zyn) {
     if (zyn.midiService != null) {
       zconsole.log(JSON.stringify(zyn.midiService.knot.filterMap, null, 1));
-      if (zyn.midiService._uadsr != null)
-        zconsole.log(JSON.stringify(
-          zyn.midiService._uadsr.filters[zyn.config.uadsr.mode]));
     }
   });
   

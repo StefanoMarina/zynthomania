@@ -566,8 +566,8 @@ function onBindSessionEditClick(id) {
 }
 
 function onBindSessionDelClick(id) {
-  let rx = id.match(/^bind-ses-(\d+)-(\d+)/);
-  let channel = rx[1], index = rx[2];
+  let rx = id.match(/^bind-ses-(all|\d+)-(\d+)/);
+  let channel = rx[1], index = parseInt(rx[2]);
   
   window.zsession.bind.session[channel].splice(index,1);
   bindUpdateRemoteSession();

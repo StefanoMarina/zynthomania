@@ -27,6 +27,8 @@ const ZynthoMania = require ('./zyntho.js');
 const OSCWorker = require ('./oscworker.js').OSCWorker;
 const {execSync, exec, spawn} = require("child_process");
 
+const Filter = require('./knot/knot.js').Filter;
+
 const app = EXPRESS();
 
 var args = process.argv.slice(2);
@@ -538,7 +540,7 @@ app.post('/binds/session', function (req, res) {
 });
 
 /**
- * POST /bindss/session/set
+ * POST /binds/session/set
  * add a new file to the bind chain.
  * @body : {file}
  */
@@ -551,14 +553,31 @@ app.post('/binds/session/set', function (req, res) {
      return;
   }
   
+  Object.keys(req.body.session).forEach( (ch) => {
+    req.body.session[ch].forEach( (e) => {
+      try {
+        Filter.sanitize(e);
+      } catch (err) {
+        zconsole.notice(`Bad filter : ${err}`);
+        res.statusMessage='Invalid session file';
+      res.status(402).end();
+      }
+    })
+  });
+  
   app.zyntho.midiService.sessionConfig = req.body.session;
   app.zyntho.midiService.sessionMap = null;
+  
+  let oldConfig = app.zyntho.midiService.knot.filterMap;
   
   try {
     app.zyntho.midiService.refreshFilterMap(false);
     res.end();
   } catch (err) {
     zconsole.error(err);
+    app.zyntho.midiService.sessionConfig = null;
+    app.zyntho.midiService.sessionMap = null;
+    app.zyntho.midiService.knot.filterMap = oldConfig;
     res.statusMessage='Invalid session file';
     res.status(402).end();
   }
