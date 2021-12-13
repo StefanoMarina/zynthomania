@@ -70,6 +70,22 @@ wifi is another resource-eater, so if you feel like you don't need zmania's inte
 
 # Installation
 
+## Operating system
+Follow the links above to get a realtime kernel OS or to build a new one.
+make sure you enable ssh, do ``sudo raspi-config`` and enable SSH server.
+
+### Running headless
+You may experience some problems when trying to run raspberry os without a monitor. One thing that helped me was
+forcing hdmi mode.
+
+If your pi doesn't run without a monitor, set this into ``/boot/config.txt``:
+
+```
+hdmi_group=1
+hdmi_mode=1
+hdmi_force_hotplug=1
+```
+
 ## Node.js
 First thing first, let's install node.js, version 16 or better. I reccomend using [**nvm**](https://github.com/nvm-sh/nvm)
 as it allows simpler and better handling of node.js versions:
@@ -153,19 +169,28 @@ If you want to change the configuration, just run ``zyn-configure-jack`` first a
 After this, reboot. Check if systems are running: 
 
 ```bash
-sudo systemctl status jackd
-sudo systemctl status zynaddsubfx
-sudo systemctl status zynthomania
+sudo systemctl status jackd | grep Active
+sudo systemctl status zynaddsubfx | grep Active
+sudo systemctl status zynthomania | grep Active
 ```
 Check out the logs or open an issue if something is not working.
 
+### Accessing zynthomania
+Zynthomania control is due via web interface. You will have to connect to the pi via browser.
+
+First, grab your **pi's ip address**, under pi's shell, do ``ifconfig | grep wlan -A 2`` 
+or ``ifconfig | grep eth -A 2`` if you are using LAN cable.
+
 if your raspberry pi is connected to a local network, run the following address on any browser under the same net:
 
-*http://{your\_raspberry\_address}:7000*
+```
+http://{your\_raspberry\_address}
+```
 
-replace with your real address. Zynthomania should start!
+Replace *your\_raspberry\_address* with your real address. Zynthomania should start!
 
 ### Enable midi device
+
 If the zynthomania interface loads, go to "System" > "MIDI" and click on your MIDI device name (may be multiple).
 This will plug your device to Zynthomania. You're ready to go!
 
@@ -188,10 +213,6 @@ you plug your device into zynthomania.
 I.E. if your controller shows up as "AKAI Mono II MIDI Input" create a file under binds/ called "AKAI Mono II MIDI Input.json".
 
 Check out the manual and KNOT's OSC syntax for major details.
-
-## Enable connection
-
-If yo
 
 ## Advanced config
 
@@ -218,7 +239,7 @@ Route configuration:
 
 | Property | Type  | Meaning |
 |:---:|:----:|:----|
-| send     | number| General send to system fx when a matching part fx is found |
+| send | number| General send to system fx when a matching part fx is found |
 | fx | Array | similar to *dry*, a list of fx names that should be routed |
 
 UADSR configuration:
@@ -226,8 +247,8 @@ UADSR configuration:
 | Property | Type  | Meaning |
 |:---:|:----:|:----|
 | mode | string| uadsr mode. can be 'uadsr4', 'uadsr8', 'none' |
-| uadsr4_binds | Array| 4 numbers representing (in order) CC to be used for A,D,S,R and switch |
-| uadsr8_binds | Array| 8 numbers representing ADSR for volume and cutoff |
+| uadsr4\_binds | Array| 4 numbers representing (in order) CC to be used for A,D,S,R and switch |
+| uadsr8\_binds | Array| 8 numbers representing ADSR for volume and cutoff |
 
 ### Services 
 Services configuration is detailed in the sysjack manual. The following additions are made:
@@ -239,6 +260,7 @@ Services/User:
 | zyn\_oscillator\_size| integer | zynaddsubfx oscillator size on startup |
 | osc\_local\_port | integer | on which port zynthomania will listen. zmania OSC are accepted.
 | zyn\_osc\_port  | integer | zynaddsubfx OSC port. messages sent here will ignore zmania OSC.
+| remote\_port    | integer | which port to listen for zynthomania. default is https' 80. |
 
 Services/Unit:
 
@@ -248,4 +270,41 @@ you can change them here.
 **NOTE** please refer to sysjack approach, put values under "user" and use ``{user/myvalue}`` in the unit path.
 Some of those values, i.e. *zyn\_osc\_port*, are used by zynthomania to match configuration.
 
- 
+## Danger zone
+
+### Running pi as an access point
+
+If you want to bring your synth along with you, your'e gonna need to have the pi as
+an access point, so you don't need a router or internet to connect to zynthomania.
+
+If you do not plan to move your synth outside your house/studio, just consider either disabling ethernet o wireless lan,
+as they both consume resources required by ZynAddSubFX.
+
+That being said, after pain and tears, I gave up the hostapd/dnsmasq apporach and found a **much easier** way
+of turning the pi into an access point. Following [the best guide available](https://raspberrypi.stackexchange.com/questions/88214/setting-up-a-raspberry-pi-as-an-access-point-the-easy-way)
+, I've created a simple script to help switch from dhcp to systemd network and create a simple access point.
+
+**Important Stuff about this**:
+- You need to do this from a screen, as changing the network configuration will break any remote connection. 
+- This is no trivial task, so be sure to know what you're doing.
+
+That being said, run this **after** you installed zynthomania:
+
+```shell
+cd ~/zynthomania/install
+chmod +x install_wifi.sh
+sudo ./install_wifi.sh
+```
+
+And answer all the questions.
+
+If your internet breaks up forever and you don't know what to do,
+keep in mind that A) I warned you B) any modified file has a backup copy on .zmania home directory.
+
+Note that the script does not remove unused packages, if everything works and you are satisfied, do:
+
+```shell
+sudo apt --autoremove purge ifupdown dhcpcd dhcpcd5 isc-dhcp-client isc-dhcp-common rsyslog
+sudo rm -r /etc/network /etc/dhcp
+sudo apt --autoremove purge avahi-daemon
+```

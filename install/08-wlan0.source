@@ -1,0 +1,11 @@
+[Match]
+Name=wlan0
+[Network]
+Address=__ROUTER/__RANGE
+MulticastDNS=yes
+IPMasquerade=yes
+DHCPServer=yes
+
+[DHCPServer]
+DNS=8.8.8.8 4.4.4.4
+
