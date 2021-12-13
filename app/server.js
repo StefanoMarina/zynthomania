@@ -716,4 +716,7 @@ try {
 }
 
 const server = require('http').createServer(app);
-server.listen(7000);
+
+let port = app.zyntho.config.services.user.remote_port;
+zconsole.log(`Opening html server on port ${port}`);
+server.listen(port);

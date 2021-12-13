@@ -16,6 +16,7 @@
     "user" : { 
       "zyn_osc_port": 7777, 
       "osc_local_port": 6666,
+      "remote_port" : 80,
       "zyn_oscillator_size" : 256
     },
     "units" : {
