@@ -75,18 +75,11 @@ This will bind a single fader/knob to portamento. I'm using CC 16 as an example.
     {
       "cc" : 16,
       "switch": {
-        "0" : "/part[0-15]/polyType 0",
-        "64": "/part[0-15]/polyType 1",
-        "127": "/part[0-15]/polyType 2"
+        "0" : [ "/part[0-15]/polyType 0","/part0/ctl/portamento.portamento F" ]
+        "64": [ "/part[0-15]/polyType 1", "/part0/ctl/portamento.portamento F" ]
+        "127":[ "/part[0-15]/polyType 2", "/part0/ctl/portamento.portamento T" ]
       }
-    },
-    {
-      "cc" : 16,
-      "fader": "bool",
-      "max": 126,
-      "osc" : "/part0/ctl/portamento.portamento ${-val}"
     }
   ]
 }
 ```
-
