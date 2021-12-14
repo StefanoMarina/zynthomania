@@ -707,7 +707,7 @@ try {
   if (myArgv.length > 0)
     app.zyntho.open(myArgv[0]);
   else {
-    zconsole.critical('You must specify a working directory');
+    throw 'You must specify a working directory';
     //app.zyntho.open(`${OS.homedir()}/.zmania`);
   }
 } catch (err) {

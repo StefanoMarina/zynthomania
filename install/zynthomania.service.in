@@ -3,8 +3,8 @@ Description=Zynthomania launcher
 After=network.target sound.target jackd.service zynaddsubfx.service
 
 [Service]
-User=USERNAME
-Group=audio
+User=root
+Group=root
 ExecStart=COMMAND_LINE
 
 Restart=on-failure
