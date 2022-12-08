@@ -706,12 +706,14 @@ function onScriptOK() {
 
 function onSystemInfo() {
     doQuery('status/system', null, (data) => {
+      console.log(data);
       let space = $('#pnlSystemInfo > div:first-child');
       space.empty();
       space.append(`<p class='col-12'>Temp: ${data.cpuTemp}</p>`);
       space.append(`<p class='col-12'>JACK<span class="d-none d-md-inline"> process status</span>: <i class="${(data.jackProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
       space.append(`<p class='col-12'>ZynAddSubFX<span class="d-none d-md-inline"> status</span>: <i class="${(data.zynProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
       space.append(`<p class='col-12'>Cartridge: ${data.workingDir}</p>`);
+      space.append("<p class='col-12'>Net address:"+data.netAddress.reduce( (acc, x)=> acc+", "+x)+"</p>");
     });
 }
 function onSystemMIDI() {

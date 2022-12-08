@@ -362,9 +362,12 @@ app.get('/status/system', function (rq, res) {
   result.cpuTemp = "N/A";
   
   try { result.zynProcess = execSync('pgrep zynaddsubfx').toString()}
-  catch (e) {result.zynProcess = null}
+    catch (e) {result.zynProcess = "NA"}
   try {result.jackProcess = execSync('pgrep jackd').toString()}
-  catch (e) {result.jackProcess = null}
+    catch (e) {result.jackProcess = "NA"}
+  try { result.netAddress = execSync ('hostname -I').toString().trim().split(" ")}
+    catch (e) {result.netAddress = []};
+               
   result.workingDir = app.zyntho.IO.workingDir;
   	
   res.json(result);
