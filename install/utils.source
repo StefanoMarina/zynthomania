@@ -1,0 +1,10 @@
+#!/bin/bash
+
+safe_replace_file() {
+filename=$1
+path=$2
+  if [[ -f "$path/$filename" ]]; then
+    cp "$path/$filename" ~/.zmania/"$filename".`date +%s`.bak
+  fi
+  mv "./$filename" "$path"
+}
