@@ -4,7 +4,6 @@ UNAME=$(logname)
 HOTSPOTFILE="/home/$UNAME/.zmania/hotspot_status"
 WLANFILE="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
 
-
 if [[ -f "$HOTSPOTFILE" ]]; then
   echo "Hotspot status detected."
 else
