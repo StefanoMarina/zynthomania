@@ -228,6 +228,8 @@ button:hover, .send-btn, .btn-selected, .btn-selected *, button:hover *, .fx-btn
   color: var(--color-lcd) !important;
 }
 
+button[disabled] {color : red !important}
+
 select {border: none; min-width: 45%}
 
 ul, .select {
