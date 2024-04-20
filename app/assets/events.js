@@ -705,7 +705,7 @@ function onScriptOK() {
 }
 
 function onSystemInfo() {
-    doQuery('status/system', null, (data) => {
+    doQuery('system', null, (data) => {
       console.log(data);
       let space = $('#pnlSystemInfo > div:first-child');
       space.empty();
@@ -713,9 +713,9 @@ function onSystemInfo() {
       space.append(`<p class='col-12'>JACK<span class="d-none d-md-inline"> process status</span>: <i class="${(data.jackProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
       space.append(`<p class='col-12'>ZynAddSubFX<span class="d-none d-md-inline"> status</span>: <i class="${(data.zynProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
       space.append(`<p class='col-12'>Cartridge: ${data.workingDir}</p>`);
-      space.append("<p class='col-12'>Net address:"+data.netAddress.reduce( (acc, x)=> acc+", "+x)+"</p>");
     });
 }
+
 function onSystemMIDI() {
   doQuery('status/midi', null, (data) => {
     
@@ -750,6 +750,29 @@ function onSystemMIDI() {
           onSystemMIDI();
         });
     });
+  });
+}
+
+function onSystemNetwork() {
+  doQuery('system', null, (data) => {
+    console.log(data);
+    let space = $('#pnlSystemNetwork > div:first-child');
+    space.empty();
+    space.append("<p class='col-12'>Net address:"+data.netAddress.reduce( (acc, x)=> acc+", "+x)+"</p>");
+    
+    let btnDoHotspot = $('#pnlSystemNetwork > div:nth-child(2) > div:first-child button'),
+      btnDoWifi = $('#pnlSystemNetwork > div:nth-child(2) > div:last-child button');
+    
+    btnDoHotspot.prop('disabled', data.isHotspot);
+    btnDoWifi.prop('disabled', !data.isHotspot);
+    
+  });
+}
+
+function onSystemNetworkChange(toHotspotVal) {
+  doAction('network-change', {toHotspot : toHotspotVal}, (data) => {
+    $('main').addClass('hidden');
+    $('body').append('<small>Please change connection to reconnect to client</small>');
   });
 }
 
@@ -1156,7 +1179,6 @@ function onToolbarChangePart(index) {
       $('#btnDoFavorite > i').addClass('far');
       window.zsession.setInstrument(null);
     }
-    
   });
   
   //TODO: any active panel must be re-triggered
