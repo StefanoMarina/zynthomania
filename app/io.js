@@ -125,7 +125,7 @@ zconsole.log = function(msg) {
 }
 
 zconsole.notice = function(msg) {
-  console.log(`<5> {msg}`);
+  console.log(`<5> ${msg}`);
 }
 
 zconsole.warning = function(msg) {
