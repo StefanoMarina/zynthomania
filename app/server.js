@@ -21,7 +21,7 @@ const EXPRESS = require('express');
 const Fs = require('fs');
 const OS = require('os'); 
 const Util = require ('util');
-const Path = require('node:path');
+const Path = require('path');
 
 const ZynthoIO = require ('./io.js');
 const zconsole = ZynthoIO.zconsole;
@@ -730,18 +730,27 @@ app.post('/session/set', function (req, res) {
 });
 
 
-//Shutdown
+//Shutdown default behaviour
 app.shutdownZyn =  function(req,res) {
-  //zconsole.logPost(req);
   let reboot=(req.body.reboot !== undefined) ?
 		req.body.reboot : true;
-  if (reboot) {
-   zconsole.notice('Rebooting system');
-   exec ('reboot');
-  } else {
-   zconsole.notice('Shutdown system');
-   exec ('shutdown 0');
-  }
+    
+  //Save session to default.xmz
+  app.zyntho.on('saved', function(filename) {
+    if (!filename.endsWith('default.xmz'))
+      return;
+    
+    if (reboot) {
+     zconsole.notice('Rebooting system');
+     exec ('reboot');
+    } else {
+     zconsole.notice('Shutdown system');
+     exec ('shutdown 0');
+    }  
+  });
+  
+  app.zyntho.sessionSave();
+  
   res.end();
 };
 

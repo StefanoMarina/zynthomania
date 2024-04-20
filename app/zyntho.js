@@ -946,7 +946,7 @@ class ZynthoServer extends EventEmitter {
       return;
     }
     
-    //remove previous session bind if present
+    //remove previous session automatic bind if present
     if (this.lastSession !== undefined && "default.xmz" != this.lastSession) {
       let lastBindFile = this.lastSession.replaceAll('.xmz', '.json');
       this.midiService.removeBind(`${this.IO.workingDir}/binds/${lastBindFile}`);
@@ -1010,21 +1010,19 @@ class ZynthoServer extends EventEmitter {
   }
   
   /**
-   * Save a session file.
+   * Saves a Zynthomania session. A zyntho session is composed by
+   * 1) a xmz file with zynaddsubfx status, 2) additional configuration
+   * 3) midi bindings.
+   * Also, it will emit a 'saved' event.
    * @param file filename without path. if undefined, default.xmz is used.
    */
   sessionSave(file) {
     if (this.IO.readOnlyMode) {
-      zconsole.notice('Session save aborted due to read only mode.');
-      return;
+      throw 'Session save aborted due to read only mode.';
     }
     
     file = (file === undefined) ? 'default.xmz' : file;
     
-    this.osc.send(this.parser.translate(
-      `/save_xmz '${this.IO.workingDir}/sessions/${file}'`
-    ));
-   
     // Extra session data   
     let extfile = file.replace(/xmz$/,'json');
     try {
@@ -1042,6 +1040,43 @@ class ZynthoServer extends EventEmitter {
         zconsole.warning(`Could not save session bind: ${err}`);
       }
     }
+    
+    var dummyFileSave = `${this.IO.workingDir}/sessions/__dummy__${file}`,
+        file = `${this.IO.workingDir}/sessions/${file}`;
+    
+    this.osc.send(this.parser.translate(
+      `/save_xmz '${dummyFileSave}'`
+    ));
+   
+    var dummySize = 0;
+    var intervalID = null;
+    //check out when dummy file stabilizes then emit a save event.
+
+    intervalID = setInterval( (zyntho) => { 
+      
+      //avoid race condition
+        if (!Fs.existsSync(dummyFileSave)){    
+          return;
+        }
+        let newSize = Fs.statSync(dummyFileSave);
+        
+        //save completed
+        if (dummySize == newSize.size && newSize.size > 0) {
+          zconsole.debug('File save complete.');
+          
+          clearInterval(intervalID);
+          
+          //replace file
+          if (Fs.existsSync(file))
+              Fs.rmSync(file);
+          Fs.renameSync(dummyFileSave, file);
+          
+          zyntho.emit('saved', file);
+        } else {
+          zconsole.log(`Save incomplete: ${dummySize}/${newSize.size}`);
+          dummySize = newSize.size;
+        }
+      },500, this);
   }
 
 }
