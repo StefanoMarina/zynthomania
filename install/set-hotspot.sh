@@ -1,6 +1,12 @@
 #!/bin/bash
-UNAME=$(logname)
-HOTSPOTFILE="/home/$UNAME/.zmania/hotspot_status"
+
+if [[ $# -eq 0 ]]; then
+  UNAME=$(logname)
+  HOTSPOTFILE="/home/$UNAME/.zmania/hotspot_status"
+else
+  HOTSPOTFILE="$1/hotspot_status"
+fi
+  
 WLANFILE="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
 
 if [[ -f "$HOTSPOTFILE" ]]; then
