@@ -21,6 +21,8 @@ const EXPRESS = require('express');
 const Fs = require('fs');
 const OS = require('os'); 
 const Util = require ('util');
+const Path = require('node:path');
+
 const ZynthoIO = require ('./io.js');
 const zconsole = ZynthoIO.zconsole;
 const ZynthoMania = require ('./zyntho.js');
@@ -30,6 +32,8 @@ const {execSync, exec, spawn} = require("child_process");
 const Filter = require('./knot/knot.js').Filter;
 
 const app = EXPRESS();
+
+app.scripts_dir = Path.resolve(__dirname, '../install');
 
 var args = process.argv.slice(2);
 app.zyntho = new ZynthoMania.ZynthoServer(args[0]);
@@ -347,11 +351,17 @@ app.get('/status/session', function (rq, res) {
   res.json(result);
 });
 
+app.get('/status/split', function (req, res) {
+  app.zyntho.getSplit( (result) => {
+    res.json(result);
+  });
+});
+
 /**
- * /status/session
+ * /system
  * GET grabs system info
  */
-app.get('/status/system', function (rq, res) {
+app.get('/system', function (rq, res) {
   zconsole.logGet(rq);  
   let result = {};
   
@@ -367,16 +377,11 @@ app.get('/status/system', function (rq, res) {
     catch (e) {result.jackProcess = "NA"}
   try { result.netAddress = execSync ('hostname -I').toString().trim().split(" ")}
     catch (e) {result.netAddress = []};
-               
+  
   result.workingDir = app.zyntho.IO.workingDir;
-  	
+  result.isHotspot = (Fs.existsSync(result.workingDir+"/hotspot_status"));
+  
   res.json(result);
-});
-
-app.get('/status/split', function (req, res) {
-  app.zyntho.getSplit( (result) => {
-    res.json(result);
-  });
 });
 
 /**
@@ -625,7 +630,49 @@ app.post('/binds/session/save', function (req, res) {
 });
 
 /**
-* POST restarts connection with zynaddsubfx
+ * POST network/change
+ * change network status
+ * @body : { toHotspot : true|false }
+ */
+ app.post('/network-change', function (req, res ) {
+   if (req.body.toHotspot === undefined ) {
+     res.status(400).end();
+     return;
+   }
+   if (app.zyntho.IO.readOnlyMode){
+    res.statusMessage='System is read only.';
+    res.status(403).end();
+    return;
+  }
+  
+  let logFile = `${app.workingDir}/network-change.log`;
+  
+  // try to change to hotspot
+  if (req.body.toHotspot === 1) {
+    try{
+       execSync(`${app.scripts_dir}/set-hotspot.sh ${app.workingDir} > ${logFile}`);
+    } catch (err) {
+      res.statusMessage='Error in hotspot set';
+      res.status(500).end();
+      return;
+    }
+  } else {
+    try{
+       execSync(`${app.scripts_dir}/restore-wifi.sh ${app.workingDir} > ${logFile}`);
+    } catch (err) {
+      res.statusMessage='Error in wifi restore';
+      res.status(500).end();
+      return;
+    }
+  }
+  
+  return app.shutdownZyn( {body : { reboot : true } }, res);
+ });
+ 
+/**
+ * 
+ * POST /reconnect
+ * restarts connection with zynaddsubfx
 */
 app.post('/reconnect', (req, res) => {
   zconsole.logPost(req);
@@ -635,7 +682,8 @@ app.post('/reconnect', (req, res) => {
   } catch (err) {
     zconsole.notice('ZynAddSubFX not running, trying to manually run...');
     try {
-      outcome = execSync(`../sysjack/install.pl config=${app.zyntho.IO.workingDir}/config.json key=services -y -s zynaddsubfx`)
+      let sysjackdir = Path.resolve(__dirname, '../sysjack');
+      outcome = execSync(`${sysjackdir}/install.pl config=${app.zyntho.IO.workingDir}/config.json key=services -y -s zynaddsubfx`)
                         .toString();
                         
       //split args
@@ -682,8 +730,9 @@ app.post('/session/set', function (req, res) {
 });
 
 
-app.post('/shutdown', function(req,res) {
-  zconsole.logPost(req);
+//Shutdown
+app.shutdownZyn =  function(req,res) {
+  //zconsole.logPost(req);
   let reboot=(req.body.reboot !== undefined) ?
 		req.body.reboot : true;
   if (reboot) {
@@ -694,7 +743,9 @@ app.post('/shutdown', function(req,res) {
    exec ('shutdown 0');
   }
   res.end();
-});
+};
+
+app.post('/shutdown', app.shutdownZyn);
 
 app.on('open', () => {
   zconsole.log ("Opened web application");
@@ -705,10 +756,11 @@ app.on('data', (data) =>{
 });
 
 var myArgv = process.argv.slice(2);
-
 try {
-  if (myArgv.length > 0)
+  if (myArgv.length > 0) {
+    app.workingDir = myArgv[0];
     app.zyntho.open(myArgv[0]);
+  }
   else {
     throw 'You must specify a working directory';
     //app.zyntho.open(`${OS.homedir()}/.zmania`);
@@ -722,4 +774,6 @@ const server = require('http').createServer(app);
 
 let port = app.zyntho.config.services.user.remote_port;
 zconsole.log(`Opening html server on port ${port}`);
+zconsole.log(`Scripts dir: ${app.scripts_dir}`);
+
 server.listen(port);

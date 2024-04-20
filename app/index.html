@@ -329,6 +329,7 @@
               <header class="col-3 no-gutters tab-v br">
                 <button class="tab-header" data-tab="keybPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
                 <button class="tab-header" data-tab="keybPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlSystemNetwork" onclick="onSystemNetwork();">Network</button>
               </header>
               <div class="col-9"> <!-- keyb content container -->
                 <div id="pnlMIDI" class="keybPanel panel hidden row">
@@ -345,7 +346,15 @@
                     <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemInfoShutdown(1)">Reset</button></div>
                   </div>
                 </div>
-                
+                <!-- Network -->
+                <div id="pnlSystemNetwork"  class="keybPanel panel hidden row">
+                  <div class="container">
+                  </div>
+                  <div class="container row">
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemNetworkChange(1)">Route</button></div>
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemNetworkChange(0)">Local</button></div>
+                  </div>
+                </div>
               </div>
           </div> 
         </div> 
