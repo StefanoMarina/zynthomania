@@ -443,11 +443,11 @@ app.post('/fx/dry', function(req, res) {
 });
 
 /**
- * POST /status/midi/plug
+ * POST /system/midi/plug
  * connect or disconnect midi device
  * @body : {plug: device id, status: desired action, true for connect}
  */
-app.post('/status/midi/plug', function(req, res) {
+app.post('/system/midi/plug', function(req, res) {
   zconsole.logPost(req);
   if (req.body.name === undefined || req.body.status === undefined){
     res.status(400).end();

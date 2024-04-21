@@ -137,14 +137,17 @@ class ZynthoServer extends EventEmitter {
     //Register MIDI Device update events
     this.midiService.on('device-in', (name) =>{
       
-      if (this.config['plugged_devices'] == null)
+      if (this.config['plugged_devices'] == null){
         this.config['plugged_devices'] = [];
+        this.midiService.midiInputDevices = this.config['plugged_devices'];
+      }
       
       if (this.config['plugged_devices'].indexOf(name) == -1) {
         this.config['plugged_devices'].push(name);
         this.save();
       }
     });
+    
     this.midiService.on('device-out', (name) =>{
       if (this.config['plugged_devices'] != null) {
         let index = this.config['plugged_devices'].indexOf(name);

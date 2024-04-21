@@ -59,7 +59,7 @@ class ZynthoMidi extends EventEmitter {
     
     this.oscParser = new KNOT.OSCParser();
     this.uadsrConfig = config.uadsr;
-    this.midiInputRequests = config.plugged_devices;
+    this.midiInputDevices = config.plugged_devices;
     
     //console.log (`ZMIDI: build ${JSON.stringify(this.uadsrConfig)}`); 
   }
@@ -80,8 +80,6 @@ class ZynthoMidi extends EventEmitter {
     return true;
   }
   
-  
-  
   /**
    * Creates a virtual port called 'Zynthomania' and connects it to
    * ZynAddSubFX. This port will filter any incoming message through
@@ -96,7 +94,7 @@ class ZynthoMidi extends EventEmitter {
     let midi = this.getMidiOutput();
     
     if (midi == null) {
-      zconsole.crtical('Virtual midi port is not allocated');
+      zconsole.critical('Virtual midi port is not allocated');
       throw 'Virtual midi port is not allocated';
     }
     
@@ -109,19 +107,19 @@ class ZynthoMidi extends EventEmitter {
       this.knot.setMidiOut(midi);
       
       // Start-up midi devices
-      if (this.midiInputRequests != null) {
+      if (this.midiInputDevices != null) {
         const inputs = this.enumerateInputs(); 
         let mapName = inputs.map (obj => obj.name);
         let index = -1;
         
-        this.midiInputRequests.forEach( (req) => {
-          zconsole.log(`Attemping reconnection to midi device ${req}`);
+        this.midiInputDevices.forEach( (req) => {
+          zconsole.log(`Attemping start up connection to midi device ${req}`);
           index = mapName.indexOf(req);
           if (index != -1) {
             try {
               this.setConnection(req, 1);
             } catch (err) {
-              zconsole.notice(`Failed to reconnect ${req} : ${err}`);
+              zconsole.notice(`Failed to connect ${req} : ${err}`);
             }
           }
         });
@@ -248,11 +246,9 @@ class ZynthoMidi extends EventEmitter {
   * triggers a midi learn event, as in, the next midi message will be
   * fired as a 'learn' message. This is triggered on all inputs. 
   * when a midi message is received, 'learn' is emitted.
-  * @param onlyNotesAndCc 'true' will force noteon/cc.
+  * @param filter (opt) a list of midi codes to be ignored.
   */
   midiLearn(filter) {
-    //onlyNotesAndCc = (onlyNotesAndCc === undefined) ? true :onlyNotesAndCc;
-    
     if (filter !== undefined && !Array.isArray(filter))
       filter = [filter];
     
@@ -377,7 +373,7 @@ class ZynthoMidi extends EventEmitter {
     
     if (deviceID < 0)
       throw `invalid device ${devicePort}`;
-        
+    
     if (this.midiInputs[devicePort] !== undefined) {
       if (status) return;
     
@@ -389,6 +385,8 @@ class ZynthoMidi extends EventEmitter {
       this.emit('device-out', inputs[deviceID].name);
       zconsole.log(`Released midi connection from ${devicePort}.`);
     } else {
+      
+      //create a new midi input
       let newInput = new MIDI.Input();
       newInput.on('message', (delta, msg) =>{
           this.knot.midiCallback(delta, msg);
