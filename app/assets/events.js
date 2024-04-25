@@ -717,7 +717,7 @@ function onSystemInfo() {
 }
 
 function onSystemMIDI() {
-  doQuery('status/midi', null, (data) => {
+  doQuery('system/midi', null, (data) => {
     
 //          data = JSON.parse(data);
     if (Object.prototype.toString.call(data) !== '[object Array]') {
