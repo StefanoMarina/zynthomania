@@ -1,19 +1,19 @@
 #!/bin/bash
 
-if [[ $# -eq 0 ]]; then
-  UNAME=$(logname)
-  HOTSPOTFILE="/home/$UNAME/.zmania/hotspot_status"
-else
-  HOTSPOTFILE="$1/hotspot_status"
-fi
-
 WLANFILE="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
 
-if [[ -f "$HOTSPOTFILE" ]]; then
-  echo "Hotspot status detected."
+if [[ $1 == "-f" ]]; then
+  FORCED=1
 else
-  echo "Hotspot status not detected. use touch $HOTSPOTFILE to force"
-  exit
+  FORCED=0
+fi
+
+#check systemctl status
+status=$(systemctl is-active dhcpcd)
+
+if [[ $FORCED == 0 && "$status" == "active" ]]; then
+  echo "Pi not in hotspot mode. pass -f to force"
+  exit 0
 fi
 
 # Configuration update
@@ -52,10 +52,6 @@ systemctl daemon-reload
 echo "Restarting wpa_supplicant..."
 systemctl disable wpa_supplicant.service
 systemctl enable wpa_supplicant
-
-echo "Removing hotspot status..."
-rm $HOTSPOTFILE
-
 
 
 

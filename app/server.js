@@ -231,12 +231,7 @@ app.get('/status/options', function (req, res, next) {
  * query: none
  * return: json
  */
-app.get('/status/midi', function (req, res, next) {
-  zconsole.logGet(req);
-  res.json(app.zyntho.midiService.enumerateInputs());
-});
-
-
+ 
 /**
  * /status/part
  * GET returns part info
@@ -379,11 +374,25 @@ app.get('/system', function (rq, res) {
     catch (e) {result.netAddress = []};
   
   result.workingDir = app.zyntho.IO.workingDir;
-  result.isHotspot = (Fs.existsSync(result.workingDir+"/hotspot_status"));
+  try {
+    let value = execSync('systemctl is-active dhcpcd').toString();
+    result.isHotspot = (replace(/\n|\r/g,value)  == 'inactive');
+  } catch (e) {
+    result.isHotspot = undefined
+  };
   
   res.json(result);
 });
 
+
+app.get('/system/midi', function (req, res, next) {
+  zconsole.logGet(req);
+  res.json(app.zyntho.midiService.enumerateInputs());
+});
+
+/**
+ * POST
+ */
 /**
 * /fx/set
 * [POST] sets a part fx id and/or preset. if part id is null, system fx will be
@@ -650,7 +659,7 @@ app.post('/binds/session/save', function (req, res) {
   // try to change to hotspot
   if (req.body.toHotspot === 1) {
     try{
-       execSync(`${app.scripts_dir}/set-hotspot.sh ${app.workingDir} > ${logFile}`);
+       execSync(`${app.scripts_dir}/set-hotspot.sh`);
     } catch (err) {
       res.statusMessage='Error in hotspot set';
       res.status(500).end();
@@ -658,7 +667,7 @@ app.post('/binds/session/save', function (req, res) {
     }
   } else {
     try{
-       execSync(`${app.scripts_dir}/restore-wifi.sh ${app.workingDir} > ${logFile}`);
+       execSync(`${app.scripts_dir}/restore-wifi.sh`);
     } catch (err) {
       res.statusMessage='Error in wifi restore';
       res.status(500).end();
