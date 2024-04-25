@@ -1,0 +1,21 @@
+[Unit]
+Description=Network checker
+After=network.target
+Requires=dhcpcd
+BindsTo=dhcpcd
+
+[Service]
+User=root
+Group=root
+Type=simple
+
+ExecStartPre=/bin/sleep 30
+ExecStart=COMMAND_LINE
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=Network Check
+
+
+[Install]
+WantedBy=multi-user.target

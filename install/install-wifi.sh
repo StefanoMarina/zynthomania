@@ -13,7 +13,7 @@ DO NOT RUN IF:
 - You do not have superuser privileges. run as sudo!
 - You need to do other stuff; this script will reboot the pi.
 
-Please run this script only from direct monitoring.
+Please run this script only from direct monitoring and sudo.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -121,9 +121,29 @@ else
   fi
 fi
 
+echo "Do you want to install the network checkout system?
+This will check if you are connected to a router on dhcp and eventually
+restore hotspot.
+
+This is useful only if you shift from hotspost and bring your zyntho device 
+around - this will avoid lock you outside of pi if you forget to switch back
+to hotspot!
+
+( should any problem arise, mount your microsd into another device and remove 
+/etc/systemd/system/net-checker.service ) 
+"
+read -p "Install network check? (y)es or (n)o:" ANSWER
+
+if [[ "$ANSWER" == "y" ]]; then
+  chmod +x check-network.sh
+  sed -e "s#COMMAND_LINE#$ZYNTHO_DIR/install/check-network.sh#" net-checker.service.in > net-checker.service
+  sudo mv net-checker.service /etc/systemd/system/
+  sudo systemctl enable net-checker.service
+fi
+
 echo "Installing systemd-resolve service and network service..."
 apt install libnss-resolve
 ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
-echo "running set-hotspost.sh"
+echo "running set-hotspot.sh"
 bash ./set-hotspot.sh
