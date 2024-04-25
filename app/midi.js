@@ -107,30 +107,14 @@ class ZynthoMidi extends EventEmitter {
       this.knot.setMidiOut(midi);
       
       // Start-up midi devices
-      if (this.midiInputDevices != null) {
-        const inputs = this.enumerateInputs(); 
-        let mapName = inputs.map (obj => obj.name);
-        let index = -1;
-        
-        this.midiInputDevices.forEach( (req) => {
-          zconsole.log(`Attemping start up connection to midi device ${req}`);
-          index = mapName.indexOf(req);
-          if (index != -1) {
-            try {
-              this.setConnection(req, 1);
-            } catch (err) {
-              zconsole.notice(`Failed to connect ${req} : ${err}`);
-            }
-          }
-        });
-      }
+      if (this.midiInputDevices != null)
+        this.syncPluggedDevices();
     }
     
     // Connect midi to ZynAddSubFX
     exec("aconnect 'RtMidi Output Client:Zynthomania' 'ZynAddSubFX'");
   }
-  
-  
+    
    /**
    * Get a list of available input devices, and their actual connection
    * with zynthomania or zynaddsubfx
@@ -371,8 +355,9 @@ class ZynthoMidi extends EventEmitter {
         devicePort = inputs[deviceID].port;
     }
     
-    if (deviceID < 0)
-      throw `invalid device ${devicePort}`;
+    if (deviceID < 0){
+      throw `invalid device ${devicePort}.`;
+    }
     
     if (this.midiInputs[devicePort] !== undefined) {
       if (status) return;
@@ -392,6 +377,7 @@ class ZynthoMidi extends EventEmitter {
           this.knot.midiCallback(delta, msg);
       });
       
+      //zconsole.notice(`Midi port stored as ${devicePort}`);
       this.midiInputs[devicePort] = newInput;
       
        try {
@@ -423,6 +409,57 @@ class ZynthoMidi extends EventEmitter {
     }
   }
   
+    /**
+   * Check if all devices from the `plugged_device` config list is connected.
+   * If not, tries to connect it.
+   * This is also called from a timer on zyntho server
+   */
+  syncPluggedDevices() {
+    if (this.midiInputDevices == null)
+      return;
+    
+    const inputs = this.enumerateInputs();
+    
+    //Check out if any device supposed to be plugged is not plugged
+    inputs.forEach( (inputObj) => {
+     
+      if ( !inputObj.connected  &&
+        this.midiInputDevices.indexOf(inputObj.name) != -1 ){   
+        zconsole.log(`Attemping start up connection to midi device ${inputObj.name}`);
+        try {
+          this.setConnection(inputObj.port, 1);
+        } catch (err) {
+          zconsole.error(`Failed to connect ${inputObj.name} : ${err}`);
+        }
+      }
+    });
+    
+    /*
+     * Check out any lost connection
+     * NOTE: just turning off controller is NOT the expected behaviour.
+     * This is just so any plug-replug of the device works as expected,
+     * as undead midi connections will prevent re-plugging.
+     * 'device-out' signal is NOT emitted.
+     */
+    let connectedPorts = Object.keys(this.midiInputs),
+      currentPorts = inputs.map ( (obj) => obj.port);
+    
+    let lostConnections = 
+      connectedPorts.filter( port => !currentPorts.includes(port) );
+    
+    //zconsole.log(`${JSON.stringify(currentPo)}`);
+    
+    lostConnections.forEach ( devicePort  => {
+      zconsole.log(`Lost connection to ${devicePort}`);
+      try {
+          this.midiInputs[devicePort].closePort();
+          this.midiInputs[devicePort] = undefined;
+          delete this.midiInputs[devicePort];
+        } catch (err) {
+          zconsole.error(`Failed to delete connection ${devicePort} : ${err}`);
+        }
+    });
+  }
 }
 
 exports.ZynthoMidi = ZynthoMidi;

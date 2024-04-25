@@ -158,6 +158,11 @@ class ZynthoServer extends EventEmitter {
       }
     });
     
+    //Start the auto-plug service - should this run forever?
+    this.autoPlugService = setInterval(function(midiService){
+      midiService.syncPluggedDevices();
+    }, 2000, this.midiService);
+    
     /* UADSR */
     if (this.config.uadsr != null && (this.config.uadsr.type != "none")) {
       try {
