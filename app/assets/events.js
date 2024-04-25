@@ -741,11 +741,12 @@ function onSystemMIDI() {
       $(midiCont).append(content);
     });
     
+    //Add action to midi device buttons: plug in device
     $(midiCont).children('button').on('click', (e) => {
       let target = $(e.target);
       let plugged = $(target).hasClass('btn-selected');
       
-      doAction('status/midi/plug', 
+      doAction('system/midi/plug', 
         {'name': $(target).val(), 'status': !plugged}, (data) =>{
           onSystemMIDI();
         });
