@@ -34,7 +34,9 @@ class ZynthoMidi extends EventEmitter {
   
   constructor(IODir, config) {
     super();
-    this.midiInputs = {};
+    this.midiConnections = {};
+    
+    this.midiInput = null;
     this.midiOutput = null;
     this.knot = new KNOT.Knot(null);
     this.knot.setEmitOnly(true);
@@ -121,10 +123,11 @@ class ZynthoMidi extends EventEmitter {
    * @returns an array of midi devices
   */
   enumerateInputs() {
-    let midi = new MIDI.Input();
+    //zconsole.debug("enumerateInputs: Attemping access to MIDI");
+    let midi = this.getMidiInput();
     let q = midi.getPortCount();
     var result = [];
-    let connectedInputs = Object.keys(this.midiInputs);
+    let connectedInputs = Object.keys(this.midiConnections);
     let portName = "", displayName;
     let status = false;
     
@@ -137,9 +140,16 @@ class ZynthoMidi extends EventEmitter {
       result.push({name : displayName, port: portName, connected: status});
     }
     
+    
     return result;
   }
   
+  getMidiInput() {
+    if (this.midiInput == null)
+      this.midiInput = new MIDI.Input();
+      
+    return this.midiInput;
+  }
   getMidiOutput() {
     if (this.midiOutput == null)
       this.midiOutput = new MIDI.Output();
@@ -243,21 +253,21 @@ class ZynthoMidi extends EventEmitter {
       this.learnCallback = (delta, msg) => {
         if (filter !== undefined) {
           if (filter.indexOf(msg[0] >> 4) == -1) {
-            for (let input in this.midiInputs)
-              this.midiInputs[input].once('message', this.learnCallback);
+            for (let input in this.midiConnections)
+              this.midiConnections[input].once('message', this.learnCallback);
             
             return;
           }
         }
         
         this.emit('learn', msg);
-        for (let input in this.midiInputs)
-          this.midiInputs[input].off('message', this.learnCallback);
+        for (let input in this.midiConnections)
+          this.midiConnections[input].off('message', this.learnCallback);
       }
     }
     
-    for (let input in this.midiInputs) {
-      this.midiInputs[input].once('message', this.learnCallback);
+    for (let input in this.midiConnections) {
+      this.midiConnections[input].once('message', this.learnCallback);
     }
   }
   
@@ -359,13 +369,13 @@ class ZynthoMidi extends EventEmitter {
       throw `invalid device ${devicePort}.`;
     }
     
-    if (this.midiInputs[devicePort] !== undefined) {
+    if (this.midiConnections[devicePort] !== undefined) {
       if (status) return;
     
       //remove connection
-      this.midiInputs[devicePort].closePort();
-      this.midiInputs[devicePort] = undefined;
-      delete this.midiInputs[devicePort];
+      this.midiConnections[devicePort].closePort();
+      this.midiConnections[devicePort] = undefined;
+      delete this.midiConnections[devicePort];
       
       this.emit('device-out', inputs[deviceID].name);
       zconsole.log(`Released midi connection from ${devicePort}.`);
@@ -378,7 +388,7 @@ class ZynthoMidi extends EventEmitter {
       });
       
       //zconsole.notice(`Midi port stored as ${devicePort}`);
-      this.midiInputs[devicePort] = newInput;
+      this.midiConnections[devicePort] = newInput;
       
        try {
         newInput.openPort(deviceID);
@@ -441,7 +451,7 @@ class ZynthoMidi extends EventEmitter {
      * as undead midi connections will prevent re-plugging.
      * 'device-out' signal is NOT emitted.
      */
-    let connectedPorts = Object.keys(this.midiInputs),
+    let connectedPorts = Object.keys(this.midiConnections),
       currentPorts = inputs.map ( (obj) => obj.port);
     
     let lostConnections = 
@@ -452,9 +462,10 @@ class ZynthoMidi extends EventEmitter {
     lostConnections.forEach ( devicePort  => {
       zconsole.log(`Lost connection to ${devicePort}`);
       try {
-          this.midiInputs[devicePort].closePort();
-          this.midiInputs[devicePort] = undefined;
-          delete this.midiInputs[devicePort];
+          this.midiConnections[devicePort].closePort();
+          this.midiConnections[devicePort] = undefined;
+          delete this.midiConnections[devicePort];
+          zconsole.log(`Removed connection ${devicePort}`);
         } catch (err) {
           zconsole.error(`Failed to delete connection ${devicePort} : ${err}`);
         }
