@@ -1,0 +1,159 @@
+<!doctype html>
+
+<html>
+  <head>
+    <link href="lnf.css" rel="stylesheet">
+    <link href="bootstrap-grid.min.css" rel="stylesheet">
+    <link href="fontawesome-free-5.15.3-web/css/all.css" rel="stylesheet">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="main.js"></script>
+    <script src="osc-values.js"></script>
+    <script src="swipeable.js"></script>
+    <script src="ajax.js"></script>
+    <script src="events.js"></script>
+    <script src="osc-elements.js"></script>
+    <script src="knob-panel.js"></script>
+    <script src="note-editor.js"></script>
+    <script src="fx-editor.js"></script>
+    <script src="synth-editor.js"></script>
+    
+    <title>ZynthoMania!</title>
+  </head>
+
+  <body onload="onLoad()">
+    
+    <!-- Dialog box -->
+    <dialog id="selectBox">
+      <header class="header">
+        <h4></h4>
+      </header>
+      <div class="container">
+        <div class="row"></div>
+      </div>
+      <footer class="row">
+        <div class="col-6"><button class="button selected col-12" onclick="selectBoxOk()">Ok</button></div>
+        <div class="col-6"><button class="button selected col-12" onclick="selectBoxCancel()">Cancel</button></div>
+      </footer>
+    </dialog>
+    
+    <!-- Note Selector -->
+  <dialog id="note-editor" data-min="0" data-max="127" class="container">
+    <header class="header"><H4 id="note-editor-selection">Select Note</H4></header>
+    <div>
+      <div class="row">
+        <div class="col-2 col-md-3">OCT<span class="d-none d-md-inline">AVE</span></div>
+        <div class="col-8 col-md-7">
+            <input id="note-editor-slider" type="range" class="slider" id="note-editor-octave" min="0" max="8" value="3">
+        </div>
+        <div class="col-1">
+          <label id="note-editor-slider-label">1</label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <img id="piano-editor" class="piano" src='piano-editor/piano_none.svg' usemap="#pianomap">
+          <map name="pianomap">
+            <!-- flat note: 17x35px -->
+            <area shape="rect" data-note="0" coords="-5,40,12,70" >
+            <area shape="rect" data-note="2" coords="14,40,31,70" >
+            <area shape="rect" data-note="4" coords="33,40,50,70" >
+            <area shape="rect" data-note="5" coords="52,40,67,70" >
+            <area shape="rect" data-note="7" coords="69,40,88,70" >
+            <area shape="rect" data-note="9" coords="85,40,102,70" >
+            <area shape="rect" data-note="11" coords="102,40,124,70" >
+            <area shape="rect" data-note="1" coords="12,0,24,45" >
+            <area shape="rect" data-note="3" coords="28,0,40,45" >
+            <area shape="rect" data-note="6" coords="64,0,76,45" >
+            <area shape="rect" data-note="8" coords="82,0,96,45" >
+            <area shape="rect" data-note="10" coords="100,0,112,45" >
+          </map>
+        </div>
+      </div>
+    </div>
+    
+    <footer class="row">
+      <div class="col-4"><button class="d-block button"><i class="icon icon-inline i-midi"></i>LEARN</button></div>
+      <div class="col-4"><button id="note-editor-ok" class="d-block button selected">OK</button></div>
+      <div class="col-4"><button id="note-editor-cancel" class="d-block button selected">Cancel</button></div>
+    </footer>
+  </dialog>
+    
+    <div id="main-panel" class="row">
+      <!--toolbar fissa-->
+      <header class="col-12 col-sm-5">
+        <!-- system toolbar -->
+        <nav>
+          <button><i class="fas fa-sd-card"></i></button>  <!--system -->
+          <button><i class="fas fa-save"></i></button>  <!-- session -->
+          <button><i class="fa fa-sliders-h"></i></button> <!-- binds -->
+          <button class="br"><i class="fa fa-terminal"></i></button>  <!-- OSC -->
+          <button><i class="fas fa-download"></i></button> <!-- quick save -->
+          <button onclick="onTempo()" class="osc-element minimal" id="global-tempo"
+            data-osc-path="/tempo"></button>
+          <button id="global-volume" class="osc-element minimal osc-knob d-inline"
+                data-osc-path="/volume" data-osc-type="i"></button>
+          <button id="global-panic" class="osc-element minimal d-inline"
+              data-osc-path="/Panic" data-osc-type="">
+                <i class="fas fa-exclamation-triangle"></i> </button>
+        </navbar>
+        
+        <!-- Info Display -->
+        <div class="col-12 partDisplay bt bb">
+          <p><small><span id="q-status" class="fa" style="padding-right: 2px"></span><span id="message" style="padding-left:0px">No session file</span></small></p>
+          <h3><span id="instrumentName">---- </span></h3>
+          <p><small><i class='fa fa-terminal'></i>&nbsp;<span id="osc-message"></span></small></p>
+        </div>
+        
+        <!-- Part controls -->
+        <div class="row">
+          <div class="col-4 col-md-3">
+              <div class="swipeable" id="partID" style="padding-top: 10%"></div>
+          </div>
+          <div class="col-8 col-md-9">
+            <nav id="partToolbar">
+              <button id="part-toolbar-mixer" class="panel-button" onclick="onPartMixer()"><i class="fa fa-sliders-h"></i></button>
+              <button id="part-toolbar-bank" class="panel-button" onclick="onBanks()"><i class="fas fa-folder"></i></button> <!-- Bank/Instrument -->
+              <button id="part-toolbar-control" ><i class="icon i-piano" onclick="onPartControl()"></i></button> <!-- Keyboard stuff -->
+              <button id="part-toolbar-fx" style="padding:5px" onclick="onPartFX()">FX</button> <!-- FX stuff -->
+              <button id="part-toolbar-synth" onclick="onSynth()"><i class="fas fa-flask"></i></button> <!-- Synth -->
+            </navbar>
+          </div>
+        </div>
+      </header>
+      
+      <main class="col">
+        
+        <!-- Title -->
+        <div class="row no-gutters">
+            <div class="col header" id="content-title"></div>
+            <div class="col-1 header hidden" id="content-back" style="cursor:pointer">
+              <p><i class="fas fa-caret-square-up"></i></p>
+            </div>
+        </div>
+        <div id="section-content"> <!-- actual content -->
+        
+        <!-- special synth navigation section -->
+        <header id="synth-header" class="hidden container bb" style="position:sticky;padding-bottom: 5px">
+          <div class="row">
+            <div class="col-6 col-lg-4"><div class="swipeable" id="synth-layer"></div></div>
+            <div class="col-6 col-lg-4"><div class="swipeable" id="adsynth-voice"></div></div>
+            <nav id="synthSelector" class="col col-lg-4 offset-3 offset-lg-0">  
+              <button class="osc-element minimal osc-boolean"
+                id="synth-toolbar-layer-enabled"
+                data-osc-path="/part/kit/Penabled" ></button>
+              <button class="minimal" id="synth-toolbar-ad-enabled" onclick="onSynth('ad')">ad</button>
+              <button class="minimal" id="synth-toolbar-sub-enabled" onclick="onSynth('sub')">sub</button>
+              <button class="minimal" id="synth-toolbar-pad-enabled" onclick="onSynth('pad')">pad</button>
+            </nav>
+          </div>                
+        </header>
+        
+        <section id="section-intro" class="opened" data-title="Zynthomania">
+          <div class="col-12">
+            <p><small>Zynthomania! created by Stefano Marina under GPLV3 (2021-)</small></p>
+            <p><small><strong>Copyright:</strong></small></p>
+            <p><small>Piano &amp; midi icons from <a href="http://www.onlinewebfonts.com">oNline Web Fonts </a> under CC-3</small></p>
+          </div>
+        </section>
+        

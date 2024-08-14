@@ -113,6 +113,7 @@ class ZynthoServer extends EventEmitter {
       
     let favFile = `${this.IO.workingDir}/favorites.json`;
     let configFile = `${this.IO.workingDir}/config.json`;
+    let fxFile = `${this.IO.workingDir}/fx.json`;
     
     zconsole.log("opening client on port " + this.config.services.user.zyn_osc_port + "...");
   
@@ -128,6 +129,16 @@ class ZynthoServer extends EventEmitter {
       }
     } else
       this.favorites = [];
+    
+    if (Fs.existsSync(fxFile)) {
+      zconsole.debug('loading custom fx specs...');
+      try {
+        this.config['fx-specs'] = JSON.parse(
+          Fs.readFileSync(fxFile) );
+      } catch (err) {
+        zconsole.error(`Cannot read fx specs: ${err}`);
+      }
+    }
     
     /* Init midi service */
     this.midiService = new ZynthoMidi.ZynthoMidi(this.IO.workingDir,
@@ -277,7 +288,11 @@ class ZynthoServer extends EventEmitter {
           let parsed = this.parser.translate(oscMsg.address);
           this.oscEmitter.on(parsed.address, this, parsed.args);
         } else {
-          zconsole.log(`OSC message: ${oscMsg.address} ${JSON.stringify(oscMsg.args.map( (e) => e.value))}`);
+          
+          //DEBUG ONLY: Skip zyn-fusion /active_keys
+          //REMOVEME!!
+          if (oscMsg.address != '/active_keys')
+            zconsole.log(`OSC message: ${oscMsg.address} ${JSON.stringify(oscMsg.args.map( (e) => e.value))}`);
         }
         
         this.emit(oscMsg.address, oscMsg);
@@ -313,7 +328,7 @@ class ZynthoServer extends EventEmitter {
      return this.config.route;
    }
   
-  
+  /* @Deprecated */
   getSplit(onDone) {
     const result = [];
     
@@ -361,7 +376,84 @@ class ZynthoServer extends EventEmitter {
           onDone(splitConfig);
     });
   }
+  
+  /**
+   * ZynthoServer::getFX
+  * @params path must be a discrete path such as part0/partefx1 or /systemefx0
+  * 
+  */
+  getFX(path) {
+    const result = {};
+    let typeWorker = new OSCWorker(this);
+    let efftypepacket = this.parser.translate(`${path}/efftype`);
     
+    typeWorker.pushPacket (efftypepacket, (address, args) => {
+       result.efftype = args[0].value;
+    });
+    
+    this.osc.send(efftypepacket);
+    return typeWorker.listen().then( ()=> {
+      if ( result.efftype == 0) {
+        result.name = 'None';
+        return Promise.resolve(result);
+      }
+      
+      result.name = exports.typeToString(result.efftype);
+
+      
+      result.config = this.config['fx-specs'][result.name];
+      
+      let cfg = result.config;
+      if ('algorithm' in cfg)
+        result.algorithm =  cfg.algorithm;
+
+      
+      let fxQuery = this.parser.emptyBundle();
+      let worker = new OSCWorker(this);
+   
+      fxQuery.packets = fxQuery.packets.concat(
+        this.parser.translate(`${path}/parameter[0-1]`).packets, 
+        [
+          this.parser.translate(`${path}/preset`),
+          this.parser.translate(`${path}/parameter${cfg.reagent}`),
+          this.parser.translate(`${path}/parameter${cfg.catalyst}`),
+          this.parser.translate(`${path}/parameter${cfg.acid}`),
+          this.parser.translate(`${path}/parameter${cfg.base}`)
+        ]
+      );
+      
+      if (cfg.algorithm.length > 0) {
+        fxQuery.packets.push(
+          this.parser.translate(`${path}/parameter${cfg.formula}`));
+      }
+      
+      result.osc = {};
+      worker.pushPacket(fxQuery, (address, args) =>{
+        zconsole.debug(`${address}: ${args[0]}`);
+        result.osc[address] = args[0];
+      });
+      
+      if (path.startsWith('/part')) {
+        let rex=/^\/part(\d+)\/partefx(\d)/.exec(path);
+        let partID = rex[1];
+        let fxID = rex[2];
+        let additionalPacket =
+          this.parser.translate(`/part${partID}/Pefxbypass${fxID}`);
+        worker.pushPacket(additionalPacket,
+          ( address, args) => {
+            result.bypass = args[0].value;
+          });
+        fxQuery.packets.push(additionalPacket);
+    
+      } else {
+        result.bypass = undefined;
+      }
+        
+      this.osc.send(fxQuery);
+      return worker.listen();
+    }).then ( ()=> {return result;} );
+  }
+  
   /**
   * ZynthoServer::merge
   * merge 2 osc messages/bundles
@@ -417,7 +509,7 @@ class ZynthoServer extends EventEmitter {
    * Zynthoserver::getInstruments
    * retrieve all instrument name by filename
    */
-  getInstruments(bank) {
+  getInstruments(bank, bankID) {
     if ('Favorites' === bank)
       return this.favorites;
       
@@ -426,20 +518,20 @@ class ZynthoServer extends EventEmitter {
             ? this.IO.workingDir + "/banks/"+bank.substr(1)
             : this.config.bank_dir + "/" + bank;
     
-    zconsole.debug(fullpath);
+//    zconsole.debug(fullpath);
     
     var files = Fs.readdirSync (fullpath)
                   .filter(function (file) {
                       return !Fs.statSync(fullpath+'/'+file).isDirectory();
                 });
           
-    var regex = /\d*\-?([^\.]+)\.xiz/;
+    var regex = /(\d*)\-?([^\.]+)\.xiz/;
       
     files.forEach(file => {
       let match = regex.exec(file);
       let name = "";
        
-      name = (match != null) ? match[1] : file;   
+      name = (match != null) ? `${match[1].slice(1)}: ${match[2]}` : file;   
       result.push ({"name": name, path: fullpath+'/'+file});
     });
       
@@ -562,6 +654,9 @@ class ZynthoServer extends EventEmitter {
    }
   
 
+  fxPreset (path, value) {
+    
+  }
   /**
   * changeFX
   * Changes the current part FX, queries new preset, sends done
@@ -628,23 +723,55 @@ class ZynthoServer extends EventEmitter {
     return worker;
   }
   
+  //checks out system or part id by finding out the last number
+  queryPackFXNames(scope, amount){
+      var worker =  new OSCWorker(this);
+      const returnArray = Array(amount);
+      
+      let packet = this.parser.translate(`${scope}/efftype`);
+//      zconsole.debug(JSON.stringify(packet));
+      
+      worker.pushPacket(packet, (address, args) => {
+        var id, rex;
+        try {
+          rex = RegExp(/^.*(\d)\/efftype/).exec(address);
+          if (rex == null)
+            throw `Failed regex with [${address}]`;
+          id = parseInt(rex[1]);
+          returnArray[id] = exports.typeToString(args[0].value);  
+        } catch {
+          zconsole.error(`Failure in parsing id for [${address}]`);
+        }
+      });
+      
+      this.osc.send(packet);
+      return worker.listen().then( ()=> {return returnArray;});
+  }
+  
   /**
   * queryPartFX
   * queries part fx info, such as effect name, bypass status and preset
   * Those are effectively 3 bundled queries
   * @param partID part to query
   * @param onDone query to call when all is done
+  * @return a promise with the data
   */
-  queryPartFX(part, onDone) {
+  queryPartFX(part) {
+    /*
+     * We populate a listener (worker), to handle different osc signals
+     * differently so we can populate the result object.
+     */
+     
    const returnObject = {
       efx : [{},{},{}]
     };
-    const worker = new OSCWorker(this);
     
+    const worker = new OSCWorker(this);
     let fxQuery = this.parser.emptyBundle();
     
-    //Effect type
     let query = this.parser.translate(`/part${part}/partefx[0-2]/efftype`);
+    
+    //When listening to effect type, check out the effect name.
     worker.pushPacket(query, (add, args) => {
       let efftype = args[0].value;
       let id = parseInt(RegExp(`\/part${part}\/partefx(\\d)`).exec(add)[1]);
@@ -662,14 +789,26 @@ class ZynthoServer extends EventEmitter {
         let id = parseInt(add.match(/Pefxbypass(\d)/)[1]);
         returnObject.efx[id].bypass = bypass;
       } catch (err) {
-        zconsole.debug(`queryPartFX: mismatch. ${add}: ${err} - ${id}`);
+        zconsole.warning(`queryPartFX: mismatch. ${add}: ${err} - ${id}`);
       }
     });
     
     fxQuery.packets = fxQuery.packets.concat(query.packets);
     
-    //System send is handled as part
-    /*
+    query = this.parser.translate(`/part${part}/Pefxroute[0-2]`);
+    worker.pushPacket(query, (add, args)=> {
+      let route = args[0].value;
+      try {
+        let id = parseInt(add.match(/Pefxroute(\d)/)[1]);
+        returnObject.efx[id].route = route;
+      } catch (err) {
+        zconsole.warning(`queryPartFX: mismatch. ${add}: ${err} - ${id}`);
+      }
+    });
+    
+    fxQuery.packets = fxQuery.packets.concat(query.packets);
+    
+    //System send
     query = this.parser.translate(`/Psysefxvol[0-3]/part${part}`);
     worker.pushPacket(query, (add,args) => {  
       if (returnObject.send === undefined)
@@ -679,10 +818,14 @@ class ZynthoServer extends EventEmitter {
       returnObject.send[id] = args[0].value;
     });
     fxQuery.packets = fxQuery.packets.concat(query.packets);
-    */
+    
     //run before testing preset name
     this.osc.send(fxQuery);
-    worker.listen().then( () =>{
+    
+   //we don't listen to preset anymore.
+   return worker.listen().then ( () => { return returnObject} );
+   
+   /*return worker.listen().then( () =>{
           
       //check out presets
       let queries = [];
@@ -709,9 +852,9 @@ class ZynthoServer extends EventEmitter {
         return worker.listen();
       }
     
-    }).then ( ()=>{
-        onDone(returnObject);
-    });
+      return returnObject;
+    }); //.then ( onDone (returnObject) );
+    * */
   }
   
   /**
@@ -722,7 +865,7 @@ class ZynthoServer extends EventEmitter {
   * @param onDone  query to call when all is done
   * @param part (optional) if set, retrieves part to system fx send
   */
-  querySystemFX(onDone, part) {
+  querySystemFX(part) {
    const returnObject = {
       efx : [{},{},{},{}]
     };
@@ -739,7 +882,7 @@ class ZynthoServer extends EventEmitter {
     });
     
     this.osc.send(fxQuery);
-    worker.listen().then(()=>{
+    return worker.listen().then(()=>{
       let presetQueries = [], sendQueries = [];
       
       for (let i = 0; i < 4; i++) {

@@ -50,26 +50,50 @@ app.use (BodyParser.urlencoded({extended:false}));
  * REST CALLBACKS
  ************************/
 
-app.get('/', function(req, res,next) {  
-    res.sendFile(__dirname + '/index.html');
+app.get('/', (req, res, next) => {  
+  const chunkdir = __dirname + '/chunks/';
+  chunkFiles = Fs.readdirSync(chunkdir);
+  
+  res.writeHead(200, {
+    'Transfer-Encoding' : 'chunked'
+  });
+  
+  res.write(Fs.readFileSync(__dirname + '/header.html'));
+  chunkFiles.forEach ( (file) => { res.write(Fs.readFileSync(
+      chunkdir + file ) ); } );
+  res.write(Fs.readFileSync(__dirname + '/footer.html'));
+  res.end();
+    //res.sendFile(__dirname + '/index.html');
 });
 
- 
+var util = require ('util')
+
+/**
+ * getChuck
+ * return html content
+ */
+function get_chunk(req, res, next) {  
+  zconsole.logGet(req);
+  res.sendFile(__dirname + '/chunks/'+req.query.chunk+".html");
+}
+app.get('/chunk', get_chunk);
+
 /**
  * getBanks
  * GET request to retrieve all bank folder
  */
-app.get('/files/banks', function (req, res, next) {
+function get_files_banks (req, res, next) {
   zconsole.logGet(req);
   
   res.json (app.zyntho.getBanks());
-});
+}
+app.get('/files/banks', get_files_banks);
 
 /**
  * getInstruments
  * GET request to retrieve all .xiz file inside a folder
  */
-app.get('/files/banks/xiz', function (req, res, next) {
+function get_files_banks_xiz (req, res, next) {
   zconsole.logGet(req);
   
   if (req.query.bank === undefined) {
@@ -77,9 +101,10 @@ app.get('/files/banks/xiz', function (req, res, next) {
   }
   
   res.json(app.zyntho.getInstruments(req.query.bank));
-});
+}
+app.get('/files/banks/xiz', get_files_banks_xiz);
 
-app.get('/files/scripts', function (req, res, next) {
+function get_files_scripts (req, res, next) {
   zconsole.logGet(req);
   let dir = app.zyntho.IO.workingDir + "/scripts";
   let files = [];
@@ -87,24 +112,26 @@ app.get('/files/scripts', function (req, res, next) {
     files = Fs.readdirSync (dir);
   }
   res.json(files);
-});
+}
+app.get('/files/scripts', get_files_scripts);
 
 /**
  * loadInstrument
  * POST loads xiz
  * BODY {instrument: instrument}
  */
-app.post('/loadInstrument', function (req, res) {
+function post_loadInstrument (req, res) {
   zconsole.logPost(req);
   
   if (req.body.id === undefined || req.body.instrument === undefined) {
     res.status(400).end();
   }
   
-  app.zyntho.loadInstrument(req.body.id, req.body.instrument.path, function() {
+  app.zyntho.loadInstrument(req.body.id, req.body.instrument, function() {
     res.status(200).end();
   })
-});
+}
+app.post('/loadInstrument', post_loadInstrument);
 
   
 /**
@@ -112,7 +139,7 @@ app.post('/loadInstrument', function (req, res) {
  * POST set/unset favorite
  * Body {action :"set/unset", instrument : {Instrument} }
  */
-app.post('/setFavorite', function (req, res) {
+function post_setFavorite (req, res) {
   zconsole.logPost(req);
   
   if (req.body.instrument == null || Object.keys(req.body.instrument).length ==0) {
@@ -126,7 +153,8 @@ app.post('/setFavorite', function (req, res) {
     : app.zyntho.removeFavorite(req.body.instrument);
     
   res.status ( (!result) ? 400 :200).end();
-});
+}
+app.post('/setFavorite', post_setFavorite);
 
 /**
  * script
@@ -135,7 +163,7 @@ app.post('/setFavorite', function (req, res) {
  * @note if requestResult is present, but no OSC is
  * returned, the worker will hang on a undefined state.
  */
-app.post('/script', function(req, res) {
+function post_script(req, res) {
   zconsole.logPost(req);
   
   if (req.body.script === undefined) {
@@ -178,10 +206,12 @@ app.post('/script', function(req, res) {
       res.status(402).end();
     });
   } else {
+    zconsole.log(JSON.stringify(bundle));
     app.zyntho.sendOSC(bundle);
     res.end();
   }
-});
+}
+app.post('/script', post_script);
 
 /**
  * /status/partfx
@@ -191,16 +221,40 @@ app.post('/script', function(req, res) {
  * id: part id
  */
  
-app.get('/status/partfx', function (req, res, next) {
- zconsole.logGet(req);
- 
- if (req.query.id === undefined || req.query.id.match(/\d+/)==null) {
+function get_status_partfx (req, res, next) {
+  zconsole.logGet(req);
+
+  if (req.query.id === undefined || req.query.id.match(/\d+/)==null) {
    res.status(400).end();
    return;
- }
+  }
 
- app.zyntho.queryPartFX(req.query.id, (result) => { res.json(result) });
-})
+  const resultObject = {'efx' : [], 'sysefx' : []};
+  
+  Promise.all( [
+    app.zyntho.queryPartFX(req.query.id) ,
+    app.zyntho.queryPackFXNames('/sysefx[0-3]',4)
+  ]).then( (values)=>{
+    values[0].sysefxnames = values[1];
+    res.json(values[0]);
+  });
+}
+app.get('/status/partfx', get_status_partfx);
+
+function get_status_fx(req, res, next) {
+  zconsole.logGet(req);
+  
+  if (req.query.path === undefined) {
+    req.status(400).end();
+    return;
+  }
+  
+  app.zyntho.getFX(req.query.path).then ( (result) => {
+ 
+    res.json(result);
+  });
+}
+app.get('/status/fx', get_status_fx);
 
 /**
  * /status/partfx
@@ -210,21 +264,22 @@ app.get('/status/partfx', function (req, res, next) {
  * id: part id
  */
  
-app.get('/status/systemfx', function (req, res, next) {
+function get_status_systemfx (req, res, next) {
  zconsole.logGet(req);
  app.zyntho.querySystemFX((result) => { res.json(result) }, req.query.part);
-})
-
+}
+app.get('/status/systemfx', get_status_systemfx);
 
 /**
  * GET returns all zynthomania options
  * query: none
  * return : json
  */
-app.get('/status/options', function (req, res, next) {
+function get_status_options (req, res, next) {
   zconsole.logGet(req);
   res.json(app.zyntho.config);
-});
+}
+app.get('/status/options', get_status_options);
 
 /**
  * GET returns MIDI information status
@@ -239,7 +294,7 @@ app.get('/status/options', function (req, res, next) {
  * return: json
  */
 
-app.get('/status/part', function( req, res, next) {
+function get_status_part( req, res, next) {
   zconsole.logGet(req);
   if ( req.query.id === undefined) {
     res.status(400).end();
@@ -272,13 +327,14 @@ app.get('/status/part', function( req, res, next) {
     }
     res.json(result);
   });
-});
+}
+app.get('/status/part',get_status_part);
 
 /**
  * /status/binds
  * GET return array with bind information
  */
-app.get('/status/binds', function( req, res, next) {
+function get_status_binds( req, res, next) {
   zconsole.logGet(req);
   
   let result = {};
@@ -296,23 +352,25 @@ app.get('/status/binds', function( req, res, next) {
     zconsole.error(`Error on file parsing: ${err}`);
     res.status(500).end();
   }
-});
+}
+app.get('/status/binds', get_status_binds);
 
-app.get('binds/session', function (rq, res) {
+function get_binds_session (rq, res) {
   zconsole.logGet(rq);
   
   if (app.zyntho.midiService.sessionConfig == null) {
     res.json({});
   } else
     res.json(app.zyntho.midiService.sessionConfig);
-});
+}
+app.get('/binds/session', get_binds_session);
 
 /**
  * /midilearn
  * GET request a midi learn event
  * Will wait for an event for 3 seconds, then sends error
  */
-app.get('/midilearn', function(rq, res) {
+function get_midilearn(rq, res) {
   zconsole.logGet(rq);
   
   app.zyntho.midiService.once('learn', (msg) => {
@@ -329,13 +387,14 @@ app.get('/midilearn', function(rq, res) {
     }
   }, 3000);
   
-});
+}
+app.get('/midilearn', get_midilearn);
 
 /**
  * /status/session
  * GET returns XMZ session info and extended session data
  */
-app.get('/status/session', function (rq, res) {
+function get_status_session (rq, res) {
   zconsole.logGet(rq);
   
   let result = {};
@@ -344,19 +403,21 @@ app.get('/status/session', function (rq, res) {
   result.currentSession = app.zyntho.lastSession;
   result.sessionData = app.zyntho.session;
   res.json(result);
-});
+}
+app.get('/status_session', get_status_session);
 
-app.get('/status/split', function (req, res) {
+function get_status_split (req, res) {
   app.zyntho.getSplit( (result) => {
     res.json(result);
   });
-});
+}
+app.get('/status/split', get_status_split);
 
 /**
  * /system
  * GET grabs system info
  */
-app.get('/system', function (rq, res) {
+function get_system (rq, res) {
   zconsole.logGet(rq);  
   let result = {};
   
@@ -382,42 +443,84 @@ app.get('/system', function (rq, res) {
   };
   
   res.json(result);
-});
+}
+app.get('/system', get_system);
 
-
-app.get('/system/midi', function (req, res, next) {
+function get_system_midi (req, res, next) {
   zconsole.logGet(req);
   res.json(app.zyntho.midiService.enumerateInputs());
-});
+}
+app.get('/system/midi', get_system_midi);
 
 /**
  * POST
  */
 /**
 * /fx/set
-* [POST] sets a part fx id and/or preset. if part id is null, system fx will be
-* changed instead
+* [POST] set an FX effect type. returns a call to get_fx
 * body { [part: partid], fx : fx channel id, type: type id, [preset: preset id] }
 * will publish the new fx preset, if available
 */
-app.post('/fx/set', function (req, res) {
+function post_fx_set (req, res) {
   zconsole.logPost(req);
-  if (req.body.fx == null) {
+  
+  if (req.body.efftype == null || req.body.path == null) {
+    res.status(400).end();
+    return;
+  }
+  let OSCPacket= app.zyntho.translate(`${req.body.path}/efftype ${req.body.efftype}`);
+  
+  if (req.body.efftype == 0) {
+    app.zyntho.osc.send(OSCPacket);
+    app.json({'efftype': 0});
+    return;
+  }
+  
+  let worker = new OSCWorker(app.zyntho);
+  worker.pushPacket(OSCPacket);
+  
+  app.zyntho.osc.send(OSCPacket);
+  worker.listen().then ( ()=>{
+    return app.zyntho.getFX(req.query.path);
+  }).then ( (result) => {
+      res.json(result);
+  });
+}
+app.post('/fx/type', post_fx_set);
+
+/**
+ * /fx/preset
+ * Changes a preset
+ * will publish new fx data
+ */
+function post_fx_preset(req, res) {
+  zconsole.logPost(req);
+  
+  if (req.body.preset == null || req.body.path == null) {
     res.status(400).end();
     return;
   }
   
-  app.zyntho.changeFX(req.body.part, req.body.fx, req.body.type, req.body.preset,
-                        (data) => {res.json(data)});
+  let OSCPacket= app.zyntho.parser.translate(`${req.body.path}/preset ${req.body.preset}`);
+  let worker = new OSCWorker(app.zyntho);
+  worker.pushPacket(OSCPacket);
   
-});
+  app.zyntho.osc.send(OSCPacket);
+  worker.listen().then ( ()=>{
+    return app.zyntho.getFX(req.query.path);
+  }).then ( (result) => {
+      res.json(result);
+  });
+}
+app.post('/fx/preset', post_fx_preset);
+
 /**
  * /fx/route
  * POST sets the new route filter
  * body: { route: route object }
  */
 
-app.post('/fx/route', function(req, res) {
+function post_fx_route(req, res) {
   if (req.body.route === undefined){
     res.status(400).end();
     return;
@@ -429,14 +532,15 @@ app.post('/fx/route', function(req, res) {
   app.zyntho.route(undefined, undefined, () =>{
     res.status(200).end();
   });
-});
+}
+app.post('/fx/route', post_fx_route);
 
 /**
  * /fx/dry
  * POST sets new dry filter
  * @body : {dry: array of names}
  */
-app.post('/fx/dry', function(req, res) {
+function post_fx_dry(req, res) {
   if (req.body.dry === undefined){
     res.status(400).end();
     return;
@@ -449,14 +553,15 @@ app.post('/fx/dry', function(req, res) {
   app.zyntho.route(undefined, undefined, (msg) =>{
     res.status(200).end();
   });
-});
+}
+app.post('/fx/dry', post_fx_dry);
 
 /**
  * POST /system/midi/plug
  * connect or disconnect midi device
  * @body : {plug: device id, status: desired action, true for connect}
  */
-app.post('/system/midi/plug', function(req, res) {
+function post_system_midi_plug(req, res) {
   zconsole.logPost(req);
   if (req.body.name === undefined || req.body.status === undefined){
     res.status(400).end();
@@ -472,14 +577,15 @@ app.post('/system/midi/plug', function(req, res) {
     res.status(500).end();
   }
   
-});
+}
+app.post('/system/midi/plug', post_system_midi_plug);
 
 /**
  * POST /binds/add
  * add a new file to the bind chain.
  * @body : {file}
  */
-app.post('/binds/add', function(req, res) {
+function post_binds_add(req, res) {
   zconsole.logPost(req);
   if (req.body.file === undefined) {
     res.status(400).end();
@@ -494,14 +600,16 @@ app.post('/binds/add', function(req, res) {
     zconsole.error(err);
     res.status(500).end();
   }
-});
+}
+app.post('/binds/add', post_binds_add);
+
 
 /**
  * POST /binds/add
  * add a new file to the bind chain.
  * @body : {file}
  */
-app.post('/binds/remove', function(req, res) {
+function post_binds_remove(req, res) {
   zconsole.logPost(req);
   if (req.body.file === undefined) {
     res.status(400).end();
@@ -527,9 +635,10 @@ app.post('/binds/remove', function(req, res) {
       res.status(500).end();
     }
   }
-});
+}
+app.post('/binds/remove', post_binds_remove);
 
-app.post('/binds/session', function (req, res) {
+function post_binds_session (req, res) {
   zconsole.logPost(req);
   if (req.body.file === undefined){
      res.status(400).end();
@@ -554,7 +663,8 @@ app.post('/binds/session', function (req, res) {
     res.statusMessage='Invalid session file';
     res.status(402).end();
   }
-});
+}
+app.post('/binds/session', post_binds_session);
 
 /**
  * POST /binds/session/set
@@ -562,7 +672,7 @@ app.post('/binds/session', function (req, res) {
  * @body : {file}
  */
  
-app.post('/binds/session/set', function (req, res) {
+function post_binds_session_set (req, res) {
   zconsole.logPost(req);
   
   if (req.body.session === undefined){
@@ -598,7 +708,8 @@ app.post('/binds/session/set', function (req, res) {
     res.statusMessage='Invalid session file';
     res.status(402).end();
   }
-});
+}
+app.post('/binds/session/set', post_binds_session_set);
 
 /**
  * POST /binds/session/save
@@ -606,7 +717,7 @@ app.post('/binds/session/set', function (req, res) {
  * @body : {file}
  */
  
-app.post('/binds/session/save', function (req, res) {
+function post_binds_session_save (req, res) {
   zconsole.logPost(req);
   
   if (req.body.file === undefined){
@@ -636,14 +747,15 @@ app.post('/binds/session/save', function (req, res) {
     res.statusMessage='Cannot save!';
     res.status(500).end();
   }
-});
+}
+app.post('/binds/session/save', post_binds_session_save);
 
 /**
  * POST network/change
  * change network status
  * @body : { toHotspot : true|false }
  */
- app.post('/network-change', function (req, res ) {
+ function post_network_change (req, res ) {
    if (req.body.toHotspot === undefined ) {
      res.status(400).end();
      return;
@@ -676,14 +788,15 @@ app.post('/binds/session/save', function (req, res) {
   }
   
   return app.shutdownZyn( {body : { reboot : true } }, res);
- });
+ }
+ app.post('/network-change', post_network_change);
  
 /**
  * 
  * POST /reconnect
  * restarts connection with zynaddsubfx
 */
-app.post('/reconnect', (req, res) => {
+function post_reconnect (req, res) {
   zconsole.logPost(req);
   
   try {
@@ -708,7 +821,7 @@ app.post('/reconnect', (req, res) => {
       res.status(503).end();
     }
   }
-  
+
   
   app.zyntho.osc.once('close', ()=> {
     zconsole.log('Relaunching osc connection...');
@@ -721,13 +834,13 @@ app.post('/reconnect', (req, res) => {
   });
   
   app.zyntho.osc.close();
-});
-
+}
+app.post('/reconnect', post_reconnect);
 
 /**
 * Updates any extended session parameter
 */
-app.post('/session/set', function (req, res) {
+function post_session_set (req, res) {
   zconsole.logPost(req);
   for (let key in app.zyntho.session) {
     if (req.body[key] !== undefined) {
@@ -736,16 +849,16 @@ app.post('/session/set', function (req, res) {
     }
   }
   res.end();
-});
-
+}
+app.post('/session/set', post_session_set);
 
 //Shutdown default behaviour
 app.shutdownZyn =  function(req,res) {
   let reboot=(req.body.reboot !== undefined) ?
 		req.body.reboot : true;
     
-  //Save session to default.xmz
-  app.zyntho.on('saved', function(filename) {
+//Save session to default.xmz
+app.zyntho.on('saved', function(filename) {
     if (!filename.endsWith('default.xmz'))
       return;
     
@@ -761,7 +874,7 @@ app.shutdownZyn =  function(req,res) {
   app.zyntho.sessionSave();
   
   res.end();
-};
+}
 
 app.post('/shutdown', app.shutdownZyn);
 
@@ -773,6 +886,10 @@ app.on('data', (data) =>{
   zconsole.notice('data: ' + JSON.stringify(data));
 });
 
+/*
+ * MAIN
+ */
+ 
 var myArgv = process.argv.slice(2);
 try {
   if (myArgv.length > 0) {
@@ -781,7 +898,6 @@ try {
   }
   else {
     throw 'You must specify a working directory';
-    //app.zyntho.open(`${OS.homedir()}/.zmania`);
   }
 } catch (err) {
   zconsole.critical(err);

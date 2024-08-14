@@ -1,0 +1,138 @@
+<!-- part FX  -->
+<section id="section-part-fx" data-title="Part FX" class="container">
+  <!-- access to FX  -->
+  <div class="row">
+    <div class="col-4 panel">
+      <button class="button" id="part-fx-0" onclick="onPartFXEdit(0)"></button>
+    </div>
+    <div class="col-4 panel">
+      <button class="button" id="part-fx-1" onclick="onPartFXEdit(1)"></button>
+    </div>
+    <div class="col-4 panel">
+      <button class="button" id="part-fx-2" onclick="onPartFXEdit(2)"></button>
+    </div>
+  </div>
+  <h4>FX Routing</h4>
+  <div class="col-12">
+    <table style="width:100%; table-layout:fixed" class="bb bt">
+      <tr>
+        <td id="p-r-0-2"><span>Skip</span></td>
+        <td></td>
+        <td id="p-r-1-2"><span>Skip</span></td>
+        <td></td>
+        <td id="p-r-2-2"><span>Skip</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><button class="button" id="p-r-trigger-0">1</button></td>
+        <td id="p-r-0-0"><i class="fa fa-chevron-right"></i></td>
+        <td><button class="button" id="p-r-trigger-1">2</button></td>
+        <td id="p-r-1-0"><i class="fa fa-chevron-right"></i></td>
+        <td><button class="button" id="p-r-trigger-2">3</button></td>
+        <td id="p-r-2-0"><i class="fa fa-level-down-alt"></td>
+      </tr>
+      <tr>
+        <td id="p-r-0-1"><i class="fa fa-chevron-down"></i></td>
+        <td></td>
+        <td id="p-r-1-1"><i class="fa fa-chevron-down"></i></td>
+        <td></td>
+        <td id="p-r-2-1"><i class="fa fa-chevron-down"></i></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="bt" colspan="6">MIXER</td>
+      </tr>
+    </table>
+  </div>
+  <div class="row">
+    <div class="col-4">
+      <div class="osc-element d-none" id="part-fx-route-0"
+        data-osc-path="/part/Pefxroute0"></div>
+    </div>
+    <div class="col-4">
+      <div class="osc-element d-none" id="part-fx-route-1"
+        data-osc-path="/part/Pefxroute1"></div>
+    </div>
+    <div class="col-4">
+      <div class="osc-element d-none" id="part-fx-route-2"
+        data-osc-path="/part/Pefxroute2"></div>
+    </div>
+  </div>
+  <h4>Send to global FX</h4>
+  <div class="row">
+    <div class="col-6 col-md-3 panel">
+      <div class="osc-element osc-knob" id="part-fx-send-0"
+        data-osc-path="/Psysefxvol0/part"
+        data-osc-type="i"></div>
+    </div>
+    <div class="col-6 col-md-3 panel">
+      <div class="osc-element osc-knob" id="part-fx-send-1"
+        data-osc-path="/Psysefxvol1/part"
+        data-osc-type="i"></div>
+    </div>
+    <div class="col-6 col-md-3 panel">
+      <div class="osc-element osc-knob" id="part-fx-send-2"
+        data-osc-path="/Psysefxvol2/part"
+        data-osc-type="i"></div>
+    </div>
+    <div class="col-6 col-md-3 panel">
+      <div class="osc-element osc-knob" id="part-fx-send-3"
+        data-osc-path="/Psysefxvol3/part"
+        data-osc-type="i"></div>
+    </div>
+  </div>
+</section>
+
+<!-- General FX Editor -->
+<section id="fx-editor" data-title="Edit FX" class="container">
+  <div class="row">
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" id="fx-drywet"
+        data-osc-path="/fxcursor/parameter0"
+        data-label="Dry/Wet"></div>
+    </div>
+    <div class="col-6 panel">
+      <div class="osc-element minimal" id="fx-type"
+        data-osc-path="/fxcursor/efftype"></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" id="fx-pan"
+        data-osc-path="/fxcursor/parameter1"
+        data-label="Pan"></div>
+    </div>
+  </div>
+  <h4>FX Alchemy</h4>
+  <div class="row">
+    <div class="col-3 panel">
+      <div class="osc-element osc-boolean" id="fx-part-bypass"
+        data-label="Bypass"></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element" id="fx-preset"
+        data-osc-path="/fxcursor/preset"
+        data-label="Preset"></div>
+    </div>
+    <div class="col-6 panel">
+      <div class="osc-element" id="fx-formula"
+        data-label="Formula"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" id="fx-reagent"
+        data-label="Reagent"></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" id="fx-catalyst"
+        data-label="Catalyst"></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" id="fx-acid"
+        data-label="Acid"></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" id="fx-base"
+        data-label="Base"></div>
+    </div>
+  </div>
+</section>

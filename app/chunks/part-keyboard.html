@@ -1,0 +1,263 @@
+<section data-title="Part controls" id="section-part-control" class="container">
+  <!-- Midi, Key Range -->
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element" id="part-ctl-channel"
+        data-osc-path="/part/Prcvchn" data-osc-type="i"
+        data-label="Midi channel;Midi">
+      </div>
+    </div>
+    
+    <div class="col-8 panel">
+      <div class="content row no-gutters border">
+        <header class="col-12 header osc-header">Key Range</header>
+        <div class="col-6">
+          <div class="osc-element" id="part-ctl-minkey"
+           data-osc-path="/part/Pminkey" data-osc-type="i">
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="osc-element" id="part-ctl-maxkey"
+          data-osc-path="/part/Pmaxkey" data-osc-type="i">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Subsections 1 -->
+  <div class="row">
+    <div class="col-4 col-lg-3 panel">
+      <div class="osc-element osc-knob" id="part-ctl-transpose"
+        data-label="Transpose" data-osc-path="/part/Pkeyshift"
+        data-osc-type="i">
+      </div>
+    </div>
+    <div class="col-4 col-lg-3 panel">
+      <button class="button" onclick="onPartControlPoly()">Polyphony</button>
+    </div>
+    <div class="col-4 col-lg-3 panel">
+      <button class="button" onclick="onPartControlVelo()">Velocity</button>
+    </div>
+    <div class="col-4 col-lg-3  panel">
+      <button class="button" onclick="onPartControlPitch()">Pitch wheel</button>
+    </div>
+    <div class="col-4 col-lg-3  panel">
+      <button class="button" onclick="onPartControlPortamento()">Portamento</button>
+    </div>
+    <div class="col-4 col-lg-3 panel">
+      <button class="button" onclick="onPartControlDepth()">Other CC</button>
+    </div>
+  </div>
+</section>
+
+<!-- Polyphonic mode -->
+<section data-title="Polyphony" id="section-ctl-poly" class="container"
+  data-back="section-part-control">
+  <div class="row">
+    <div class="col-5 panel">
+      <div class="osc-element" id="part-ctl-polytype"
+        data-osc-path="/part/polyType" data-osc-type="i">
+      </div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob" data-osc-type="i"
+          id="part-ctl-keylimit"
+          data-label="Max poly" data-osc-path="/part/Pkeylimit"
+      ></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-boolean" data-osc-type="T"
+            id="part-ctl-drummode"
+            data-label="Drum Mode" data-osc-path="/part/Pdrummode"
+      ></div>
+    </div>
+  </div>
+</section>
+
+<!-- Velocity response -->
+<section data-title="Velocity" id="section-ctl-velocity" class="container"
+  data-back="section-part-control">
+  <div class="row">
+    <div class="col panel">
+      <div class="osc-element osc-knob" id="part-ctl-velsns"
+        data-osc-path="/part/Pvelsns" data-osc-type="i"
+        data-label="Sensitivity">
+      </div>
+    </div>
+    <div class="col panel">
+      <div class="osc-element osc-knob" id="part-ctl-veloffs"
+        data-osc-path="/part/Pveloffs" data-osc-type="i"
+        data-label="Offset">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- controller depth -->
+<section data-title="Response" id="section-part-control-response" class="container"
+  data-back="section-part-control">
+  <h4><center>Mod Wheel (#1)</center></h4>
+  <div class="row">
+    <div class="col-4">
+        <div class="osc-element osc-boolean" id="part-ctl-modwheel-exponential"
+          data-osc-path="/part/ctl/modwheel.exponential" data-osc-type="i"
+          data-label="expo mode;exponential">
+        </div>
+    </div>
+    <div class="col-4">
+      <div class="osc-element osc-knob" id="part-ctl-depth-modwheel"
+        data-osc-path="/part/ctl/modwheel.depth" data-osc-type="i"
+        data-label="Modulation depth;ModW depth"></div>
+    </div>
+  </div>
+  <h4><center>Bandwidth control (#75)</center></h4>
+  <div class="row">
+    <div class="col-4">
+        <div class="osc-element osc-boolean" id="part-ctl-bandwidth-exponential"
+          data-osc-path="/part/ctl/bandwidth.exponential" data-osc-type="i"
+          data-label="expo mode;exponential">
+        </div>
+    </div>
+    <div class="col-4">
+      <div class="osc-element osc-knob" id="part-ctl-depth-bandwidth"
+        data-osc-path="/part/ctl/bandwidth.depth" data-osc-type="i"
+        data-label="Bandwidth d."></div>
+    </div>
+  </div>
+  
+  <!-- Depth -->
+  <h4>Other CC Depth</h4>
+  <div class="row">
+    <div class="panel col-4">
+      <div class="osc-element osc-knob" id="part-ctl-depth-pan"
+        data-osc-path="/part/ctl/panning.depth" data-osc-type="i"
+        data-label="Pan depth (#7);Pan d.(#7)"></div></div>
+    <div class="panel col-4">
+      <div class="osc-element osc-knob" id="part-ctl-depth-cutoff"
+        data-osc-path="/part/ctl/filtercutoff.depth" data-osc-type="i"
+        data-label="Filter Cutoff depth (#71);F depth (#71)"></div></div>
+    <div class="panel col-4">
+      <div class="osc-element osc-knob" id="part-ctl-depth-q"
+        data-osc-path="/part/ctl/filterq.depth" data-osc-type="i"
+        data-label="Filter Q depth (#74);Q depth (#74)"></div></div>
+  </div>
+  <h4>CC Receive</h4>
+  <div class="row">
+    <div class="panel col-6 col-md-4">
+      <div class="osc-element osc-boolean" id="part-ctl-expression-receive"
+          data-osc-path="/part/ctl/expression.receive" data-osc-type="T"
+          data-label="Expression rec (#11)">
+      </div>
+    </div>
+    <div class="panel col-6 col-md-4">
+      <div class="osc-element osc-boolean" id="part-ctl-volume-receive"
+          data-osc-path="/part/ctl/volume.receive" data-osc-type="T"
+          data-label="Volume rec. (#10)">
+      </div>
+    </div>
+    <div class="panel col-6 col-md-4">
+      <div class="osc-element osc-boolean" id="part-ctl-sustain-receive"
+          data-osc-path="/part/ctl/sustain.receive" data-osc-type="T"
+          data-label="Sustain receive (#64)">
+      </div>
+    </div>
+    <div class="panel col-6 col-md-4">
+      <div class="osc-element osc-boolean" id="part-ctl-fmamp-receive"
+          data-osc-path="/part/ctl/fmamp.receive" data-osc-type="T"
+          data-label="FMAmp receive.">
+      </div>
+    </div>
+  </div>
+  <!-- Receive -->
+</section>
+
+<section data-title="Pitch wheel" data-back="section-part-control"
+  id="section-part-control-pitch" class="container">
+  <small>split mode allows defining a different tune for down bending.</small>
+  <div class="row">
+    <div class="panel col-4">
+      <div class="osc-element osc-knob" data-osc-type="i"
+        id="part-ctl-pitch-range"
+        data-label="Bend Range" data-osc-path="/part/ctl/pitchwheel.bendrange"
+        ></div>
+    </div>
+    <div class="panel col-4">
+      <div class="osc-element osc-boolean" id="part-ctl-pitch-split"
+          data-osc-path="/part/ctl/pitchwheel.is_split" data-osc-type="T"
+          data-label="Split mode">
+      </div>
+    </div>
+    <div class="panel col-4">
+      <div class="osc-element osc-knob" data-osc-type="i"
+        id="part-ctl-pitch-range-down"
+        data-label="Down-bend range" data-osc-path="/part/ctl/pitchwheel.bendrange_down"
+      >
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Portamento -->
+<section data-title="Portamento" data-back="section-part-control"
+  id="section-part-control-portamento" class="container">
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element osc-boolean" id="part-ctl-port-enable"
+          data-osc-path="/part/ctl/portamento.portamento" data-osc-type="T"
+          data-label="Enable"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-boolean" id="part-ctl-port-receive"
+          data-osc-path="/part/ctl/portamento.receive" data-osc-type="T"
+          data-label="Receive Control (#65); Receive (#65)"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="part-ctl-port-length"
+          data-osc-path="/part/ctl/portamento.time" data-osc-type="i"
+          data-label="Length"></div>
+    </div>
+  </div>
+  <div class="row">
+      <div class="col-4 panel">
+        <div class="osc-element osc-knob" id="part-ctl-port-updown"
+          data-osc-path="/part/ctl/portamento.updowntimestretch" data-osc-type="i"
+          data-label="Up/Down %"></div>
+      </div>
+  </div>
+    
+  <h4>Proportional sync mode</h4>
+  <small>Sets portamento time to be proportional to the interval between two notes.</small>
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element osc-boolean" id="part-ctl-port-proportional"
+          data-osc-path="/part/ctl/portamento.proportional" data-osc-type="T"
+          data-label="Enable sync; Enable"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="part-ctl-port-proprate"
+          data-osc-path="/part/ctl/portamento.propRate" data-osc-type="i"
+          data-label="Sync scale"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="part-ctl-port-propdepth"
+          data-osc-path="/part/ctl/portamento.propDepth" data-osc-type="i"
+          data-label="Sync depth"></div>
+    </div>
+  </div>
+  <h4>Pitch range</h4>
+  <small>Set how many semitones triggers/are filtered from portamento</small>
+  <div class="row">
+    <div class="col-6 panel">
+      <!-- this is actually a boolean but won't be understable otherwise -->
+      <div class="osc-element osc-swipeable" id="part-ctl-port-pitchtype"
+          data-osc-path="/part/ctl/portamento.pitchthreshtype" data-osc-type="T"
+          data-label="Thresh Mode"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="part-ctl-port-pitchthresh"
+          data-osc-path="/part/ctl/portamento.pitchthresh" data-osc-type="i"
+          data-label="Semitones"></div>
+    </div>
+  </div>
+</section>

@@ -16,156 +16,239 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 
-function createSwipeable(query, elements) {
-  let sid = $(query);
-  if (sid.length == 0) {
-    console.error(`error: swipeable query ${query} is not valid.`);
-    return;
-  }
-  
-  let select = sid.find('select');
-  let selectid;
-  
-  if (select.length == 0) {
-    sid.append('<select></select>');
-    select = sid.find('select');
-    if (elements == null) {
-      console.error('Error: no elements with missing select.');
-      return;
-    }
-  }
-  
-  if (sid.find('label').length == 0)
-    sid.append(`<label></label>`);
- 
-  if (elements != null) {
-    elements.forEach( (el) => 
-      select.append(`<option value="${el}">${el}</option>`)
-    );
-    select.val(elements[0]);
-    sid.find('label').text(elements[0]);
-  } else {
-    let val = select.children().get()[0].value;
-    select.val(val);
-    sid.find('label').text(val);
-  }
-  
-  select.on('change', (e) =>{
-    sid.find('label').text(e.target.value);
-  });
-}
+const SWRIGHT = new Event("swipe-right");
+const SWLEFT  = new Event("swipe-left");
 
-function swipeableGetElements(select) {
-  return $(select).find('option').map( 
-          function(){return this.value}).get();
-}
+class Swipeable {
+  constructor(htmlElement) {
+        
+    this.element = htmlElement;
+    
+    //enable swiping on element
+    enableSwiping(this.element);
+    
+    //add changing capabilities to swiper
+    this.element.addEventListener("swipe-right", (event) => {
+      let selectid = event.target.getElementsByTagName("select")[0];
+      let labelid = event.target.getElementsByTagName("label")[0];
+      let currentValue = selectid.selectedIndex;
+      let max = selectid.options.length;
+      
+      currentValue = (currentValue < max-1)
+        ? currentValue +1 : 0;
+      selectid.selectedIndex = currentValue;
+      labelid.innerHTML = selectid.options[currentValue].text;
+      selectid.dispatchEvent(new Event('change'));
+      
+      //console.log(`Called swipe-right: ${currentValue}`);
+    });
 
-function registerSwipeables(query, enableClickSelect, dialogData) {
-  query = (query!==undefined) ? query : '.swipeable';
-  enableClickSelect= (enableClickSelect !== undefined) ? enableClickSelect : true;
-  dialogData = (dialogData !== undefined) ? dialogData : { title :'Select' };
-  
-  let qLabel = $(query).find('label');
-  
-  qLabel.on('swipeleft', (e) =>{
-    let select = $(e.target).siblings('select');
-    let elements = swipeableGetElements(select),
-        index = elements.indexOf(select.val());
+    this.element.addEventListener("swipe-left", (event) => {
+      let selectid = event.target.getElementsByTagName("select")[0];
+      let labelid =  event.target.getElementsByTagName("label")[0];
+      let currentValue = selectid.selectedIndex;
+      let max = selectid.options.length;
+      
+      currentValue = (currentValue > 0 )
+        ? currentValue -1 
+        : selectid.options.length-1;
+        
+      selectid.selectedIndex = currentValue;
+      labelid.innerHTML = selectid.options[currentValue].text;
+      //console.log(`Called swipe-left: ${currentValue}`);
+      selectid.dispatchEvent(new Event('change'));
+    });
     
-    index = (index > 0) ? index-1 : elements.length-1;
+    if (this.element.querySelector("label") == null)
+      this.element.append(document.createElement('label'));
+    if (this.element.querySelector("select") == null)
+      this.element.append(document.createElement('select'));
     
-    let value = elements[index];
-    select.val(value);
-    select.trigger({type: 'change', e: e, value: value});
-  });
+    this.selectElement = this.element.getElementsByTagName('select')[0];
+    
+    //Label click to open dialog event
+    let label = this.element.querySelector('label');
+    label.addEventListener("click", (e) => {
+      let obj = e.srcElement || e.target;
+      let parent = obj.parentNode;
+      
+      //gather all elements
+      let selid = parent.querySelector("select");
+      let data = { 
+          title : selid.dataset.title,
+          defValue : selid.selectedIndex,
+          buttonClass: selid.dataset.buttonClass
+      }
+      
+      var elements = Array.from(selid.options)
+        .map ( opt => opt.text );
+
+      document.getElementById('selectBox')
+        .addEventListener('ok', (event) => {
+          //in this context this is the html element
+          this.setSelection(event.detail, true);
+        }, {'once': true});
+        
+      dialogBox(elements, this.dialogData);
+    });
+  }
+
+  setSelection(index, trigger=false) {
+    this.selectElement.selectedIndex = index;
+    this.element.querySelector('label').innerHTML =
+      this.selectElement.options[index].text;
+    if (trigger)
+      this.selectElement.dispatchEvent(new Event('change', {'target': this.selectElement}));
+  }
   
-  $(query).find('label').on('swiperight', (e) =>{
-    let select = $(e.target).siblings('select');
-    let elements = swipeableGetElements(select),
-        index = elements.indexOf(select.val());
-    
-    index = (index < elements.length-1) ? index+1 : 0;
-    
-    let value = elements[index];
-    select.val(value);
-    select.trigger({type: 'change', e: e, value: value});
-  });
-  
-  const onClick = function (e) {
-    let select = $(e.target).siblings('select');
-    let elements = swipeableGetElements(select);
-    if (elements.length == 0) {
-        console.error('swipeable click error: no elements');
+  setValue ( value, trigger = false) {
+    for (let i = 0; i < this.selectElement.options.length; i++) {
+      if (this.selectElement.options[i].value == value) {
+        this.setSelection(i, trigger);
         return;
+      }
     }
-    
-    dialogData.defValue = select.val();
-    
-    dialogBox(elements, dialogData , (i) =>{     
-      select.val(elements[i]);
-      select.trigger({type: 'change', e: e, value: select.val()});
-    });
-  };
+    console.log(`swipeable ${this.element.id}: invalid value '${value}'`);
+  }
   
-  if (enableClickSelect) {
-    $(query).find('label').on('click', function (e) {
-      if ($(e.target).hasClass('btn-selected'))
-        onClick(e);
-      else
-        $(e.target).addClass('btn-selected');
-    });
-  } else
-    $(query).find('label').on('click', onClick);
+  setDialogData(dialogData) {
+    this.dialogData = Object.assign(
+      { title:'Select', 
+        disableClick: false, 
+        onCancel: undefined,
+        buttonClass: 'col-12 col-md-3 col-lg-2'
+      },
+      dialogData);
+    
+    let sel = this.element.querySelector('select');
+    sel.dataset.title = this.dialogData.title;
+    sel.dataset.buttonClass = this.dialogData.buttonClass;
+  }
   
+  setOptions(elements, labels) {
+    let select = this.element.querySelector('select');
+    let label = this.element.querySelector('label');
+  
+    if (labels == null)
+      labels = elements.map ( (el)=>String(el));
+    
+    select.innerHTML = '';
+    
+    for (let i = 0; i < elements.length;i++)
+      select.options.add( new Option ( labels[i], elements[i] ));
+    
+    //by default set first
+    label.innerHTML = labels[0];
+  }
 }
 
-function dialogBox(elements, data, onOk, onCancel) { 
+//Enables left-right swiping 
+function enableSwiping(object, sensitive=4) {
+  
+  object.swipeSensitiveness = sensitive;
+  
+  object.addEventListener('touchstart', e => {
+    object.touchStartX = e.changedTouches[0].screenX;
+  });
+  
+  object.addEventListener('touchend', e => {
+    let touchEndX = e.changedTouches[0].screenX;
+    let res = touchEndX - object.touchStartX;
+    
+    if ( (res - object.swipeSensitiveness) > 0)
+      object.dispatchEvent(SWRIGHT);
+    else if ( (res + object.swipeSensitiveness) < 0)
+      object.dispatchEvent(SWLEFT);
+    else
+      object.click();
+  });
+}
+
+/**
+ * shows a custom selection dialog box
+ * elements an array of values
+ * DialogBox triggers custom 'ok' and 'cancel' events
+ * from <dialog> element.
+ * @params elements array of labels - index is returned
+ * @params data may have 
+ *  title
+ *  default selected index
+ *  button class
+ *  labels
+ */
+function dialogBox(elements, data) {
+  
+  data = Object.assign ( {
+    title : 'Selection',
+    defValue : 0,
+    buttonClass : 'col-12 col-md-6 col-lg-3',
+    labels : null
+  }, data );
+  
   let title = (data != null && data.title != null) ? data.title : 'Selection';
   let defValue = (data != null && data.defValue != null) ? data.defValue : null;
   let buttonClass = (data != null && data.buttonClass != null) ? data.buttonClass : 'col-12';
   
-  $('.dialogBox').removeClass('hidden');
-  $('main').addClass('hidden');
-  let dialog = $('.dialogBox > div');
-  let content = $(dialog).find('> div');
+  let dialogBox = document.getElementById('selectBox');
+  let mainDiv = document.getElementById('main-panel');
   
-  $(dialog).find('h4').text(title);
-  $(content).empty();
+  //dialogBox.classList.remove('hidden');
+  mainDiv.classList.add('hidden');
   
+  let query = dialogBox.getElementsByTagName('div');
+  let dialogContent = query[1];  
+  dialogBox.getElementsByTagName('h4')[0].innerHTML = title;
+  dialogContent.innerHTML = '';
+    
   let isSelected = false,  html = "", value="", element = null;
   
   for (let i = 0; i < elements.length; i++) {
     element = elements[i];
-    isSelected = (element == defValue) ? 'btn-selected' : '';
+    isSelected = (i == defValue) ? 'btn-selected' : '';
     value = (data.scores != null) ? data.scores[i] : i;
-    html = `<div class="${buttonClass}"><button style="width:100%" value="${value}" class="${isSelected} big-btn dialog-button">${element}</button></div>`;
-    $(content).append(html);
+    html = `<div class="${buttonClass}"><button style="width:100%" value="${value}" class="${isSelected} button">${element}</button></div>`;
+    dialogContent.innerHTML += html;
   }
   
-  $(content).find('button').on('click', (e)=>{
-    if ($(e.target).hasClass('btn-selected')) {
-      $('#btnOk').trigger('click');
-    } else {
-      $(content).find('button').removeClass('btn-selected');
-      $(e.target).addClass('btn-selected');
-    }
-  });
+  //selection
+  let list = dialogContent.getElementsByTagName('button');
+  for (let btn of list) {
+      btn.addEventListener('click',onSelectBoxItemSelection);
+  }
   
-  $('#btnOk').one('click', () =>{
-    $('main').removeClass('hidden');
-    $('.dialogBox').addClass('hidden');
-    window.scrollTo(0,0);
-    if ($(content).find('.btn-selected').length>0) {
-      onOk($(content).find('.btn-selected').val());
-    }
-  });
-  
-  $('#btnCancel').one('click', () =>{
-    window.scrollTo(0,0);
-    $('.dialogBox').addClass('hidden');
-    $('main').removeClass('hidden');
-    if (onCancel)
-      onCancel();
-  });
+  dialogBox.open = true;
 }
 
+function onSelectBoxItemSelection(e) {
+  if (e.target.classList.contains('selected')){
+    selectBoxOk();
+    return;
+  } else {
+    //remove prev selection to all
+    document.querySelectorAll('#selectBox .container .selected')
+      .forEach( (btn) => {
+      btn.classList.remove('selected'); }
+    );
+    e.target.classList.add('selected');
+  }
+}
+
+function selectBoxOk() {
+  let selection = document.querySelector('#selectBox .container .selected');
+  if (selection == null)
+    return;
+  document.getElementById('selectBox').open=false;
+  document.getElementById('main-panel').classList.remove('hidden');
+  window.scrollTo(0,0);
+  
+  document.getElementById('selectBox').dispatchEvent(
+    new CustomEvent('ok', {'detail': selection.value}));
+}
+
+function selectBoxCancel() {
+  document.getElementById('selectBox').open=false;
+  document.getElementById('main-panel').classList.remove('hidden');
+  window.scrollTo(0,0);
+  document.getElementById('selectBox').dispatchEvent(
+    new CustomEvent('cancel'));
+}

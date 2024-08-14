@@ -1,0 +1,504 @@
+<!--synth -->
+<section id="section-synth" data-title="Synth" class="container">
+  <div class="row">
+    <div class="col-4 col-md-3 col-lg-2 panel">
+      <div class="osc-element osc-boolean" id="synth-enabled"
+        data-osc-path="/part/kit/P#synth#enabled"
+        data-label="Synth enabled"
+        data-osc-type="T"></div>
+    </div>
+    <div class="col panel">
+      <h4 id="current-synth" style="margin: 0">Adsynth</h4>
+    </div>
+  </div>
+  <div class="row" id="adsynth-edit">
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthOSC()">Wave</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFrequency()">Frequency</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFilter()">Filter</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthAmplitude()">Amp</button></div>
+  </div>
+  <div class="row" id="subsynth-edit">
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthSubHarmonics()">Harmonics</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFrequency()">Frequency</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFilter()">Filter</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthAmplitude()">Amp</button></div>
+  </div>
+  <div class="row" id="padsynth-edit">
+      <div class="col-4 col-md-3 col-lg-2 panel optional pad-only"><button class="button disabled"><small>PADsynth not implemented :(</small></button></div>
+  </div>
+</section>
+
+<!--Adsynth oscilllator -->
+<section id="section-synth-osc" data-title="Adsynth" class="container"
+  data-back="section-synth">
+  <!-- Swipeable synth-osc-wave actually handles 2 OSC types -->
+  <div class="osc-element d-none" id="synth-generator-type"
+    data-osc-path="/part/kit/synth/voice/Type"></div>
+  <div class="osc-element d-none" id="synth-generator-wave"
+    data-osc-path="/synthcursor/OscilSmp/Pcurrentbasefunc"></div>
+  
+  <div class="row">
+    <div class="col-12 col-lg-6 panel">
+      <div class="content row no-gutters border">
+        <header class="col-12 header osc-header">Wave</header>
+        <div class="col-8">
+          <div class="swipeable" id="synth-osc-wave"
+          data-label="Wave"></div>
+        </div>
+        <div class="col-4">
+          <div class="osc-element osc-knob minimal " id="synth-osc-wave-p"
+          data-osc-path="/synthcursor/OscilSmp/Pbasefuncpar" data-osc-type="i">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6 panel">
+      <div class="content row no-gutters border">
+        <header class="col-12 header osc-header">Shaper</header>
+        <div class="col-8">
+          <div class="osc-element minimal" id="synth-osc-shaper"
+          data-label="Shaper function"
+          data-osc-path="/synthcursor/OscilSmp/Pwaveshapingfunction"></div>
+        </div>
+        <div class="col-4">
+          <div class="osc-element minimal osc-knob" id="synth-osc-shaper-p"
+          data-label="Shaper value"
+          data-osc-path="/synthcursor/OscilSmp/Pwaveshaping" data-osc-type="i">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12 col-lg-6 panel">
+      <div class="content row no-gutters border">
+        <header class="col-12 header osc-header">Harmonics</header>
+        <div class="col-4">
+          <div class="osc-element minimal" id="synth-osc-h"
+            data-label="harmonics"
+            data-osc-path="/synthcursor/OscilSmp/Padaptiveharmonics"></div>
+        </div>
+        <div class="col-4">
+          <div class="osc-element osc-knob minimal" id="synth-osc-h-f"
+            data-label="harmonics freq"
+            data-osc-path="/synthcursor/OscilSmp/Padaptiveharmonicsbasefreq" data-osc-type="i">
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="osc-element osc-knob minimal" id="synth-osc-h-p"
+            data-label="harmonics power"
+            data-osc-path="/synthcursor/OscilSmp/Padaptiveharmonicspower" data-osc-type="i">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h4>FM</h4>
+  <div class="row">
+    <div class="col-8 panel">
+      <div class="osc-element osc-swipeable" id='synth-osc-fm'
+        data-osc-path="/synthcursor/PFMEnabled"
+        data-label="FM Type">
+      </div>
+    </div>
+    <div class="col-4 panel">
+      <button class="button" onclick='onSynthFMFrequency()'>FM Frequency</button>
+    </div>
+  </div>
+  
+  <h4>Unison</h4>
+   <div class="row">
+     <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="synth-uni-size"
+          data-osc-path="/synthcursor/Unison_size"
+          data-label="Voices"></div>
+     </div>
+     <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="synth-uni-spread"
+          data-osc-path="/synthcursor/Unison_frequency_spread"
+          data-label="Spread"></div>
+     </div>
+     <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="synth-uni-phase"
+          data-osc-path="/synthcursor/Unison_phase_randomness"
+          data-label="Random"></div>
+    </div>
+     <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="synth-uni-vib"
+          data-osc-path="/synthcursor/Unison_vibratto"
+          data-label="Vibrato"></div>
+     </div>
+     <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="synth-uni-speed"
+          data-osc-path="/synthcursor/Unison_vibratto_speed"
+          data-label="Vibrato Speed;V-Speed"></div>
+     </div>
+   </div>
+</section>
+
+<!-- frequency editor -->
+<section id="synth-frequency-editor" class="container">
+  <div class="row">
+    <div class="col-6 panel">
+      <div class="osc-element osc-swipeable" id='freq-detune-type'
+        data-partial="PDetuneType"
+        data-label="Detune type"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id='freq-detune'
+        data-partial="PDetune"
+        data-label="Detune"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id='freq-coarse'
+        data-partial="coarsedetune"
+        data-label="Coarse"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id='freq-octave'
+        data-partial="octave"
+        data-label="Octave"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-boolean" id='freq-para'
+        data-partial="Pfixedfreq"
+        data-label="Fixed"></div>
+    </div>
+  </div>
+  <h4>Frequency Weave</h4>
+  <div class="row">
+      <div class="col-6 panel">
+        <button class="button" id="freq-open-envelope">Frequency Envelope</button>
+      </div>
+      <div class="col-6 panel">
+        <button class="button" id="freq-open-lfo">Frequency LFO</button>
+      </div>
+  </div>
+</section>
+
+<!-- general envelope editor -->
+<section id="synth-envelope-editor" class="container">
+  <div class="row">
+    <div class="col panel">
+      <div class="osc-element osc-boolean" id="adsr-enabled"
+        data-label="On"></div>
+    </div>
+    <!--<div class="col panel">
+      <div class="osc-element osc-boolean" id="adsr-linear"
+        data-label="Linear"></div>
+    </div>-->
+    <div class="col panel">
+      <div class="osc-element osc-boolean" id="adsr-forced-release"
+        data-label="Forced Release; F. release"
+        data-partial="Pforcedrelease"></div>
+    </div>
+     <div class="col panel">
+      <div class="osc-element osc-knob" id="adsr-stretch"
+        data-partial="Penvstretch"
+        data-label="Stretch"></div>
+    </div>
+  </div>
+  
+  <div id="env-section-times">
+    <h4>Envelope Times</h4>
+    <div class="row no-gutters">
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-t-a"
+          data-partial="PA_dt"
+          data-label="Attack"></div>
+      </div>
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-t-d"
+          data-partial="PA_dt"
+          data-label="Decay"></div>
+      </div>
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-t-r"
+          data-partial="PR_dt"
+          data-label="Release"></div>
+      </div>
+    </div>
+  </div>
+  <div id="env-section-values">
+    <h4>Values at point</h4>
+    <div class="row no-gutters">
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-v-a"
+          data-partial="PA_val"
+          data-label="Attack"></div>
+      </div>
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-v-d"
+          data-partial="PD_val"
+          data-label="Decay"></div>
+      </div>
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-v-s"
+          data-partial="PS_val"
+          data-label="Sustain"></div>
+      </div>
+      <div class="col-3 panel">
+        <div class="osc-element osc-knob" id="adsr-v-r"
+          data-partial="PR_val"
+          data-label="Release"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- general LFO editor -->
+<section id="synth-lfo-editor" class="container" data-title="Edit LFO">
+  <div class="row">
+    <div class="col-3 col-lg-2 panel">
+      <div class="osc-element osc-boolean" id="lfo-enable"
+        data-label="Enable"
+        data-osc-type="T"></div>
+    </div>
+    <div class="col col-md-4 col-lg-4 panel">
+      <div class="osc-element osc-swipeable" id="lfo-type"
+        data-partial="PLFOtype"
+        data-label="Type"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-3 col-lg-2 panel">
+      <div class="osc-element osc-knob" id="lfo-frequency"
+        data-label="Frequency;Hz"
+        data-partial="freq"
+        data-osc-type="f"></div>
+    </div>
+    <div class="col-3 col-lg-2 panel">
+      <button class="button" onclick="onLFOEditorSyncButton()">Sync</button>
+    </div>
+    <div class="col-3 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="lfo-depth"
+        data-partial="Pintensity"
+        data-label="Depth"></div>
+    </div>
+    <div class="col-3 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="lfo-phase"
+        data-partial="Pstartphase"
+        data-label="Phase"></div>
+    </div>
+  </div>
+  <h4>Keyb reaction</h4>
+  <div class="row">
+    <div class="col-4 offset-2 col-lg-2 panel">
+        <div class="osc-element osc-boolean" id="lfo-cont"
+        data-partial="Pcontinuous"
+        data-label="Continous;C-Mode"></div>
+    </div>
+    <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="lfo-stretch"
+        data-partial="Pstretch"
+        data-label="Stretch to key;Stretch"></div>
+    </div>
+  </div>
+  <h4>Envelope</h4>
+  <div class="row">
+    <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="lfo-delay"
+        data-partial="Pdelay"
+        data-label="Delay"></div>
+    </div>
+    <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="lfo-fadein"
+        data-partial="fadein"
+        data-label="Fade In;In"></div>
+    </div>
+    <div class="col-4 col-lg-2 panel">
+        <div class="osc-element osc-knob" id="lfo-fadeout"
+        data-partial="fadeout"
+        data-label="Fade out;Out"></div>
+    </div>
+  </div>
+  <h4>Random</h4>
+  <div class="row">
+    <div class="col-4 offset-2 col-lg-2 panel">
+      <div class="osc-element osc-knob" id="lfo-rand-amp"
+        data-partial="Prandomness"
+        data-label="Random Amplitude; R-Amp"></div>
+    </div>
+    <div class="col-4 col-lg-2 panel">
+      <div class="osc-element osc-knob" id="lfo-rand-freq"
+        data-partial="Pfreqrand"
+        data-label="Random Frequency; R-Freq"></div>
+    </div>
+  </div>
+</section>
+
+<!-- filter editor -->
+<section id="synth-edit-filter" data-title="Filter" class="container"> 
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element osc-boolean"
+        id="filter-enable"
+        data-label="Enable for voice;V. En."></div>
+    </div>
+    <div class="col-4 panel">
+        <div class="osc-element osc-knob"
+        id="filter-basefreq"
+        data-partial="basefreq"
+        data-label="Frequency"></div>
+    </div>
+    <div class=" col-4 panel">
+        <div class="osc-element osc-knob"
+        id="filter-q"
+        data-partial="baseq"
+        data-label="Q"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-6 panel">
+      <div class="osc-element osc-swipeable"
+        id="filter-category"
+        data-label="Category"
+        data-partial="Pcategory"
+      ></div>
+    </div>
+    <div class="col-6 panel">
+      <div class="osc-element osc-swipeable"
+        id="filter-type"
+        data-label="Type"
+      ></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob"
+        id="filter-stages"
+        data-partial="Pstages"
+        data-label="Stages"></div>
+    </div>
+      <div class="col-4 panel">
+      <div class="osc-element osc-knob"
+        id="filter-gain"
+        data-partial="gain"
+        data-label="Gain"></div>
+    </div>
+    
+  </div>
+  <div class="row">
+    <div class="col-6 panel">
+      <button class="button"id="filter-edit-envelope"  >Filter Envelope</button>
+    </div>
+    <div class="col-6 panel">
+      <button class="button" id="filter-edit-lfo" >Filter LFO</button>
+    </div>
+  </div>
+</section>
+
+<!-- Amplitude editor -->
+<section id="synth-edit-amp" data-title="Amplitude" class="container"> 
+  <div class="row">
+    <div class="col-4 col-md-4 col-lg-2 panel">
+      <div id="amp-volume" class="osc-element osc-knob"
+        data-osc-path="/synthcursor/volume" data-osc-type="f"
+        data-label="Volume"></div>
+    </div>
+   
+    <div class="col-4 col-md-4 col-lg-2 panel">
+      <div id="amp-panning" class="osc-element osc-knob"
+        data-osc-path="/synthcursor/PPanning" data-osc-type="i"
+        data-label="Balance"></div>
+    </div>
+    
+    <div class="col-4 col-md-4 col-lg-2 panel">
+      <div  id="amp-bypass-global" class="osc-element osc-boolean" 
+        data-osc-path="/synthcursor/Pfilterbypass"
+        data-label="Bypass global;Bypass"></div>
+    </div>
+    <div class="col-4 col-md-4 col-lg-2 panel">
+      <div id="amp-delay" class="osc-element osc-knob"
+        data-osc-path="/synthcursor/PDelay" data-osc-type="i"
+        data-label="Delay after start;Delay"></div>
+    </div>
+  </div>
+  <div id="global-punch">
+    <h4>Global Punch</h4>
+    <div class="row">
+      <div class="col-6 panel">
+        <div id="amp-punch" class="osc-element osc-knob"
+          data-osc-path="/synthcursor/PPunchStrength" data-osc-type="i"
+          data-label="Punch strength;Strength"></div>
+      </div>
+      <div class="col-6 panel">
+        <div id="amp-punch-time" class="osc-element osc-knob"
+          data-osc-path="/synthcursor/PPunchTime" data-osc-type="i"
+          data-label="Punch time;Duration"></div>
+      </div>
+    </div>
+  </div>
+  <h4>Weave</h4>
+  <div class="row">
+    <div class="col-6 panel">
+      <button class="button"id="amp-edit-envelope"  >Amp Envelope</button>
+    </div>
+    <div class="col-6 panel">
+      <button class="button" id="amp-edit-lfo" >Amp LFO</button>
+    </div>
+  </div>
+</section>
+
+<section data-title="SubSynth Harmonics" data-back="section-synth"
+  id="section-synth-harmonics"
+  class="container">
+  <h4>Magnitude</h4>
+  <div class="row">
+    <div class="col-3 panel">
+      <div class="osc-element osc-button"
+        id="sub-h-clear"
+        data-label="Clear"
+        data-osc-path="/synthcursor/Phmag[1-32] 0"
+        ><div class="content"><i class="fas fa-trash"></i></div></div>
+    </div>
+    <div class="col-5 panel">
+      <div class="osc-element osc-swipeable"
+        id="sub-h-mag-type"
+        data-osc-path="/synthcursor/Phmagtype"
+        data-label="Type"
+        ></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob"
+        id="sub-h-stages"
+        data-osc-path="/synthcursor/Pnumstages"
+        data-label="Stages"
+        ></div>
+    </div>
+  </div>
+  <h4>Generator</h4>
+  <p>coming soon.</p>
+  <h4>Spread</h4>
+  <div class="row">
+    <div class="col-12 col-lg-6 panel">
+      <div class="osc-element osc-swipeable"
+      id="sub-h-spread-type"
+      data-osc-path="/synthcursor/POvertoneSpread.type"
+      >  
+      </div>
+    </div>
+    <div class="col-12 col-lg-6 panel">
+      <div class="osc-content border">
+        <header class="osc-header header">Modifiers</header>
+        <div class="row">
+          <div class="col-4">
+            <div class="osc-element osc-knob minimal"
+              id="sub-h-spread-1"
+              data-osc-path="/synthcursor/POvertoneSpread.par1"></div>
+          </div>
+          <div class="col-4">
+            <div class="osc-element osc-knob minimal"
+            id="sub-h-spread-2"
+              data-osc-path="/synthcursor/POvertoneSpread.par2"></div>
+          </div>
+          <div class="col-4">
+            <div class="osc-element osc-knob minimal"
+              id="sub-h-spread-3"
+              data-osc-path="/synthcursor/POvertoneSpread.par3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

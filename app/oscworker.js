@@ -18,6 +18,13 @@
 
 const EventEmitter = require('events');
 
+
+/*
+ * NOTE TO SELF:
+ * ALTHOUGH WORKER is the default name for multiple handlers,
+ * it is more like a listener.
+ */
+ 
 /**
  * OSCWorker creates a promise upon multiple osc requests.
  * It is an eventemitter on its own. when all OSC requests are fulfilled,
@@ -27,6 +34,9 @@ class OSCWorker extends EventEmitter {
   
   constructor(emitter) {
     super();
+    if (emitter == undefined || emitter == null)
+      throw 'OSCWorker initialized with undefined or null emitter';
+      
     this.stack = [];
     this.emitter = emitter;
   }

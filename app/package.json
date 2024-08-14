@@ -19,10 +19,11 @@
     "body-parser": "^1.19",
     "events": "^3.3",
     "express": "^4.17",
+    "image-map-resizer": "^1.0.10",
     "jquery": "^3.6",
+    "midi": "^2",
     "node-gyp": "^8.3",
     "osc": "^2.4",
-    "midi": "^2",
     "simple-text-parser": "2.1.1",
     "util": "^0.12",
     "ws": "^7.5"

@@ -1,0 +1,919 @@
+<!doctype html>
+
+<html>
+  <head>
+    <link href="lnf.css" rel="stylesheet">
+    <link href="bootstrap-grid.min.css" rel="stylesheet">
+    <link href="fontawesome-free-5.15.3-web/css/all.css" rel="stylesheet">
+    
+    <script src="jquery/dist/jquery.min.js"></script>
+    <script
+			  src="jquery.mobile.custom/jquery.mobile.custom.min.js"
+    ></script>
+        
+    <script src="lcdknob.js"></script>
+    <script src="swipeable.js"></script>
+    <script src="fxbutton.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ZynthoMania!</title>
+  </head>
+
+  <body>
+     <div id="dialogBox" class="dialogBox hidden">
+      <div>
+        <h4 class="header"></h4>
+        <div class="container row">
+        </div>
+        <footer class="container row">
+          <div class="col-6"><button class="btn-selected col-12" id="btnOk">Ok</button></div>
+          <div class="col-6"><button class="btn-selected col-12" id="btnCancel">Cancel</button></div>
+        </footer>
+      </div>
+    </div>
+    
+    <main class="row no-gutters">
+      
+      <div class="col-12"> <!-- main body -->
+        
+        <table id="partBar" class="col-12 toolbar">
+          <tr>
+            <td><button id="btnDoFavorite"><i class="far fa-star big-icon"></i></button></td>
+            <td><div class="swipeable"></div></td>
+            <td>
+              <i class="fa fa-volume-up big-icon"></i><button id="kpvol" class="knob"></button> 
+            </td>
+            <td><i class="fa fa-arrows-alt-h big-icon"></i><button id="kppan" class="knob"></button> </td>
+            <td><button id="btnEditChan" class="big-btn"><span class="big-icon icon i-midi"></span></button></td>
+            <td><button id="btnClearPart" class="big-btn"><i class="fa fa-trash-alt"></i></button></td>
+          </tr>
+        </table>
+      
+        <div class="col-12">
+          <h3>
+            <a class="hidden"><i class="fa fa-power-off"></i></a>
+            <span id="instrumentName">Welcome to Zynthomania! </span>
+            <span id="q-status" class="fa" style="float: right"></span>
+          </h3>
+        </div>
+      
+        <div class="row">
+          <div class="col-12 tab">
+            <header class="d-flex flex-row tab-h">
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlBanks" id="btnBanks">Banks</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlBinds" id="btnBinds">Binds</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlFX" id="">FX</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlKeyb">Keyb</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlScript">Script</button>
+              <button class="tab-header" data-tab="controlPanel" data-open="pnlSystem">System</button>
+            </header>
+          
+          <!--panels-->
+            <div class="tab controlPanel">
+              <p class="col-12">Welcome to Zynthomania!</p>
+              <p class="col-12"><small> 2021 build by Stefano Marina under GPLv3</small></p>
+              <p class="col-12"><small>Piano, midi icons<a href="http://www.onlinewebfonts.com">from oNline Web Fonts </a> under CC-3</small></p>
+            </div>
+            
+            <div id="pnlBanks" class="tab row controlPanel no-gutters hidden">
+                <ul id="selBanks" class="select col-6 col-xs-6"></ul>
+                <ul id="selInstruments" class="select col-6 col-xs-6 hidden"></ul>
+            </div>
+            
+            <div id="pnlFX" class="tab row no-gutters controlPanel hidden">
+              <header class="col-3 no-gutters tab-v br">
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlDry" onclick="onFxDry()">Dry</button>
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlPart" onclick="onFxPart()">Part</button>
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlRoute" onclick="onFxRoute()">Route</button>
+                <button class="tab-header" data-tab="fxPanel" data-open="pnlSystemFX" onclick="onFxSystem()">System</button>
+              </header>
+              <div class="col-9"> <!-- fx content container -->
+                
+                <div id="pnlDry" class="panel fxPanel hidden row">
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Reverb</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Echo</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Chorus</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Phaser</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Alienwah</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Distorsion</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">EQ</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">DynamicFilter</button></div>
+                  <div class="col-12 col-md-6">
+                    <button class="col-12 big-btn btn-selected send-btn" id="applyDry">Dry</button>
+                  </div>
+                </div>
+                
+                <div id="pnlPart" class="panel fxPanel hidden row">
+                  <div class="col-12">
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx0"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx1"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnpfx2"></div>
+                  </div>
+                </div>
+                <div id="pnlSystemFX" class="panel fxPanel hidden row">
+                  <div class="col-12">
+                  
+                    <div id="swipeTest" class="col-12 big-btn swipeable"></div>
+                    
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx0"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx1"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx2"></div>
+                    <div class="fx-btn row no-gutters col-12 big-btn" data-group="pfx" id="btnsfx3"></div>
+                  </div>
+                </div>         
+                <div id="pnlRoute" class="panel fxPanel hidden row">
+                  <div class="col-8 align:center"><h4 style="text-align:center">To system FX </h4></div>
+                  <div class="col-4 "><button class="knob" id="routeSend"></button></div>
+                  
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Reverb</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Echo</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Chorus</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Phaser</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnDrySelection">Alienwah</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">Distorsion</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">EQ</button></div>
+                  <div class="col-12 col-md-6"><button class="col-12 big-btn toggle btnRouteSelection">DynamicFilter</button></div>
+                  <div class="col-12 col-md-6">
+                    <button class="col-12 big-btn send-btn btn-selected" id="applyRoute">Apply</button>
+                  </div>
+                </div>
+              </div> <!-- /fx content -->
+            </div> <!-- /fx -->
+            
+            <div id="pnlKeyb" class="tab row no-gutters controlPanel hidden">
+              <header class="col-3 no-gutters tab-v br">
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlSession" onclick="onKeybSession();">Session</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlKeybSplit" onclick="onKeybSplit();">Split</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlUADSR" onclick="onKeybUADSR();">UADSR</button>
+              </header>
+              <div class="col-9"> <!-- keyb content container -->
+                  <div id="pnlSession" class="keybPanel panel hidden">
+                  <p class="bb tc" id="keybCurSession"></p>
+                  <ul id="keybSessionList" class="select col-12 col-xs-12" style="width: 100% !important; height:240 !important"></ul>
+                  <div class="row">
+                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onKeybSessionLoadClick()">Load</button></div>
+                    <div class="col-6"><button class="big-btn send-btn col-12" onclick="onKeybSessionSaveClick()">Save</button></div>
+                  </div>
+                </div>
+                <div id="pnlUADSR" class="keybPanel panel hidden row">
+                  <div class="col-12 row no-gutters">
+                    <button class="btnUADSR col-4"  value="none" >Off</button>
+                    <button class="btnUADSR col-4"  value="uadsr4" >4</button>
+                    <button class="btnUADSR col-4"  value="uadsr8" >8</button>
+                  </div>
+                  <div id="u4config" class="uadsrControl hidden col-12 row">
+                    <p class="col-12 tc">ADSR</p>
+                    <div class="tc col-2 col-md-3">A</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4a"></div> 
+                    <div class="tc col-2 col-md-3">D</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4d"></div> 
+                    <div class="tc col-2 col-md-3">S</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4s"></div> 
+                    <div class="tc col-2 col-md-3">R</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu4r"></div> 
+                  </div>
+                  <div id="u4switch" class="uadsrControl hidden col-12 row">
+                    <div class="col-4">Switch</div>
+                    <div class="col-8"><input class="itext col-12" type="number" id="iu4sw"></div>
+                  </div>
+                   <div id="u8config" class="uadsrControl hidden col-12 row">
+                    <p class="tc col-12">Filter</p>
+                    <div class="tc col-2 col-md-3">A</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8a"></div> 
+                    <div class="tc col-2 col-md-3">D</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8d"></div> 
+                    <div class="tc col-2 col-md-3">S</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number" id="iu8s"></div> 
+                    <div class="tc col-2 col-md-3">R</div>
+                    <div class="col-10 col-md-3"><input class="itext col-12" type="number"id="iu8r"></div> 
+                  </div>
+                  <div class="col-12">
+                  <button id="uadsrApply" class="col-12 send-btn hidden uadsrControl">Apply</button>
+                  </div>
+                </div>
+                <div id="pnlKeybSplit" class="keybPanel panel hidden">
+                  <div class="row">
+                    <div class="col-6">Midi Channel</div>
+                    <div class="col-6"><div id="keybSplitChannel" class="col-12 swipeable"></div></div>
+                  </div>
+                  <div class="row no-gutters table">
+                    <div class="header col-2 tc">Prt</div>
+                    <div class="header col-2 tc">From</div>
+                    <div class="header col-2 tc">To</div>
+                    <div class="header col tc">Edit</div>
+                  </div>
+                  <div class="table" id="keybSplitTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BINDS -->
+            <div id="pnlBinds" class="tab row no-gutters controlPanel hidden">
+              <header class="col-3 tab-v br">
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindChain" onclick="onBindChain()">Chain</button>
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindIO" onclick="onBindFile()">File</button>
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindEdit" onclick="onBindEdit()">Edit</button>
+                <button class="tab-header" data-tab="bindPanel" data-open="pnlBindSession" onclick="onBindSession()">Session</button>
+              </header>
+              <div class="col-9">  
+                <div id="pnlBindIO" class="bindPanel panel hidden">
+                  <div class="col-12"><ul id="selBinds" class="select" style=" height:280 !important"></ul></div>
+                  <div class="row">
+                    <div class="col-12 col-lg-4"><button class="big-btn send-btn col-12" onclick="onBindFileAddClick(this);">Add to chain</button></div>
+                    <div class="col-6 col-lg-4"><button class="big-btn send-btn col-12" onclick="onBindFileEditClick();">Edit</button></div>
+                    <div class="col-6 col-lg-4"><button id="bindSave" class="big-btn send-btn col-12" onclick="onBindFileSaveClick();">Save</button></div>
+                  </div>
+                </div>
+                <div id="pnlBindChain" class="bindPanel panel hidden">
+                  <p style="text-align: center">Touch to remove</p>
+                  <div class="col-12" id="chainContainer">
+                  </div>
+                </div>
+                <div id="pnlBindEdit" class="bindPanel panel container hidden">
+                  <div class="row">
+                    <div class="col-6">Channel</div>
+                    <div class="col-6 swipeable">
+                        <select id="bindEditChannel" value="0">
+                        </select>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="hidden d-md-inline col-md-4">Event</div>
+                    <div class="col-6 col-md-4 swipeable">
+                      <select id="bindEditSource" class="btn-selected col-12" value="cc">
+                        <option value="cc">CC</option>
+                        <option value="noteon">noteon</option>
+                      </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <input id="bindEditData1" type="number" class="itext col-12" value="0">
+                    </div>
+                  </div>
+                  <div class="row bb">
+                    <div class="col-2"><p>Type:</p></div>
+                    <div class="col-10 swipeable"><select class="col-12" id="bindEditType">
+                      <option value="trigger">Trigger</option>
+                      <option value="switch">Switch</option>
+                      <option value="abs">Fader/Absolute</option>
+                      <option value="int">Fader/Integer</option>
+                      <option value="float">Fader/Float</option>
+                      <option value="bool">Fader/Bool</option>
+                      <option value="!bool">Fader/Bool (reverse)</option>
+                    </select></div>
+                  </div>
+                  <div class="row no-gutters hidden bindSubEditor" id="bindEditSwitch">
+                    <div class="col-8">
+                      <ul id="bindEditSwitchTable" class="h-ul col-12">
+                      </ul>
+                    </div>
+                    <div class="col-4 no-gutters row">
+                      <button class="col-6 tc btn" onclick="onBindEditSwitchAddClick()"><i class="fa fa-plus"></i></button>
+                      <button class="col-6 tc btn" onclick="onBindEditSwitchDeleteClick()"><i class="fa fa-trash-alt"></i></button>
+                    </div>
+                  </div>
+                  <div class="row hidden no-gutters bindSubEditor" id="bindEditTrigger">
+                    <div class="col-6">Value:</div>
+                    <div class="col-1"><button onclick="onBindEditSetHigherMode(this)">^</button></div>
+                    <div class="col"><input id="bindEditData2" type="number" class="itext col-12" value="0"></div>
+                  </div>
+                  <div class="row" id="oscParameters">
+                    <div class="col-12 col-md-2">OSC <span class="d-md-none">parameters:</span></div>
+                    <p class="col-12"><small>Separate with new line for bundle</small></p>
+                    <div class="col-12 col-md-10"><textarea id="bindEditOSC" class="col-12 bindSubEditor"></textarea></div>
+                  </div>
+                  <button class="big-btn bindSubEditor col-12" id="bindEditUpdate" onclick="bindSaveCurrentEdit()">Update</button>
+                  <div class="row">
+                    <div class="col-12 col-md-6"><button class="btn-selected col-12" onclick="onBindEditMidilearn()">Midi Learn <span class="icon i-send-alt"></span></button></div>
+                    <div class="col-12 col-md-6"><button id="bindApply" class="send-btn col-12" onclick="onBindEditApply()">Apply</button></div>
+                  </div>
+                </div>
+                
+                <div id="pnlBindSession" class="bindPanel panel hidden">
+                  <div class="row no-gutters">
+                      <div class="header col-2 tc">Ch</div>
+                      <div class="header col-5 tc">Event</div>
+                      <div class="header col-5 tc">Edit</div>
+                  </div>
+                  <div id="bindSessionTable" style="max-height: 200px !important; overflow-y: auto;overflow-x: hidden">
+                    
+                  </div>
+                <p>Session is empty. 'Edit' to add.</p>
+                </div>
+                
+              </div>
+            </div> <!-- /binds -->
+            
+            <div id="pnlScript" class="tab row no-gutters controlPanel hidden">
+              <header class="col-3 tab-v br">
+                <button class="tab-header" data-tab="scrPanel" data-open="pnlFile" onclick="onScript()">File</button>
+                <button class="tab-header" data-tab="scrPanel" data-open="pnlConsole">Console</button>
+              </header>
+              <div class="col-9">
+                <div id="pnlConsole" class="scrPanel panel hidden">
+                  <textarea class="col-12" style="min-height: 200px !important" 
+                      id="commandLine" placeholder="Input parameter..."></textarea>
+                  <div class="col-12 hidden" style="height: 280px; overflow-y: auto">
+                  </div>
+                  <button class="send-btn col-12 big-btn hidden" value="ok" onclick="onScriptOK();">OK</button>
+                  <button class="send-btn col-12 col-md-6 big-btn" onclick="onScriptSendClick();">Send</button>
+                  <button class="send-btn col-12 col-md-6 big-btn" onclick="onScriptQueryClick();">Query result</button>
+                </div>
+                <div id="pnlFile" class="scrPanel panel hidden">
+                  <ul id="selScripts" class="select col-12 col-xs-12" style="width: 100% !important; height:280 !important"></ul>
+                  <button id="scriptSend" class="big-btn send-btn col-12">Launch</button>
+                </div>
+              </div><!-- /scripts -->
+            </div>
+            
+            <div id="pnlSystem" class="tab row no-gutters controlPanel hidden">
+              <header class="col-3 no-gutters tab-v br">
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlSystemInfo" onclick="onSystemInfo();">Info</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlMIDI" onclick="onSystemMIDI();">MIDI</button>
+                <button class="tab-header" data-tab="keybPanel" data-open="pnlSystemNetwork" onclick="onSystemNetwork();">Network</button>
+              </header>
+              <div class="col-9"> <!-- keyb content container -->
+                <div id="pnlMIDI" class="keybPanel panel hidden row">
+                  <div class="col-12" id="keybMidiContainer">
+                  </div>
+                </div>
+                <!--info content -->
+                <div id="pnlSystemInfo"  class="keybPanel panel hidden row">
+                  <div class="container">
+                  </div>
+                  <div class="container row">
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemInfoReconnect()">Reconnect Zyn</button></div>
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemInfoShutdown(0)">Shutdown</button></div>
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemInfoShutdown(1)">Reset</button></div>
+                  </div>
+                </div>
+                <!-- Network -->
+                <div id="pnlSystemNetwork"  class="keybPanel panel hidden row">
+                  <div class="container">
+                  </div>
+                  <div class="container row">
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemNetworkChange(1)">Route</button></div>
+                    <div class="col-12 col-md-6 col-lg-4"><button class="send-btn col-12 big-btn" onclick="onSystemNetworkChange(0)">Local</button></div>
+                  </div>
+                </div>
+              </div>
+          </div> 
+        </div> 
+      </div> <!--col-10 -->        
+    </main><!-- main row -->
+    <script src="events.js"></script>
+    <script type="text/javascript">
+      
+      window.timers = {};
+      window.buttons = {};
+      window.knobs = {};
+      
+      window.zsession = {
+        "instrument" : {}, //curent instrument
+        "bank" : '', //current bank
+        "partID": 0, //current part id
+        "partefx" : new Array(15), //last part efx query
+         fx : { path : ''}, //fx panel data
+         banks : {}, //banks panel data
+         bind : {
+           current : null,
+           info : { channel : 1, source: 'cc'}
+           } //bind editor data
+      };
+      
+      window.zsession.sanitize = function (path) {
+        if (path.search('part/') > 0)
+          path = path.replace('part/', `part${window.zsession.partID}/`)
+        
+        return path;
+      }
+      
+      window.zsession.fx.getFX =function (id) {
+        if (id === undefined)
+          id = window.zsession.fx.id;
+          
+        if (window.zsession.fx.path.search('partefx')>0)
+          return window.zsession.partefx[window.zsession.partID].fx[id];
+        else
+          return undefined;
+      }
+      
+      window.zsession.fx.setFX = function (object, id) {
+        if (id === undefined)
+          id = window.zsession.fx.id;
+          
+        if (window.zsession.fx.path.search('partefx')>0)
+          window.zsession.partefx[window.zsession.partID].fx[id] = object;
+      }
+      
+      window.zsession.getInstrument = function (partID) {
+        if (partID === undefined)
+          partID = window.zsession.partID;
+          
+        if (window.zsession.instruments === undefined)
+          window.zsession.instruments = [];
+        
+        return (window.zsession.instruments[partID] == null)
+                ? {name : 'Unloaded', path: ''}
+                : window.zsession.instruments[partID];
+      }
+      
+      window.zsession.setInstrument = function (partID, instrument) {
+        if (partID === undefined)
+          partID = window.zsession.partID;
+          
+        if (window.zsession.instruments === undefined)
+          window.zsession.instruments = [];
+          
+        window.zsession.instruments[window.zsession.partID] = instrument;
+      }
+      
+      
+      function displayMessage(msg, force) {
+        force = (force === undefined) ? false : force;
+        
+        //window.zsession.oldMessage = $('#instrumentName').text();
+        
+        //remove Ajax timer
+        clearInterval(window.timers['ajax']);
+        clearTimeout(window.timers['msg']);
+        $('#instrumentName').text(msg);
+        
+        if (!force) {
+          window.timers['msg'] = setTimeout ( function() {
+            //onToolbarChangePart();
+            if ($('main h3 > a > i').hasClass('hidden')) {
+              let iname = window.zsession.getInstrument(0);
+              $('#instrumentName').text(`#${window.zsession.partID}: ${iname.name}`);
+            } else {
+              $('#instrumentName').text('Disabled');
+            }
+            clearTimeout(window.timers['msg']);
+          }, 5000);
+        }
+      }
+      
+      /* create a Instrument object */
+      function listToInstrument(item) {
+        if ('li' != $(item).prop('tagName').toLowerCase()) {
+          console.log('Error: cannot translate item ' + $(item).prop('tagName'));
+          return;
+        }
+        return {
+          "path": $(item).attr('data-instrument'),
+          "name" : $(item).text()
+        }
+      }
+      
+      /* Quickie to check if instrument if favorite */
+      function isFavorite(instrument) {
+        if (instrument == null ||
+            window.zsession.banks['Favorites'] === undefined ||
+            window.zsession.banks['Favorites'].length == 0)
+        return false;
+        
+        return window.zsession.banks['Favorites'].filter
+                ((fav)=> {return fav.path == instrument.path})
+            .length > 0;
+      }
+      
+      const isObject = (obj) => {
+        return Object.prototype.toString.call(obj) === '[object Object]';
+      };
+      
+      /* Utility to do GET rest methods */
+      function doQuery(rest, data, onDone) {
+        return doAjax({method:'get', dataType: 'json', 
+                  url: window.location.href+rest, 
+                  data: data,
+                  contentType: 'application/json; charset=utf-8'
+        }, onDone);
+      }
+      
+      function doAction(rest, data, onDone) {
+        return doAjax( {method: 'post', 
+          url: window.location.href+rest,
+          data: JSON.stringify(data),
+          contentType: 'application/json; charset=utf-8'
+          }, onDone );
+      }
+      
+      /* ajax function */
+      function doAjax(params, onDone) {
+      
+        //Loading timer
+        clearTimeout(window.timers['msg']);
+        
+        //let text = $('#instrumentName').text();
+        //Run loading animation if not already
+        let statusIcon = document.getElementById('q-status');
+        
+        if (text.match(/^[ \.]+$/) == null) {
+          window.zsession.beforeQueryText = text;
+          
+          $('#q-status').removeClass('fa fas fa-hourglass fa-check-circle fa-times-circle');
+          $('#q-status').addClass('fa fa-hourglass');
+          
+          $('#instrumentName').text('.');
+          
+            
+          window.timers['ajax'] = setInterval ( () =>{
+            let text = $('#instrumentName').text();
+            if (text.length < 8)
+              text += "..";
+            else {
+              padding = parseInt( /(\d+)px/.exec($('#instrumentName').css('padding-left'))[1] )
+              if (padding < 100)
+                $('#instrumentName').css('padding-left', padding+10);
+              else {
+                $('#instrumentName').css('padding-left', 0);
+                text = "..";
+              }
+            }
+              
+            $('#instrumentName').text(text);
+          }, 500);
+        }
+        
+        $.ajax(params)
+        .done(function(data) {
+            clearInterval(window.timers['ajax']);
+            window.timers['ajax'] = null;
+            $('#q-status').removeClass('fa-hourglass');
+            $('#q-status').addClass('fas fa-check-circle');
+            $('#instrumentName').text(window.zsession.beforeQueryText);
+            $('#instrumentName').css('padding-left' , 0);
+            
+            //displayMessage('OK');
+            
+            if (onDone !== undefined)
+              onDone(data);
+          })
+        .fail( function(jqXHR, textStatus, errorThrown) {
+          clearInterval(window.timers['ajax']);
+          window.timers['ajax'] = null;
+          $('#q-status').removeClass('fa-hourglass');
+          $('#q-status').addClass('fas fa-times-circle');
+          $('#instrumentName').css('padding-left' , 0);
+          displayMessage(errorThrown);
+          //$('#instrumentName').text(errorThrown);
+        });
+      }
+       
+      /* Bank button load */
+ 
+      function setFavorite (instrument, value) {
+        let action = (value) ? 'set' : 'unset';
+        
+        //First, we update server
+        doAjax({method:'post', url: window.location.href+"setFavorite",
+                data: JSON.stringify({"instrument": instrument, "action": action}), 
+                contentType: 'application/json; charset=utf-8'},
+        function() {
+          
+          //Then we update client, without ajax
+          if (!value) {
+            window.zsession.banks['Favorites']= 
+            window.zsession.banks.Favorites.filter( (entry) => {
+              return (entry.path != instrument.path);});
+          } else {
+            window.zsession.banks.Favorites.push(instrument);
+          }
+          
+          //last we update display
+          if (instrument.name == window.zsession.getInstrument().name) {
+            $('#btnDoFavorite i').removeClass('far fas');
+            $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
+          }
+          
+          let li = $('#selInstruments li.btn-selected');
+          if (li !== undefined && li.attr('data-instrument') == instrument.path) {
+            $(li).empty();
+            $(li).text(instrument.name);
+            if (value)
+              $(li).append('<span style="float:right"><i class="fas fa-star"></i></span>');
+          }
+        });
+      }
+     /**
+       Init 
+       */
+           
+      $(document).ready( init );
+        
+      function init() {
+     
+        /**
+        FX buttons
+        */
+        window.buttons = {};
+        
+        $('.fx-btn').each( function (index) {
+          let id = $(this).attr('id');
+          let options = (id.match(/^btnsfx/))
+            ? {noBypass: 1} : undefined;
+            
+          let chid = parseInt(/\w+(\d+)/.exec(id)[1]);
+          let fxButton = new FXButton(id, chid, options);
+          window.buttons[id] = fxButton;
+        });
+        
+        //Part efx
+        $('#btnpfx0, #btnpfx1, #btnpfx2').each( function (index) {
+          let id = $(this).attr('id');
+          window.buttons[id].base_path = '/part/partefx';
+        });
+        
+        //system efx
+        $('#btnsfx0, #btnsfx1, #btnsfx2, #btnsfx3').each( function (index) {
+          let id = $(this).attr('id');
+          window.buttons[id].base_path = '/sysefx';
+        });
+        
+           
+        /**
+         Knobs initialization
+         */
+        window.knobs = {};
+        
+        //Create knobs
+        $('.knob').each( function () {
+          let id = $(this).attr('id')
+          let knob = new LCDKnob(id);
+          knob.setValue(0);
+          knob.render();
+          window.knobs[id] = knob;
+        })
+        
+        //Knob events
+        $(document).find('.knob').on('click', (e) => {
+            let id = e.currentTarget.id;
+            window.knobs[id].next();
+            $(`#${id}`).trigger({type:'knob-change', e: e});
+        });
+        
+        $(document).find('.knob').on('swiperight', (e) => {
+            let id = e.currentTarget.id;
+            window.knobs[id].next(8);
+            $(`#${id}`).trigger({type:'knob-change', e: e});
+        });
+        
+        $(document).find('.knob').on('swipeleft', (e) => {
+            let id = e.currentTarget.id;
+            window.knobs[id].next(8);
+            $(`#${id}`).trigger({type:'knob-change', e: e});
+        });
+        
+        $(document).find('#kss0, #kss1, #kss2, #kss3').on('knob-change', (e) => {
+          let id = e.currentTarget.id.match(/kss(\d)/)[1];
+          onFxPartSystemKnobChange(id);
+        });
+        
+        $('#kpvol').on('knob-change', (e) =>{
+          doAction('script', {script : 
+            `/part${window.zsession.partID}/Pvolume ${window.knobs['kpvol'].getValue()}`
+          });
+        });
+        $('#kppan').on('knob-change', (e) =>{
+          doAction('script', {script : 
+            `/part${window.zsession.partID}/Ppanning ${window.knobs['kppan'].getValue()}`
+          });
+        });
+        
+        
+        /**
+        Tab button management
+        **/
+          $('.tab-header').on('click', function() {
+            let tab = $(this).closest('.tab');
+            
+            $(tab).find('> header .tab-header').removeClass('btn-selected');
+            $(this).addClass('btn-selected');
+            
+            if ( $(this).attr('data-open') !== undefined) {
+              let className= $(this).attr('data-tab');
+              $('.'+className).addClass('hidden');
+              $('#'+$(this).attr('data-open')).removeClass('hidden');
+            }
+          });
+          
+          $('.tab > header button').on('click', (e) => {
+            let id = $(e.currentTarget).attr('data-open');
+            let subItem = $('#'+id + ' > header .btn-selected');
+            if (subItem.length > 0) {
+              subItem.trigger('click');
+            }
+          });
+          /*
+          Unordered lists
+          */
+          //Double filter is necessary or new elements won't be looked up
+          $('ul, .select').on('click', 'li', function(e){
+            var item = $(e.target);
+            item.addClass('btn-selected');
+            item.siblings().removeClass('btn-selected');
+            //eventId = '#' + $(item).parent().attr('data-event-id');
+            //$(eventId).val(item.text());
+          });
+          
+          /**
+          Button actions
+          */
+          $('h3 > a').on('click', () => {
+            doAction('script', {script: `/part${window.zsession.partID}/Penabled T`},
+             () => {
+              onToolbarChangePart();
+             });
+          });
+          
+          $('#btnClearPart').on('click', ()=>{
+            doAction('script', {script: [`/part${window.zsession.partID}/clear`, 
+              `/part${window.zsession.partID}/Penabled F`
+              ]},onToolbarChangePart);
+          });
+          
+          $('#btnBanks').on('click', function() { onBanks(); });
+          $('#selBanks').on('click', 'li', function(e) {
+            onBanksBankSelect($(e.target).attr('data-bank'));
+          });
+          
+          // Instrument / Unset favorite click
+          $('#selInstruments').on('click', 'li', function(e) {
+            if ('span' == $(e.target).prop('tagName').toLowerCase()
+                  || 'i' == $(e.target).prop('tagName').toLowerCase()) {
+                    
+              let instrument = listToInstrument($(e.target).closest('li'));
+              setFavorite(instrument, false);
+            } else
+              onBanksInstrumentClick(listToInstrument($(e.target)));
+          });
+          
+          $('#btnDoFavorite').on('click', function() {
+            let instrument = window.zsession.getInstrument();
+            setFavorite(instrument, (!isFavorite(instrument)));
+          });
+             
+          $('#applyRoute').on('click', function() {
+            const route = {};
+            route.send = window.knobs['routeSend'].getValue();
+            route.fx = $.makeArray(
+            $('.btnRouteSelection.btn-selected').map( function() {return $(this).text()})
+            );
+            
+            //console.log(route);
+            doAction('fx/route', {route: route});
+          })
+          
+          
+          $('#applyDry').on('click', function() {
+            const dry = $.makeArray(
+              $('.btnDrySelection.btn-selected').map( function() {return $(this).text()})
+            );
+            
+            doAction('fx/dry', {dry: dry});
+          })
+      
+      
+          $('#scriptSend').on('click', (e)=>{
+            let value = $('#selScripts').children('li.btn-selected').text();
+            if (value == "" || value == null)
+              return;
+            doAction('script', {script: `/zmania/run_script '${value}'`},
+                (done) =>{
+                $('#instrumentName').text(`Run ${value}`);
+            });
+          });
+          
+          $('#btnEditChan').on('click', (e) => {
+            dialogBox([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], 
+              { title: 'Change part MIDI channel:',
+                defValue: parseInt(e.currentTarget.value)+1,
+                buttonClass: 'col-6 col-md-4 col-lg-3'
+              },
+            (value) => {
+              doAction('script', 
+              {script: `/part${window.zsession.partID}/Prcvchn ${value}`},
+              ()=> {
+                displayMessage(`Channel changed to ${value+1}`);
+                $('#btnEditChan').val(value);
+              });
+            });
+          });
+        /*
+        * Check
+        TODO: still needed?
+        */
+          $('.check').on('click', function() {
+            $(this).attr('data-check', $(this).attr('data-check') == 'true' ? 'false' : 'true');
+            
+          });
+          
+          /*
+          Toggle buttons
+          */
+          $('.toggle').on('click', function() {
+            if( $(this).hasClass('btn-selected'))
+              $(this).removeClass('btn-selected');
+            else {
+              let group = $(this).attr('data-group');
+              if ( group !== undefined)
+                $(`.toggle[data-group=${group}]`).removeClass('btn-selected');
+              $(this).addClass('btn-selected');
+            }
+          })
+          
+          /**
+         UADSR bind actions
+          */
+          $('.btnUADSR').on('click', (e) =>{
+            $('.btnUADSR').removeClass('btn-selected');
+            $(e.target).addClass('btn-selected');
+            doAction("script", {script: `/zmania/uadsr/type '${e.target.value}'`},
+              (data) =>{
+                onKeybUADSR();
+            });
+          });
+          
+          $('#uadsrApply').on('click', (e)=>{
+            let type = $('.btnUADSR.btn-selected').val();
+            let array = $('#u4config input').map ( function() {return $(this).val()}).get();
+            
+            switch (type) {
+              case "none" : return;
+              case "uadsr4": 
+                array.push($('#u4switch input').val());
+              break;
+              case "uadsr8":
+              array= array.concat(
+                $('#u8config input').map ( function() {return $(this).val()}).get()
+              );
+              break;
+              default: console.error(`Unknown type ${type} for uadsr`); return; break;
+            }
+            
+            doAction('script', {script: `/zmania/${type}/bind ${array.join(' ')}`},
+              () =>{
+                onKeybUADSR();
+              });
+          });
+          
+          
+          /*
+          Bind editor
+          */
+          
+          $('#bindEditType').on('change', onBindEditChange);
+          
+          let bec = $('#bindEditChannel');
+          bec.append('<option value="all">all</option>');
+          for (let i = 1; i < 17; i++)
+            bec.append(`<option value="${i}">${i}`+'</option>');
+          
+          /*
+          Swipeables
+          */
+          const CHAN_ARRAY = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+          //build part swipeables
+          createSwipeable('#partBar .swipeable',CHAN_ARRAY
+                .map( e => String(e).padStart(2,'0')) );
+          
+          //build bind edit swipeables
+          $('#pnlBindEdit .swipeable').each( function () {
+            createSwipeable(this);
+          });
+          
+          createSwipeable('#keybSplitChannel',CHAN_ARRAY);
+          
+          //register all swipeable events without selection
+          registerSwipeables('#pnlBindEdit .swipeable, #partBar .swipeable, #keybSplitChannel', false);
+          
+          //register selectable swipeables with selection
+          registerSwipeables('.fx-btn .swipeable', true);
+          
+          $('#keybSplitChannel > select').on('change', (e) => {
+            onKeybSplitChange(parseInt(e.currentTarget.value)-1);
+          });
+          
+          //register change part
+          $('#partBar .swipeable > select').on('change', (e)=> {
+            let part = parseInt(e.target.value)-1;
+            onToolbarChangePart(part);
+          });
+          
+          /**
+          Init actions
+          - get favorites
+          - update part names
+          */
+          doQuery('files/banks/xiz', {bank: 'Favorites'}, 
+            function(data) {
+              window.zsession.banks['Favorites'] = data;
+              //$('#instrumentName').text('Welcome to Zynthomania!');
+              window.zsession.partID=0;
+              onToolbarChangePart();
+          });
+          
+       
+      }
+    </script>
+  </body>
+</html>
