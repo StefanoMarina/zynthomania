@@ -19,6 +19,7 @@
   </div>
   <div class="row" id="subsynth-edit">
     <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthSubHarmonics()">Harmonics</button></div>
+    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthSubBandwidth()">Bandwidth</button></div>
     <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFrequency()">Frequency</button></div>
     <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFilter()">Filter</button></div>
     <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthAmplitude()">Amp</button></div>
@@ -26,6 +27,10 @@
   <div class="row" id="padsynth-edit">
       <div class="col-4 col-md-3 col-lg-2 panel optional pad-only"><button class="button disabled"><small>PADsynth not implemented :(</small></button></div>
   </div>
+</section>
+
+<section id="section-synth-subsynth" data-title="SubSynth" class="container">
+  
 </section>
 
 <!--Adsynth oscilllator -->
@@ -468,7 +473,10 @@
     </div>
   </div>
   <h4>Generator</h4>
-  <p>coming soon.</p>
+  <div class="row">
+    <div class="col-6"><button class="button" onclick="onSynthSubMagnitude()">Magnitude</button></div>
+    <div class="col-6"><button class="button" onclick="onSynthSubBandwidth()">Bandwidth</button></div>
+  </div>
   <h4>Spread</h4>
   <div class="row">
     <div class="col-12 col-lg-6 panel">
@@ -499,6 +507,53 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="subsynth-harmonics" class="container"
+data-title="Harmonics generator" data-back="section-synth-harmonics">
+  <h4>Harmonics generator</h4>
+  <div class="row">
+    <div class="col-12 col-lg-6 panel">
+      <div class="swipeable" id='hgen-type'></div>
+    </div>
+    <div class="col-4 col-lg-3 panel">
+      <div class="osc-element osc-knob" id='hgen-offset'
+        data-label="offset"></div>
+    </div>
+    <div class="col-4 col-lg-3 panel">
+      <div class="osc-element osc-knob" id='hgen-q'
+        data-label="Q"></div>
+    </div>
+    <div class="col-4 panel">
+      <button class="button selected" id="hgen-generate">Generate</button>
+    </div>
+  </div>
+</section>
+
+<section id="subsynth-bandwidth" class="container"
+  data-title="Subsynth Bandwidth" data-back="section-synth">
+  <div class="row">
+    <div class="col-6 col-lg-3 panel">
+      <div class="osc-element osc-swipeable"
+        id="sub-band-init"
+        data-label="Initializer"
+        data-osc-path="/synthcursor/Pstart"></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob"
+        id="sub-band-band"
+        data-osc-path="/synthcursor/Pbandwidth"
+        data-label="BW"
+        ></div>
+    </div>
+    <div class="col-3 panel">
+      <div class="osc-element osc-knob"
+        id="sub-band-stretch"
+        data-osc-path="/synthcursor/Pbwscale"
+        data-label="Stretch;Scale"
+        ></div>
     </div>
   </div>
 </section>

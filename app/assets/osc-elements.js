@@ -536,6 +536,37 @@ class OSCKnob extends OSCElement {
   }
 }
 
+
+class InertKnob extends OSCKnob {
+  constructor(div, range = undefined) {
+    super(div, undefined, range);
+    
+    window.zsession.elements[div.id] = this;
+    //delete window.zsession.oscElements[div.id];
+    
+    this.value = null;
+  }
+  
+  sync() {
+    this.HTMLElement.dispatchEvent(new CustomEvent('sync',
+      {'detail': this.value} ));
+    return Promise.resolve(this.value);
+  }
+  
+  act(value) {
+    this.setValue(value);
+    this.HTMLElement.dispatchEvent( new CustomEvent('sync',
+      {'detail': this.value} ));
+    return Promise.resolve(this.value);
+  }
+  
+  getValue() {return this.value}
+  setValue(value, fromServer=true) {
+    super.setValue(value, true);
+    this.value = value;
+  }
+  
+}
 /*
  * OSC Swipeables
  */

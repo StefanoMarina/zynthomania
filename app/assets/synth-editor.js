@@ -432,3 +432,55 @@ function loadAmplitudeEditor(title, backto, lfo, envelope){
     loadSection('synth-edit-amp');
   });
 }
+
+function loadHarmonicsEditor(name, data, type, path) {
+  const labels = ['SINE','COS', 'UP', 'DOWN', 'FLAT', 'RANDOM'] ;
+  if (window.zsession.initHarmonicsEditor === undefined) {
+    let obj = window.zsession.elements['hgen-type'] = new Swipeable(
+      document.getElementById('hgen-type'));
+      obj.setOptions([...Array(6).keys()],
+      labels);
+    
+    new InertKnob(document.getElementById('hgen-offset'), 
+      {'min':0,'max':31, 'type': 'wave start', 'itype': 'i'});
+      
+    new InertKnob(document.getElementById('hgen-q'),
+      {'min':0.1,'max':2, 'type': 'Exponential', 'itype': 'f'});
+    
+    document.getElementById('hgen-generate').addEventListener
+      ('click', onHarmonicsEditorGenerate);
+      
+    window.zsession.initHarmonicsEditor = true;
+  }
+  
+  window.zsession.elements['hgen-type'].setValue(labels.indexOf(data.alg));
+  window.zsession.elements['hgen-q'].setValue(data.power);
+  window.zsession.elements['hgen-offset'].setValue(data.offset);
+
+  let section = document.getElementById('subsynth-harmonics');
+  section.dataset.path = path;
+  section.dataset.type = type;
+  
+  loadSection('subsynth-harmonics');
+}
+
+function onHarmonicsEditorGenerate(event) {
+  let section = document.getElementById('subsynth-harmonics');
+  let path = section.dataset.path;
+  
+  new ZynthoREST().post( 'subsynth', {
+      'path' : path,
+  //    'type' : type,
+      'alg' : parseInt(
+        window.zsession.elements['hgen-type'].getValue()
+        ),
+      'power' : parseFloat(
+        window.zsession.elements['hgen-q'].getValue()
+      ),
+      'offset' : parseInt(
+        window.zsession.elements['hgen-offset']
+        .getValue())
+  }).then ( ()=>{
+    displayOutcome('Harmonics generated');
+  });
+}

@@ -19,6 +19,8 @@ module.exports = {};
 
 const zconsole = require('./io.js').zconsole;
 
+const OSCWorker = require('./oscworker.js').OSCWorker; //debug
+
 module.exports.registerOSC = function (zynServer) {
   let emitter = zynServer.oscEmitter;
   
@@ -123,5 +125,49 @@ module.exports.registerOSC = function (zynServer) {
        zconsole.error(`session save error: ${err}`);
      }
    });
+   
+   emitter.on('/zmania/subgenerator/path', function (zyn, args) {
+     if (args.length == 0) {
+       zyn.emit('/zmania/subgenerator/path', 
+        zyn.parser.translate(
+        `/zmania/subgenerator/path '${zyn.ssHarmonics.path}'`)
+        );
+     } else {
+       zyn.ssHarmonics.path = args[0].value;
+     }
+   });
+   
+   emitter.on('/zmania/test', function (zyn, args) {
+     let test = zyn.parser.translate('/zmania/test1');
+     const worker = new OSCWorker(zyn);
+     worker.pushPacket(test, ()=> {
+       zconsole.debug('listened to test packet');
+      });
+     zyn.emit('osc',test);
+     Promise.resolve(worker.listen());
+   });
+   
+   emitter.on('/zmania/subsynth/offset',  (zyn, args)=>{
+     if (args.length == 0) {
+       let newPacket = zyn.parser.translate(
+       '/zmania/subsynth/offset '
+       + zyn.ssHarmonics.data.offset);
+       
+       zyn.osc.emit('osc', newPacket);
+     } else {
+       zconsole.debug("offset SET");
+      try {
+        let val = parseInt(args[0].value);
+        zyn.ssHarmonics.offset = Math.max(1, Math.min(
+          32, val));
+      } catch {
+        throw '/zmania/subsynth/offset: invalid number';
+       } 
+     }
+   });
 }
 
+/* Subsynth: set bandwidth alg */
+function osc_subsynth_manager_get_alg(zyn, args) {
+  
+}

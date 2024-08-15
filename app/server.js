@@ -156,6 +156,30 @@ function post_setFavorite (req, res) {
 }
 app.post('/setFavorite', post_setFavorite);
 
+const SubsynthHarmonics = require('./subsynth').SubsynthHarmonics;
+
+function post_subsynth(req, res) {
+  zconsole.logPost(req);
+
+  let ssgen = new  SubsynthHarmonics(req.body);
+  
+  let values = ssgen.perform(req.body.path);
+  let bundle = app.zyntho.parser.translateLines(values);
+  
+  const worker = new OSCWorker(app.zyntho);
+  worker.pushPacket(bundle, ()=>{});
+  
+  app.zyntho.sendOSC(bundle);
+  worker.listen()
+    .catch ( ()=> {
+      res.status(400).send('bad request');
+    })
+    .finally( ()=>{
+      res.end();
+    });
+}
+app.post('/subsynth', post_subsynth);
+
 /**
  * script
  * POST parse script
@@ -197,6 +221,8 @@ function post_script(req, res) {
       
       result[key] = args.map( (e) => e.value);
     });
+    
+    zconsole.debug(`script: worker has ${worker.stack.length} events`);
     
     app.zyntho.sendOSC(bundle);
     worker.listen(5000).then(()=>{
@@ -390,6 +416,21 @@ function get_midilearn(rq, res) {
 }
 app.get('/midilearn', get_midilearn);
 
+/**
+ * /status/subsynth
+ * returns info on subsynth generator
+ * query: magnitude or bandwidth, no query equals all
+ */
+ function get_status_subsynth(rq, res) {
+   zconsole.logGet(rq);
+   
+   if (rq.query.element === undefined)
+    res.json(app.zyntho.ssHarmonics.data);
+   else
+    res.json(app.zyntho.ssHarmonics.data[rq.query.element]);
+ }
+ app.get('/status/subsynth', get_status_subsynth);
+ 
 /**
  * /status/session
  * GET returns XMZ session info and extended session data

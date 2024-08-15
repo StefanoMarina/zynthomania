@@ -79,10 +79,10 @@ function initKnobEditorDialog(){
     let me = e.target;
     let knobObject = window.zsession.oscElements[
       document.getElementById('knobEditor').dataset.knobID ];
-    
-    knobObject.setValue(
-      document.getElementById('knob-editor-value').value);
-    knobObject.act().then( ()=> {
+
+    knobObject.act(
+      document.getElementById('knob-editor-value').value
+    ).then( ()=> {
         knobEditorArea.style.rotate 
           = knobObject.knob.style.rotate;
     });
@@ -106,8 +106,11 @@ function loadKnobEditor(knobObject) {
     
   document.getElementById('knob-editor-osc-path').innerHTML = 
     knobObject.getAbsolutePath();
-  document.getElementById('knob-editor-value').value=
-    knobObject.knob.dataset.value;
+    
+  let input = document.getElementById('knob-editor-value');
+  input.value=knobObject.knob.dataset.value;
+  input.max = knobObject.range.max;
+  input.min = knobObject.range.min;
   
   knobEditorDialog.dataset.title = knobObject.label;
   let currentPanel = document.querySelector( 'section.opened');

@@ -111,6 +111,11 @@ class Swipeable {
     console.log(`swipeable ${this.element.id}: invalid value '${value}'`);
   }
   
+  getValue() {
+    return this.selectElement.options[
+      this.selectElement.selectedIndex].value;
+  }
+  
   setDialogData(dialogData) {
     this.dialogData = Object.assign(
       { title:'Select', 

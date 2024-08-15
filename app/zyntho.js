@@ -30,6 +30,8 @@ const {registerOSC} = require('./osc.js');
 const OSCFile = require('./oscfile.js');
 const OSCWorker = require('./oscworker.js').OSCWorker;
 
+const SubsynthHarmonics = require('./subsynth').SubsynthHarmonics;
+
 var exports = module.exports = {};
 
 class ZynthoServer extends EventEmitter {
@@ -50,6 +52,9 @@ class ZynthoServer extends EventEmitter {
     * advanced data for new session
     */
     this.session = ZynthoServer.defaultExtendedSession();
+    
+    //creates a subsynth custom manager
+    this.ssHarmonics = new SubsynthHarmonics();
     
     /*
     * Adds all zynthomania's internal OSC commands
@@ -283,19 +288,22 @@ class ZynthoServer extends EventEmitter {
      * triggered before to handle the message.
      */
     this.osc.on("osc", (oscMsg) => {
+      /*
         if (oscMsg.address.match(/^\/zmania/i)){
           zconsole.debug(`zyntho message on osc: ${oscMsg.address}`);
-          let parsed = this.parser.translate(oscMsg.address);
-          this.oscEmitter.on(parsed.address, this, parsed.args);
+          //let parsed = this.parser.translate(oscMsg.address);
+          
+          //this.oscEmitter.on(parsed.address, this, parsed.args);
         } else {
           
-          //DEBUG ONLY: Skip zyn-fusion /active_keys
-          //REMOVEME!!
-          if (oscMsg.address != '/active_keys')
-            zconsole.log(`OSC message: ${oscMsg.address} ${JSON.stringify(oscMsg.args.map( (e) => e.value))}`);
+          
         }
-        
-        this.emit(oscMsg.address, oscMsg);
+        */
+      //DEBUG ONLY: Skip zyn-fusion /active_keys
+      //REMOVEME!!
+      if (oscMsg.address != '/active_keys')
+        zconsole.log(`OSC message: ${oscMsg.address} ${JSON.stringify(oscMsg.args.map( (e) => e.value))}`);
+      this.emit(oscMsg.address, oscMsg);
     });
 
     
@@ -1070,16 +1078,31 @@ class ZynthoServer extends EventEmitter {
       return;
     }
     
+    let filteredBundle = this.parser.emptyBundle();
+    
+    //check if multiple packets or not
+    //filtering should allow mixed packets
+    
     if (packet.address === undefined) {
-      if (packet.packets[0].address.match(/^\/zmania/i)) {
-        packet.packets.forEach( (p) => {this.oscEmitter.emit(p.address, this, p.args)} );
-        return;
-      }
+        packet.packets.forEach( (p) => {
+          if (packet.packets[0].address.match(/^\/zmania/i)) {
+            zconsole.debug(`zyntho message on send-osc: ${p.address}`);
+            this.oscEmitter.emit(p.address, this, p.args)
+          } else {
+            filteredBundle.packets.push(p);
+          }
+        });
+        
+      if (filteredBundle.packets.length > 0)
+        this.osc.send.call(this.osc, filteredBundle);
+      
+      return;
     } else if (packet.address.match(/^\/zmania/i)) {
+      zconsole.debug(`single zyntho message on send-osc: ${packet.address}`);
       this.oscEmitter.emit(packet.address, this, packet.args);
       return;
     }
-      
+    
     this.osc.send.call(this.osc, packet);
   }
   
@@ -1147,6 +1170,8 @@ class ZynthoServer extends EventEmitter {
     });
     
     this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));
+    
+    //Loads extra session data
     let sessionJson = sessionPath.replace(/xmz$/,'json');
     if (Fs.existsSync(sessionJson)) {
        zconsole.log('Loading extended data...');

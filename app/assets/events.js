@@ -1111,6 +1111,39 @@ function onSynthSubHarmonics() {
     });
 }
 
+function onSynthSubBandwidth() {
+   if (window.zsession.initSubB === undefined){
+     new OSCSwipeable(document.getElementById('sub-band-init'),
+     [0,1,2],
+     ['Zero', 'Random', 'Ones']);
+     
+     new OSCKnob(document.getElementById('sub-band-band'));
+     new OSCKnob(document.getElementById('sub-band-stretch'));
+     window.zsession.initSubB = true;
+   }
+   
+   osc_synch_section(document.getElementById('subsynth-bandwidth'))
+    .then ( ()=> {
+      loadSection('subsynth-bandwidth');
+    });
+}
+
+function onSynthSubMagnitudeGen() {
+  new ZynthoREST().query('status/subsynth'). then ( (data) => {
+    loadHarmonicsEditor('H. Magnitude', data, 'magnitude', 
+      osc_sanitize('/synthcursor/Phmag'));
+  });
+}
+
+function onSynthSubBandwidthGen() {
+  new ZynthoREST().query('status/subsynth'). then ( (data) => {
+    loadHarmonicsEditor('R. Bandwidth', data, 'bandwidth', 
+      osc_sanitize('/synthcursor/Phrelbw'));
+  });
+}
+
+
+
 function onScriptOK() {
   $('#pnlConsole div').addClass('hidden');
   $('#pnlConsole button, #pnlConsole textarea').removeClass('hidden');
