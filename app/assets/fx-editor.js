@@ -50,7 +50,7 @@ function loadFXEditor(data, title, backTo) {
   
   window.zsession.oscElements['fx-type'].setValue(data.efftype);
   if ( data.efftype == 0) {
-    loadNoneFx();
+    loadNoneFx(data);
   } else {
     loadFx(data);
   }
@@ -58,8 +58,15 @@ function loadFXEditor(data, title, backTo) {
   loadSection('fx-editor');
 }
 
-function loadNoneFx() {
-  
+function loadNoneFx(data) {
+  let __OSCPATH =  `${window.zsession.fxcursor}/parameter`    ;
+   window.zsession.oscElements['fx-drywet'].setValue(0);
+   window.zsession.oscElements['fx-pan'].setValue(0);
+   
+   window.zsession.oscElements['fx-drywet'].setEnabled(false);
+   window.zsession.oscElements['fx-pan'].setEnabled(false);
+      
+  document.getElementById('fx-alchemy').classList.add('hidden');
 }
 
 function loadFx(data) {
@@ -68,6 +75,11 @@ function loadFx(data) {
       data.osc[`${__OSCPATH}0`].value);
    window.zsession.oscElements['fx-pan'].setValue(
       data.osc[`${__OSCPATH}1`].value);
+      
+  window.zsession.oscElements['fx-drywet'].setEnabled(true);
+  window.zsession.oscElements['fx-pan'].setEnabled(true);
+   
+  document.getElementById('fx-alchemy').classList.remove('hidden');
   
   //load presets
   let presetObj = window.zsession.oscElements['fx-preset'];

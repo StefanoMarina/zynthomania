@@ -8,8 +8,8 @@ const FILTER_TYPES = [
  
 const FILTER_TYPE_PARTIAL = [ 'Ptype' , '', 'type-svf', 'type-moog', 'type-comb'];
 
-function loadFrequencyEditor(title, backto, target, path, lfo, envelope) {
-  if (window.zsession.initFrequencyEditor === undefined) {
+function loadFrequencyEditor(title, target, path, lfo, envelope) {
+  if (zsession.initFrequencyEditor === undefined) {
    let osc = new OSCSwipeable(document.getElementById('freq-detune-type'),
       [...Array(4).keys()],
       ['L. 35c', 'L. 10c', 'Ex. 100c', 'E. 1200c'],
@@ -29,7 +29,7 @@ function loadFrequencyEditor(title, backto, target, path, lfo, envelope) {
     
     new OSCBoolean(document.getElementById('freq-para'));
     
-    window.zsession.initFrequencyEditor = true;
+    zsession.initFrequencyEditor = true;
   }
   
   let section = document.getElementById('synth-frequency-editor');
@@ -40,27 +40,25 @@ function loadFrequencyEditor(title, backto, target, path, lfo, envelope) {
       
       //hotfix for a DUMB move on OSC
       if (target == 'FM' && id == 'freq-para') {
-        window.zsession.oscElements[id].oscpath = 
+        zsession.oscElements[id].oscpath = 
         `${path}/PFMFixedFreq`
       } else {
-      window.zsession.oscElements[id].oscpath = 
+      zsession.oscElements[id].oscpath = 
         (partial.startsWith('P'))
           ? `${path}/P${target}${partial.slice(1)}`
           : `${path}/${target}${partial}`;
       }
   });
   
-  if (window.zsession.synthID == 'ad' && window.zsession.voiceID == 127) {
-    window.zsession.oscElements['freq-para'].oscpath = null;
-    window.zsession.oscElements['freq-para'].HTMLElement
+  if (zsession.synthID == 'ad' && zsession.voiceID == 127) {
+    zsession.oscElements['freq-para'].oscpath = null;
+    zsession.oscElements['freq-para'].HTMLElement
       .classList.add('hidden');
   } else {
-    window.zsession.oscElements['freq-para'].HTMLElement
+    zsession.oscElements['freq-para'].HTMLElement
       .classList.remove('hidden');
   }
   
-  section.dataset.title=title;
-  section.dataset.back = backto;
   
   let el = document.getElementById('freq-open-lfo');
   if (lfo != null) {
@@ -79,74 +77,52 @@ function loadFrequencyEditor(title, backto, target, path, lfo, envelope) {
   }
   
   
+  section.dataset.title=title;
+  
   osc_synch_section(section, true).then  ( ()=> {
     onFreqEditChangeTune();
-    loadSection('synth-frequency-editor');
+    loadSection('synth-frequency-editor', true);
   });
   
 } 
 
 function onFreqEditChangeTune(event) {
   let value = [L35_TUNE, L10_TUNE, E100_TUNE, E1200_TUNE]
-    [window.zsession.oscElements['freq-detune-type']
+    [zsession.oscElements['freq-detune-type']
       .swipeable.selectElement.selectedIndex];
   
-  window.zsession.oscElements['freq-detune'].range = value;
+  zsession.oscElements['freq-detune'].range = value;
 }
 
-function loadEnvelopeEditor(title, backto, enabled, path, envelopes) {
+function loadEnvelopeEditor(title, unused, path, envelopes) {
   
   let envKnobs = [
   'adsr-t-a', 'adsr-t-d', 'adsr-t-r',
   'adsr-v-a', 'adsr-v-d', 'adsr-v-s', 'adsr-v-r'
   ];
       
-  if (window.zsession.initADSREditor === undefined) {
-    let enabledButton = 
-      new OSCBoolean(document.getElementById('adsr-enabled'));
-    //new OSCBoolean(document.getElementById('adsr-linear'));
+  if (zsession.initADSREditor === undefined) {
     new OSCBoolean(document.getElementById('adsr-forced-release'));
     
     new OSCKnob(document.getElementById('adsr-stretch'));
     envKnobs.forEach ( (id) => new OSCKnob(document.getElementById(id)));
-    
-    enabledButton.bindEnable(...envKnobs);
-    enabledButton.bindEnable('adsr-forced-release', 'adsr-stretch');
-    
-    window.zsession.initADSREditor = true;
+    zsession.initADSREditor = true;
   }
   
   let section = document.getElementById('synth-envelope-editor');
   section.dataset.title=title;
-  section.dataset.back = backto;
-  
-  //check enabled
-  if (enabled) {
-    window.zsession.oscElements['adsr-enabled'].oscpath = enabled;
-    window.zsession.oscElements['adsr-enabled'].HTMLElement.classList.remove('hidden');
-  } else {
-    window.zsession.oscElements['adsr-enabled'].setEnabled(true);
-    window.zsession.oscElements['adsr-enabled'].HTMLElement.classList.add('hidden');
-  }
-  
+   
   let showAnyTime = envelopes.slice(0,3).reduce ( (sum, b) => sum+b);
   let showAnyValue = envelopes.slice(3).reduce ( (sum, b) => sum+b);
   
   //reset time knobs
-  //envKnobs.forEach ( id => window.zsession.oscElements[id].oscpath = null);
+  //envKnobs.forEach ( id => zsession.oscElements[id].oscpath = null);
   
-  if (!showAnyTime)
-    document.getElementById('env-section-times').classList.add('hidden');  
-  else
-    document.getElementById('env-section-times').classList.remove('hidden');
+  showIf('env-section-times', showAnyTime);
+  showIf('env-section-values', showAnyValue);
   
-  if (!showAnyValue)
-    document.getElementById('env-section-values').classList.add('hidden');  
-  else
-    document.getElementById('env-section-values').classList.remove('hidden');
-    
   for (let i = 0; i < envKnobs.length; i++) {
-    let obj = window.zsession.oscElements[envKnobs[i]];
+    let obj = zsession.oscElements[envKnobs[i]];
     if (envelopes[i]){
       obj.oscpath = `${path}/${obj.HTMLElement.dataset.partial}`;
       obj.HTMLElement.parentNode.classList.remove('hidden');
@@ -155,25 +131,40 @@ function loadEnvelopeEditor(title, backto, enabled, path, envelopes) {
       obj.HTMLElement.parentNode.classList.add('hidden');
     }
   }
+
+  //is 'Att' always visible?
+  if (showAnyTime < 4) {
+    zsession.oscElements['adsr-t-a'].HTMLElement.parentNode.classList.add(
+      'offset-'+(4-showAnyTime));
+  } else {
+    zsession.oscElements['adsr-t-a'].HTMLElement.parentNode.classList
+      .remove('offset-1','offset-2','offset-3');
+  }
+  if (showAnyValue < 4) {
+    zsession.oscElements['adsr-v-a'].HTMLElement.parentNode.classList.add(
+      'offset-'+(4-showAnyTime));
+  } else {
+    zsession.oscElements['adsr-v-a'].HTMLElement.parentNode.classList
+      .remove('offset-1','offset-2','offset-3');
+  }
   
   ['adsr-forced-release', 'adsr-stretch'].forEach ( (id) =>{
-    let obj = window.zsession.oscElements[id];
+    let obj = zsession.oscElements[id];
     obj.oscpath = `${path}/${obj.HTMLElement.dataset.partial}`;
   });
   
   
   osc_synch_section(section, true).then  ( ()=> {
-    loadSection('synth-envelope-editor');
+    loadSection('synth-envelope-editor', true);
   });
 } 
 
-function loadLFOEditor(backTo, enabled, path) {
+function loadLFOEditor(enabled, path) {
   let knobs = ['lfo-frequency','lfo-stretch','lfo-depth','lfo-phase',
       'lfo-delay', 'lfo-fadein', 'lfo-fadeout', 'lfo-rand-amp',
       'lfo-rand-freq'];
       
-  if (window.zsession.initLFOEditor === undefined) {
-    new OSCBoolean(document.getElementById('lfo-enable'));
+  if (zsession.initLFOEditor === undefined) {
     new OSCBoolean(document.getElementById('lfo-cont'));
     
     new OSCSwipeable(document.getElementById('lfo-type'),
@@ -186,24 +177,19 @@ function loadLFOEditor(backTo, enabled, path) {
           let obj = new OSCKnob(document.getElementById(id));
       });
     
-    window.zsession.oscElements['lfo-frequency'].setRange(HERTZ);
+    zsession.oscElements['lfo-frequency'].setRange(HERTZ);
     
-    window.zsession.oscElements['lfo-delay'].setRange(
+    zsession.oscElements['lfo-delay'].setRange(
       { 'min': 0, 'max': 4.0,
         'type': 'centisecs to start', 'itype': 'f'}
     );
     
-    window.zsession.oscElements['lfo-enable'].bindEnable (...knobs);
-    window.zsession.oscElements['lfo-enable'].bindEnable('lfo-type',
-      'lfo-cont');
-    
-    window.zsession.initLFOEditor = true;
-    
-    window.zsession.oscElements['lfo-fadein'].setRange(LFO_FADER);
-    window.zsession.oscElements['lfo-fadeout'].setRange(LFO_FADER);
+   
+    zsession.oscElements['lfo-fadein'].setRange(LFO_FADER);
+    zsession.oscElements['lfo-fadeout'].setRange(LFO_FADER);
     
     let b = new OSCBundle();
-     window.zsession.oscElements['bundle-lfo-sync'] = b;
+     zsession.oscElements['bundle-lfo-sync'] = b;
     b.addEventListener('sync', ( data) => {
       let paths = b.getAbsolutePath();
       b.values= {
@@ -211,34 +197,27 @@ function loadLFOEditor(backTo, enabled, path) {
         'denominator' : parseInt(data[paths[1]][0])
       };
       
-      window.zsession.oscElements['lfo-frequency']
+      zsession.oscElements['lfo-frequency']
         .setEnabled(
-        window.zsession.oscElements['lfo-frequency'] &&
+        zsession.oscElements['lfo-frequency'] &&
         (b.values['numerator'] <= 0));
     });
-  }
-  
-  if (enabled != null) {
-    window.zsession.oscElements['lfo-enable'].HTMLElement.classList.remove('hidden');
-    window.zsession.oscElements['lfo-enable'].oscpath = enabled;
-  } else {
-    window.zsession.oscElements['lfo-enable'].HTMLElement.classList.add('hidden');
-    window.zsession.oscElements['lfo-enable'].setEnabled(true);
-    window.zsession.oscElements['lfo-enable'].oscpath = null;
+    
+    zsession.initLFOEditor = true;
   }
   
   //fill paths
   ['lfo-cont','lfo-type',...knobs].forEach( (id) => {
-    let obj = window.zsession.oscElements[id];
+    let obj = zsession.oscElements[id];
     obj.oscpath = `${path}/${obj.HTMLElement.dataset.partial}`;
   });
-  var bundle = window.zsession.oscElements['bundle-lfo-sync'];
-  bundle.oscpath = [`${path}/numerator`, `${path}/denominator`];
   
+  var bundle = zsession.oscElements['bundle-lfo-sync'];
+  bundle.oscpath = [`${path}/numerator`, `${path}/denominator`];
   let section = document.getElementById('synth-lfo-editor');
   
-  
-  section.dataset.back = backTo;
+ 
+   //section.dataset.back = backTo;
   osc_synch_section(section).then( () => {
     return bundle.sync();
   }).then( ()=>{
@@ -248,7 +227,7 @@ function loadLFOEditor(backTo, enabled, path) {
 }
 
 function onLFOEditorSyncButton() {
-  let b = window.zsession.oscElements['bundle-lfo-sync'];
+  let b = zsession.oscElements['bundle-lfo-sync'];
   let string = `${b.values['numerator']}/${b.values.denominator}`;
   
   let result = prompt ('Input time fraction according to bpm. 0 to enable manual.',
@@ -265,9 +244,9 @@ function onLFOEditorSyncButton() {
   }
   
   b.act([b.values.numerator,b.values.denominator]).then ( ()=>{
-      window.zsession.oscElements['lfo-frequency']
+      zsession.oscElements['lfo-frequency']
         .setEnabled(
-        window.zsession.oscElements['lfo-frequency'] &&
+        zsession.oscElements['lfo-frequency'] &&
         (b.values['numerator'] <= 0));
       
   });
@@ -276,19 +255,20 @@ function onLFOEditorSyncButton() {
 function onFilterEditorCategoryChange(ev) {
   let index = (ev.detail == null)
     ? ev.target.options[ev.target.selectedIndex].value
-    : ev.detail[0];
-    
-  let obj = window.zsession.oscElements['filter-type'];
+    : Object.values(ev.detail)[0][0];
+  
+  if (index < 0) index = 0;
+  
+  let obj = zsession.oscElements['filter-type'];
   let types = FILTER_TYPES[index];
   obj.setOptions([...Array(types.length).keys()], types);
   obj.oscpath = `${obj.path}/${FILTER_TYPE_PARTIAL[index]}`;
   obj.sync();  
 }
 
-function loadFilterEditor (title, backto, enabled, path, lfo, envelope) {
-  if (window.zsession.initFilterEditor === undefined){
-    new OSCBoolean (document.getElementById('filter-enable'));
-    
+function loadFilterEditor (title, enabled, path, lfo, envelope) {
+  if (zsession.initFilterEditor === undefined){
+     
     let swipe = new OSCSwipeable (document.getElementById('filter-category'),
       [0,2,3,4],
       ['Analog', 'St. Var.', 'Moog', 'Comb'],
@@ -316,32 +296,20 @@ function loadFilterEditor (title, backto, enabled, path, lfo, envelope) {
       { 'min': 0.01, 'max': 1000.0, 'type': 'Peak', 'itype': 'f' }
     );
     
-    window.zsession.oscElements['filter-enable'].bindEnable(
-     ...Array.from(document.querySelectorAll('#synth-edit-filter .osc-element'))
-      .map ( (el)=>el.id)
-      .filter ( (el => el != 'filter-enable'))
-    );
-    window.zsession.initFilterEditor = true;
+   
+    zsession.initFilterEditor = true;
   }
   
-  //Global filter if ! eanbled
-  if (enabled != null) {
-    window.zsession.oscElements['filter-enable'].HTMLElement.classList.remove('hidden');
-    window.zsession.oscElements['filter-enable'].oscpath = enabled;
-  } else {
-    window.zsession.oscElements['filter-enable'].HTMLElement.classList.add('hidden');
-    window.zsession.oscElements['filter-enable'].setValue(true);
-    window.zsession.oscElements['filter-enable'].oscpath = null;
-  }
+ 
   Array.from(document.querySelectorAll('#synth-edit-filter .osc-element'))
       .map ( (el)=>el.id)
-      .filter ( (id => id != 'filter-enable' && id != 'filter-type'))
+      .filter ( (id =>  id != 'filter-type'))
       .forEach( (id) => {
-        let obj = window.zsession.oscElements[id];
+        let obj = zsession.oscElements[id];
         obj.oscpath = `${path}/${obj.HTMLElement.dataset.partial}`;
   });
   
-  window.zsession.oscElements['filter-type'].oscpath = null;
+  zsession.oscElements['filter-type'].oscpath = null;
   
   let elementLFO = document.getElementById('filter-edit-lfo');
   if (lfo) {
@@ -360,14 +328,14 @@ function loadFilterEditor (title, backto, enabled, path, lfo, envelope) {
 
   let section = document.getElementById('synth-edit-filter');
   section.dataset.title = title;
-  section.dataset.back = backto;
+  //section.dataset.back = backto;
   osc_synch_section(section,true).then ( () => {
-    loadSection('synth-edit-filter');
+    loadSection('synth-edit-filter',true);
   });
 }
 
-function loadAmplitudeEditor(title, backto, lfo, envelope){
-  if (window.zsession.initAmplitudeEditor === undefined){
+function loadAmplitudeEditor(title, lfo, envelope){
+  if (zsession.initAmplitudeEditor === undefined){
     new OSCKnob(document.getElementById('amp-volume'),
       null, { 'min': -60, 'max' : 0, 'type': 'Volume (hz)', 'itype': 'f'});
     
@@ -376,39 +344,43 @@ function loadAmplitudeEditor(title, backto, lfo, envelope){
     
     new OSCBoolean (document.getElementById('amp-bypass-global'));
     
-    window.zsession.initAmplitudeEditor = true;
+    zsession.initAmplitudeEditor = true;
   }
   
-  let isVoiceGlobal = 
-    window.zsession.synthID == 'ad' &&
-    window.zsession.voiceID == ADSYNTH_GLOBAL;
-  
-  showIf( 'global-punch' ,isVoiceGlobal);
-  showIf( 'amp-bypass-global', !isVoiceGlobal);
-  showIf( 'amp-delay', !isVoiceGlobal);
-  
-  if (isVoiceGlobal) {
-    window.zsession.oscElements['amp-bypass-global']
-      .oscpath = null;
-    window.zsession.oscElements['amp-delay']
-      .oscpath = null;
-    window.zsession.oscElements['amp-punch'].setEnabled(true);
-    window.zsession.oscElements['amp-punch-time'].setEnabled(true);
-  } else {
-    window.zsession.oscElements['amp-punch'].setEnabled(false);
-    window.zsession.oscElements['amp-punch-time'].setEnabled(false);
-  }
-  
-  if (window.zsession.synthID == 'sub' || isVoiceGlobal) {
-    window.zsession.oscElements['amp-volume'].oscpath =
-      window.zsession.oscElements['amp-volume'].
-        oscpath.replace('volume', 'Volume');
-  } else {
-    window.zsession.oscElements['amp-volume'].oscpath =
-      window.zsession.oscElements['amp-volume'].
-        oscpath.replace('Volume', 'volume');
-  }
 
+  //bp and delay only on ad single voice
+  let useBypassAndDelay = 
+    zsession.synthID == 'ad' &&
+    zsession.voiceID != ADSYNTH_GLOBAL;
+    
+  
+  // Bypass and delay
+  showIf( 'amp-bypass-global', useBypassAndDelay);
+  showIf( 'amp-delay', useBypassAndDelay);
+  zsession.oscElements['amp-bypass-global'].setEnabled(useBypassAndDelay);
+  zsession.oscElements['amp-delay'].setEnabled(useBypassAndDelay);
+  
+  //Punch time & strength
+  let usePunch = 
+    (zsession.synthID != 'sub' &&
+      zsession.voiceID == ADSYNTH_GLOBAL);
+  
+  showIf( 'amp-punch' ,usePunch);
+  showIf( 'amp-punch-time', usePunch);
+  zsession.oscElements['amp-punch'].setEnabled(usePunch);
+  zsession.oscElements['amp-punch-time'].setEnabled(usePunch);
+  
+  
+  let volumeObj = zsession.oscElements['amp-volume'];
+  
+  switch (zsession.synthID) {
+    case 'ad' : 
+      volumeObj.oscpath =  (zsession.voiceID == ADSYNTH_GLOBAL)
+          ? '/synthcursor/Volume' : '/synthcursor/volume';
+    break;
+    case 'sub': volumeObj.oscpath = '/synthcursor/Volume'; break;
+    case 'pad': volumeObj.oscpath = '/synthcursor/PVolume'; break;
+  }
   
   let elementLFO = document.getElementById('amp-edit-lfo');
   if (lfo) {
@@ -427,16 +399,16 @@ function loadAmplitudeEditor(title, backto, lfo, envelope){
   
   let section = document.getElementById('synth-edit-amp');
   section.dataset.title = title;
-  section.dataset.back = backto;
+  
   osc_synch_section(section).then ( ()=>{
-    loadSection('synth-edit-amp');
+    loadSection('synth-edit-amp',true);
   });
 }
 
 function loadHarmonicsEditor(name, data, type, path) {
   const labels = ['SINE','COS', 'UP', 'DOWN', 'FLAT', 'RANDOM'] ;
-  if (window.zsession.initHarmonicsEditor === undefined) {
-    let obj = window.zsession.elements['hgen-type'] = new Swipeable(
+  if (zsession.initHarmonicsEditor === undefined) {
+    let obj = zsession.elements['hgen-type'] = new Swipeable(
       document.getElementById('hgen-type'));
       obj.setOptions([...Array(6).keys()],
       labels);
@@ -450,12 +422,12 @@ function loadHarmonicsEditor(name, data, type, path) {
     document.getElementById('hgen-generate').addEventListener
       ('click', onHarmonicsEditorGenerate);
       
-    window.zsession.initHarmonicsEditor = true;
+    zsession.initHarmonicsEditor = true;
   }
   
-  window.zsession.elements['hgen-type'].setValue(labels.indexOf(data.alg));
-  window.zsession.elements['hgen-q'].setValue(data.power);
-  window.zsession.elements['hgen-offset'].setValue(data.offset);
+  zsession.elements['hgen-type'].setValue(labels.indexOf(data.alg));
+  zsession.elements['hgen-q'].setValue(data.power);
+  zsession.elements['hgen-offset'].setValue(data.offset);
 
   let section = document.getElementById('subsynth-harmonics');
   section.dataset.path = path;
@@ -472,13 +444,13 @@ function onHarmonicsEditorGenerate(event) {
       'path' : path,
   //    'type' : type,
       'alg' : parseInt(
-        window.zsession.elements['hgen-type'].getValue()
+        zsession.elements['hgen-type'].getValue()
         ),
       'power' : parseFloat(
-        window.zsession.elements['hgen-q'].getValue()
+        zsession.elements['hgen-q'].getValue()
       ),
       'offset' : parseInt(
-        window.zsession.elements['hgen-offset']
+        zsession.elements['hgen-offset']
         .getValue())
   }).then ( ()=>{
     displayOutcome('Harmonics generated');

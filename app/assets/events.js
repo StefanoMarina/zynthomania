@@ -25,10 +25,10 @@ const ADSYNTH_GLOBAL = 127; //adsynth voice id pointing to global
   new ZynthoREST().query('files/banks', null)
   .then((data) =>{
     data.forEach( (item) => {
-      window.zsession.banks[item] = [];
+      zsession.banks[item] = [];
       displayOutcome("Banks loaded.");
     });
-    let banks = window.zsession.banks;
+    let banks = zsession.banks;
     let entry = '';
     let selectObject = document.getElementById('selBanks');
     
@@ -60,10 +60,10 @@ function onBanksBankSelect(event) {
   
   new ZynthoREST().query('files/banks/xiz', {bank: selectedBank})
   .then( (data) => {
-    window.zsession.bank = selectedBank;
-    window.zsession.banks[selectedBank] = data;
+    zsession.bank = selectedBank;
+    zsession.banks[selectedBank] = data;
     
-    let instruments = window.zsession.banks[selectedBank];
+    let instruments = zsession.banks[selectedBank];
     let entry = '';
     let selectObject = document.getElementById('selInstruments');
     selectObject.innerHTML = '';
@@ -97,7 +97,7 @@ function onBanksBankSelect(event) {
 
 function onBanksInstrumentClick(instrument) {
   new ZynthoREST().post( "loadInstrument", {'instrument': instrument, 
-    'id': window.zsession.partID} )
+    'id': zsession.partID} )
    .then (
     
     ()=>{onToolbarChangePart()}
@@ -137,10 +137,10 @@ function onBindChain() {
 function onBindFile() {
   doQuery("status/binds", null, (data) =>{
   
-    window.zsession.bind.session = data.sessionConfig;
+    zsession.bind.session = data.sessionConfig;
     
-    const saveMode = window.zsession.bind.session != null
-    && Object.keys(window.zsession.bind.session).length > 0;
+    const saveMode = zsession.bind.session != null
+    && Object.keys(zsession.bind.session).length > 0;
     
     const ul=$('#selBinds');
     
@@ -160,7 +160,7 @@ function onBindFile() {
 
 function onBindEdit(config) {
   if (config === undefined) {
-    window.zsession.bind.current = {
+    zsession.bind.current = {
       "type" : "trigger",
       "cc" : 0,
       "trigger" : 64,
@@ -168,11 +168,11 @@ function onBindEdit(config) {
     };
     $('#bindApply').text('Add');
   } else {
-    window.zsession.bind.current = config;
+    zsession.bind.current = config;
     $('#bindApply').text('Update');
   }
   
-  let bind = window.zsession.bind;
+  let bind = zsession.bind;
   
   if (bind.info == null) {
     bind.info = {source : 'cc', channel: 1};
@@ -245,8 +245,8 @@ function onBindEdit(config) {
 }
 
 function onBindEditApply() {
-  let current = window.zsession.bind.current;
-  let info = window.zsession.bind.info;
+  let current = zsession.bind.current;
+  let info = zsession.bind.info;
   
   let d1source= $('#bindEditSource').val();
   
@@ -283,10 +283,10 @@ function onBindEditApply() {
   
   let newChannel = String($('#bindEditChannel').val());
   
-  if (window.zsession.bind.session == null)
-    window.zsession.bind.session = {};
+  if (zsession.bind.session == null)
+    zsession.bind.session = {};
   
-  let session =  window.zsession.bind.session;
+  let session =  zsession.bind.session;
   
   //find if new config and channel !=, remove old position
   if (newChannel != info.channel && (info.channel != null
@@ -314,7 +314,7 @@ function onBindEditApply() {
 }
 
 function onBindEditChange(e) {
-  let current = window.zsession.bind.current;
+  let current = zsession.bind.current;
   let newMode = $(e.target).val();
   $('.bindSubEditor').addClass('hidden');
   
@@ -368,15 +368,15 @@ doQuery('midilearn', {force: [9,11]}, (data)=>{
       return;
     }
     
-    window.zsession.bind.info.channel = (data[0] & 0xf)+1;
+    zsession.bind.info.channel = (data[0] & 0xf)+1;
     
-    let current = window.zsession.bind.current;
+    let current = zsession.bind.current;
     if (dataType == 9) {
-      window.zsession.bind.info.source = 'noteon';
+      zsession.bind.info.source = 'noteon';
       current.noteon = data[1];
       if (current.cc) delete current.cc;
     } else {
-      window.zsession.bind.info.source = 'cc';
+      zsession.bind.info.source = 'cc';
       current.cc = data[1];
       if (current.noteon) delete current.noteon;
     }
@@ -392,8 +392,8 @@ doQuery('midilearn', {force: [9,11]}, (data)=>{
 
 function onBindEditSwitchListClick(e) {
   let value = $(e.target).text();
-  window.zsession.bind.selectedSwitch = value;
-  let source = window.zsession.bind.current['switch'];
+  zsession.bind.selectedSwitch = value;
+  let source = zsession.bind.current['switch'];
   
   $('#bindEditData2').val(value);
   $('#bindEditTrigger').removeClass('hidden');
@@ -403,7 +403,7 @@ function onBindEditSwitchListClick(e) {
 }
 
 function bindSaveCurrentEdit() {
-  const current = window.zsession.bind.current;
+  const current = zsession.bind.current;
   const switchTable = $('#bindEditSwitchTable');
   
    //check if there is a current edit, save
@@ -427,7 +427,7 @@ function bindSetOSC(osc) {
 }
 
 function bindUpdateRemoteSession() {
-  let session = window.zsession.bind.session;
+  let session = zsession.bind.session;
   if (session == null || Object.keys(session).length == 0) {
     displayMessage('No session to save');
     return;
@@ -440,16 +440,16 @@ function bindUpdateRemoteSession() {
 function onBindEditSetHigherMode(button) {
   let qb = $(button);
   if (qb.hasClass('selected')) {
-    window.zsession.bind.current.hmode = 0;
+    zsession.bind.current.hmode = 0;
     qb.removeClass('selected')
   } else {
-    window.zsession.bind.current.hmode = 1;
+    zsession.bind.current.hmode = 1;
     qb.addClass('selected')
   }
 }
 
 function onBindEditSwitchAddClick() {
-  let current = window.zsession.bind.current;
+  let current = zsession.bind.current;
   let keys = Object.keys(current['switch']);
   if (keys.length >= 127)
     return; //what?
@@ -477,7 +477,7 @@ function onBindEditSwitchDeleteClick() {
   if (element.length == 0)
     return;
   let value = $(element).text();
-  delete window.zsession.bind.current['switch'][value];
+  delete zsession.bind.current['switch'][value];
   $(element).remove();
   if ( $('#bindEditSwitchTable').find('li').length == 0) {
     $('#bindEditTrigger').addClass('hidden');
@@ -502,7 +502,7 @@ function onBindFileEditClick() {
   doAction('binds/session', {'file': file}, 
     (data) => {
       
-    window.zsession.bind.session = data;
+    zsession.bind.session = data;
     
   });
 }
@@ -531,13 +531,13 @@ function onBindFileSaveClick() {
 
 function onBindSession() {
   doQuery('status/binds', null, (data) => {
-    window.zsession.bind.session = data.sessionConfig;
+    zsession.bind.session = data.sessionConfig;
      
-    if (window.zsession.bind.session == null) {
-      window.zsession.bind.session = {};
+    if (zsession.bind.session == null) {
+      zsession.bind.session = {};
     }
     
-    let session = window.zsession.bind.session;
+    let session = zsession.bind.session;
     let pnlSession = $('#pnlBindSession');
     if (Object.keys(session).length ==0) {
       $('#pnlBindSession > div').addClass('hidden');
@@ -590,9 +590,9 @@ function onBindSessionEditClick(id) {
   $('#pnlBinds header button[data-open=pnlBindSession]').removeClass('selected');
   $('#pnlBinds header button[data-open=pnlBindEdit]').addClass('selected');
   
-  let info = window.zsession.bind.info;
+  let info = zsession.bind.info;
   info.channel = channel;
-  let bind = window.zsession.bind.session[String(channel)][index];
+  let bind = zsession.bind.session[String(channel)][index];
   info.source = (bind.cc) ? 'cc' : 'noteon';
   onBindEdit(bind);
 }
@@ -601,7 +601,7 @@ function onBindSessionDelClick(id) {
   let rx = id.match(/^bind-ses-(all|\d+)-(\d+)/);
   let channel = rx[1], index = parseInt(rx[2]);
   
-  window.zsession.bind.session[channel].splice(index,1);
+  zsession.bind.session[channel].splice(index,1);
   bindUpdateRemoteSession();
   onBindSession();
 }
@@ -620,9 +620,9 @@ function onFxDry() {
 
 /** loads part fx */
 function onFxPart() {
-  doQuery('status/partfx', {id: window.zsession.partID}, (data) =>{
+  doQuery('status/partfx', {id: zsession.partID}, (data) =>{
     console.log(data);
-      window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
+      zsession.partefx[zsession.partID] = {fx : data.efx, send : data.send }
       //onFXLoad('btnpfx', data);
       
       for (let i = 0; i < 3; i++)
@@ -657,13 +657,13 @@ function onFxRoute() {
 
 function onFxPartSystemKnobChange(id) {
   let newValue = window.knobs[`kss${id}`].getValue();
-  doAction('script', {script : `/Psysefxvol${id}/part${window.zsession.partID} ${newValue}` });
+  doAction('script', {script : `/Psysefxvol${id}/part${zsession.partID} ${newValue}` });
 }
 
 function onFxSystem() {
-   doQuery('status/systemfx', {part: window.zsession.partID}, (data) =>{
+   doQuery('status/systemfx', {part: zsession.partID}, (data) =>{
     console.log(data);
-      //window.zsession.partefx[window.zsession.partID] = {fx : data.efx, send : data.send }
+      //zsession.partefx[zsession.partID] = {fx : data.efx, send : data.send }
       //onFXLoad('btnpfx', data);
       
       for (let i = 0; i < 4; i++)
@@ -715,47 +715,56 @@ function onScriptQueryClick() {
   });
 }
 
+/**
+ * SYNTH SECTION
+ */
+ 
 function onSynthToolbarUpdate() {
-  window.zsession.layerID = document.querySelector('#synth-layer select')
+  zsession.layerID = document.querySelector('#synth-layer select')
     .selectedIndex;
   
   //console.log("Updating synth toolbar");
   
-  window.zsession.oscElements['bundle-synth-toolbar'].sync()
+  zsession.oscElements['bundle-synth-toolbar'].sync()
     .then ( (data) => {
-      console.log(data);
+      //console.log(data);
       result = osc_map_to_control(data);
-      window.zsession.oscElements['synth-toolbar-layer-enabled']
+      zsession.oscElements['synth-toolbar-layer-enabled']
         .setValue(result['Penabled']);
       
-      showIf('synth-toolbar-ad-enabled', result['Padenabled'], 'disabled');
-      showIf('synth-toolbar-sub-enabled', result['Psubenabled'], 'disabled');
-      showIf('synth-toolbar-pad-enabled', result['Ppadenabled'], 'disabled'); 
+      showIf('synth-toolbar-ad-enabled', result['Padenabled'], 'gray');
+      showIf('synth-toolbar-sub-enabled', result['Psubenabled'], 'gray');
+      showIf('synth-toolbar-pad-enabled', result['Ppadenabled'], 'gray'); 
       
-      window.zsession.elements['adsynth-voice'].setSelection(window.zsession.voiceID);
+      zsession.elements['adsynth-voice'].setSelection(zsession.voiceID);
   });
 }
 
 function onSynthToolbarVoiceUpdate(event) {
-  window.zsession.voiceID = 
+  zsession.voiceID = 
     event.target.options[event.target.selectedIndex].value;
     
   set_synth_cursor();
+  
+  //update synth page regardless of position
+  showIf('global-voice-pointer', zsession.voiceID == ADSYNTH_GLOBAL);
+  showIf('voice-matrix', zsession.voiceID != ADSYNTH_GLOBAL);
+ 
   
   //reload the section or return to main synth
   let currentActiveSection = document.querySelector('#section-content section.opened');
   
   //Adsynth Oscillator not availale in global
   if (currentActiveSection.id == 'section-synth-osc'
-   && window.zsession.voiceID == ADSYNTH_GLOBAL){
+   && zsession.voiceID == ADSYNTH_GLOBAL){
      onSynth();
   } else {
-    window.zsession.reloadSynthSubSection();
+    zsession.reloadSynthSubSection();
   }
 }
 
-function onSynth(synth) {
-  if (window.zsession.initSynthMain === undefined) {
+function initSynthToolbar() {
+  if (zsession.initSynthMain === undefined) {
     
     // Synth toolbar init
     let zeroTo15 = [...Array(16).keys()];
@@ -769,7 +778,7 @@ function onSynth(synth) {
     let toolbarUpdateObject = new OSCBundle(['/part/kit/Padenabled',
         '/part/kit/Psubenabled', '/part/kit/Ppadenabled',
         '/part/kit/Penabled']);
-    window.zsession.oscElements['bundle-synth-toolbar'] = toolbarUpdateObject;
+    zsession.oscElements['bundle-synth-toolbar'] = toolbarUpdateObject;
     
     new OSCBoolean(document.getElementById('synth-toolbar-layer-enabled'))
       .label = ('Layer enabled');
@@ -783,61 +792,163 @@ function onSynth(synth) {
         )
       ));
     swipe.setDialogData({'title': 'Select voice', 'buttonClass' : 'col-3'});
-    
     swipe.selectElement.addEventListener('change', onSynthToolbarVoiceUpdate);
+    swipe.setValue(zsession.voiceID);
     
-    swipe.setValue(window.zsession.voiceID);
+    zsession.elements['adsynth-voice'] = swipe;
     
-    
-    window.zsession.elements['adsynth-voice'] = swipe;
-    
-    //enable synth
-    let obj = new OSCBoolean(document.getElementById('synth-enabled'));
-    
-    //turn on/off toolbar
-    obj.HTMLElement.addEventListener( 'sync' , (event)=> {
-      value = Object.values(event.detail)[0][0];
-      let id= `synth-toolbar-${window.zsession.synthID}-enabled`;
-      showIf(id, value, 'disabled');
-    });
-    
-    window.zsession.initSynthMain = true;
+    zsession.initSynthMain = true;
   }
-  
+}
+
+function onSynthEnableSync(event) {
+  let value = (event.type == 'sync') 
+    ? Object.values(event.detail)[0][0]
+    : event.detail.script.endsWith('T');
+    
+  //console.log(`Call: ${event.type}, ${value}`);
+  let id= `synth-toolbar-${zsession.synthID}-enabled`;
+  showIf(id, value, 'gray');
+}
+
+function onSynth(synth) {
+  initSynthToolbar();
+   setSelectedToolbarButton(document.getElementById('part-toolbar-synth'));
+   
   //refresh synth cursor
   set_synth_cursor(synth);
   if (synth == undefined)
-    synth = window.zsession.synthID;
+    synth = zsession.synthID;
   
-  document.querySelectorAll('#synthSelector button.selected')
-      .forEach ( (btn)=>btn.classList.remove('selected'));
-  
-  //general stuff
-  showIf('adsynth-voice', synth == 'ad');
-  
-  showIf('adsynth-edit', synth == 'ad');
-  showIf('subsynth-edit', synth == 'sub');
-  showIf('padsynth-edit', synth == 'pad');
-  
-  let section = document.getElementById('section-synth');
-  
-  //set caption
-  document.getElementById('current-synth').innerHTML = 
-      synth.toUpperCase()+'SYNTH';
+  zsession.reloadSynthSubSection = onSynth;
+  switch (synth) {
+    case 'sub' : onSynthSubsynth(); break;
+    case 'ad' : onSynthAdsynth(); break;
+    case 'pad': onSynthPadsynth(); break;
+    default: break;
+  }
+}
 
-  window.zsession.oscElements['synth-enabled'].sync();
+function onSynthAdsynth() {
+  if (zsession.initAdSynth === undefined) {
+    let obj = new OSCBoolean(document.getElementById('adsynth-enabled'));
     
-  loadSection('section-synth');
-  setSelectedToolbarButton(document.getElementById('part-toolbar-synth'));
+    obj.HTMLElement.addEventListener('sync', onSynthEnableSync);
+    obj.HTMLElement.addEventListener('act', onSynthEnableSync);
+    
+    new OSCPathElement(document.getElementById('adsynth-vco-env-enable'),
+      null,onSynthFrequencyEnvelope);
+    new OSCPathElement(document.getElementById('adsynth-vco-lfo-enable'),
+      null,onSynthFrequencyLFO);
+      
+    obj = new OSCPathElement(document.getElementById('adsynth-vcf-enable'),
+      null,onSynthFilter);
+    
+    new OSCPathElement(document.getElementById('adsynth-vcf-env-enable'),
+      null,onSynthFilterEnvelope);
+    new OSCPathElement(document.getElementById('adsynth-vcf-lfo-enable'),
+      null,onSynthFilterLFO);
+    
+    obj.bindEnable('adsynth-vcf-env-enable',
+    'adsynth-vcf-lfo-enable');
+    
+    new OSCPathElement(document.getElementById('adsynth-vca-env-enable'),
+      null,onSynthAmplitudeEnvelope);
+    new OSCPathElement(document.getElementById('adsynth-vca-lfo-enable'),
+      null,onSynthAmplitudeLFO);
+    
+    new OSCPathElement(document.getElementById('adsynth-voice-enable'),
+      null,onSynthOSC);
+    
+    
+    zsession.initAdSynth = true;
+ }
+ 
+ set_synth_cursor('ad');
+ 
+ let voiceControls = Array.from(document.getElementById('voice-matrix')
+    .querySelectorAll('.osc-element')).map ( (el)=> el.id );
+ 
+ showIf('global-voice-pointer', zsession.voiceID == ADSYNTH_GLOBAL);
+ showIf('voice-matrix', zsession.voiceID != ADSYNTH_GLOBAL);
+ 
+ let params = (zsession.voiceID != ADSYNTH_GLOBAL) 
+  ? voiceControls : '';
   
-  document.getElementById(`synth-toolbar-${synth}-enabled`)
-          .classList.add('selected');
-          
-  window.zsession.reloadSynthSubSection = onSynth;
+  osc_synch(...params).then ( ()=> {
+   loadSection('section-synth-adsynth');
+   zsession.reloadSynthSubSection = onSynthAdsynth;
+  });
+}
+
+function onSynthSubsynth() {
+  if (window.initSubSynth === undefined) {
+    new OSCPathElement(
+      document.getElementById('subsynth-vco-env-enable'),null,
+      onSynthFrequencyEnvelope);
+    
+    new OSCPathElement(
+      document.getElementById('subsynth-vcf-enable'),null,
+      onSynthFilter);
+    
+    let obj = new OSCBoolean(document.getElementById('subsynth-enabled'));
+    
+    obj.HTMLElement.addEventListener('act', (event)=>{
+      
+      let value = event.detail.script.endsWith('T');
+      
+      //console.log(`Call: ${event.type}, ${value}`);
+      
+      showIf('synth-subsynth-enable-before', !value );
+      showIf('synth-subsynth-matrix', value );
+      
+      if (value){
+        Promise.resolve( osc_synch_section(
+          document.getElementById('section-synth-subsynth')
+        ))
+      }
+    });
+    
+    obj.HTMLElement.addEventListener('sync', onSynthEnableSync);
+    obj.HTMLElement.addEventListener('act', onSynthEnableSync);
+    
+
+    window.initSubSynth = true;
+  }
+  
+  set_synth_cursor('sub');
+  zsession.oscElements['subsynth-enabled'].sync().then( (data)=> {
+    let value = Object.values(data)[0][0];
+    showIf('synth-subsynth-enable-before', !value);
+    showIf('synth-subsynth-matrix', value);
+    
+    return (value)
+      ? osc_synch_section(document.getElementById('section-synth-subsynth'))
+      : Promise.resolve(false);
+  }).then ( ()=> {
+      loadSection('section-synth-subsynth');
+      zsession.reloadSynthSubSection = onSynthSubsynth;
+  });
+}
+
+function onSynthPadsynth() {
+   if (zsession.initPadsynth === undefined) {
+     let obj = new OSCBoolean(document.getElementById('padsynth-enabled'));
+    
+    obj.HTMLElement.addEventListener('sync', onSynthEnableSync);
+    obj.HTMLElement.addEventListener('act', onSynthEnableSync);
+     zsession.initPadsynth = true;
+   }
+   
+   set_synth_cursor('pad');
+   zsession.oscElements['padsynth-enabled'].sync().then ( ()=> {
+     loadSection('section-synth-padsynth');
+     zsession.reloadSynthSubSection = onSynthPadsynth;
+   });
 }
 
 function onSynthOSC() {
-  if (window.zsession.initSynthOSC === undefined) {
+  if (zsession.initSynthOSC === undefined) {
     
     /* synth-osc-wave is a representation of an OSC bundle actually */
     let swipe = new Swipeable(document.getElementById('synth-osc-wave'));
@@ -851,13 +962,13 @@ function onSynthOSC() {
     swipe.selectElement.addEventListener('change', (ev) => {
       let value = ev.target.options[ev.target.selectedIndex].value;
       let typeValue = Math.max(0, value - 16);
-      window.zsession.oscElements['synth-generator-type'].act (typeValue);
+      zsession.oscElements['synth-generator-type'].act (typeValue);
       
       if (typeValue == 0)
-        window.zsession.oscElements['synth-generator-wave'].act(value);
+        zsession.oscElements['synth-generator-wave'].act(value);
     });
   
-    window.zsession.elements['synth-osc-wave'] = swipe;
+    zsession.elements['synth-osc-wave'] = swipe;
     
     new OSCElement(document.getElementById('synth-generator-type'));
     new OSCElement(document.getElementById('synth-generator-wave'));
@@ -904,13 +1015,13 @@ function onSynthOSC() {
     new OSCKnob(document.getElementById('synth-uni-vib'));
     new OSCKnob(document.getElementById('synth-uni-speed'));
     
-    window.zsession.initSynthOSC = true;
+    zsession.initSynthOSC = true;
   }
   
   var bChangedPart = false;
-  if (window.zsession.voiceID == ADSYNTH_GLOBAL) {
-    window.zsession.voiceID = 0;
-    window.zsession.elements['adsynth-voice'].setSelection(1);
+  if (zsession.voiceID == ADSYNTH_GLOBAL) {
+    zsession.voiceID = 0;
+    zsession.elements['adsynth-voice'].setSelection(1);
     
     bChangedPart = true; //setting for later as sync clears msg
   }
@@ -918,25 +1029,25 @@ function onSynthOSC() {
   osc_synch_section(document.getElementById('section-synth-osc')). then ( () => {
     
     //Synch complex swiper
-    let val = parseInt(window.zsession.oscElements['synth-generator-type']
+    let val = parseInt(zsession.oscElements['synth-generator-type']
       .HTMLElement.dataset.value);
     if (val > 0) {
-      window.zsession.elements['synth-osc-wave'].setSelection(val+16);
+      zsession.elements['synth-osc-wave'].setSelection(val+16);
    
       Array.from( document.querySelectorAll('#section-synth-osc .osc-element'))
         .map ( (el) => el.id)
-        .forEach ( (id) => {window.zsession.oscElements[id].setEnabled(false)});
+        .forEach ( (id) => {zsession.oscElements[id].setEnabled(false)});
     } else {
-      window.zsession.elements['synth-osc-wave'].setSelection(
-        window.zsession.oscElements['synth-generator-wave']
-          .HTMLElement.dataset.value );
+      zsession.elements['synth-osc-wave'].setSelection(
+        zsession.oscElements['synth-generator-wave']
+          .HTMLElement.dataset.oscValue );
       Array.from( document.querySelectorAll('#section-synth-osc .osc-element'))
         .map ( (el) => el.id)
-        .forEach ( (id) => {window.zsession.oscElements[id].setEnabled(true)});
+        .forEach ( (id) => {zsession.oscElements[id].setEnabled(true)});
     }
     
-    window.zsession.onChangeSynth=onSynth;
-    window.zsession.reloadSynthSubSection = onSynthOSC;
+    zsession.onChangeSynth=onSynth;
+    zsession.reloadSynthSubSection = onSynthOSC;
     
     if (bChangedPart)
       displayOutcome('Switching to adsynth voice #1');
@@ -945,46 +1056,57 @@ function onSynthOSC() {
   });
 }
 
-function onSynthAmplitude() {
-  window.zsession.reloadSynthSubSection = onSynthAmplitude;
+function onSynthAmplitude(event) {
+  zsession.reloadSynthSubSection = onSynthAmplitude;
   
-  loadAmplitudeEditor('VCA', 'section-synth', onSynthAmplitudeLFO,
+  let forceGlobal = (typeof event == 'object') ? false : event;
+  
+  if (forceGlobal)
+    zsession.elements['adsynth-voice'].setSelection(0,true);
+    
+  loadAmplitudeEditor('VCA', 
+  (window.zsession.synthID != 'sub') ? onSynthAmplitudeLFO : null,
     onSynthAmplitudeEnvelope);
 }
 
 function onSynthAmplitudeLFO() {
-  window.zsession.reloadSynthSubSection = onSynthAmplitudeLFO;
+  zsession.reloadSynthSubSection = onSynthAmplitudeLFO;
   
   let sc = osc_sanitize('/synthcursor/AmpLfo');
   
-  let enable = (window.zsession.voiceID == ADSYNTH_GLOBAL)
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
     : osc_sanitize('/synthcursor/PAmpLfoEnabled');
     
-  loadLFOEditor( 'synth-edit-amp', enable, sc);
+  loadLFOEditor(  enable, sc);
 }
 
 function onSynthAmplitudeEnvelope() {
-  window.zsession.reloadSynthSubSection = onSynthAmplitudeEnvelope;
+  zsession.reloadSynthSubSection = onSynthAmplitudeEnvelope;
   
   let sc = osc_sanitize('/synthcursor/AmpEnvelope');
   
-  let enable = (window.zsession.voiceID == ADSYNTH_GLOBAL)
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
     : osc_sanitize('/synthcursor/PAmpEnvelopeEnabled');
     
-  loadEnvelopeEditor('Amp Envelope', 'synth-edit-amp',
+  loadEnvelopeEditor('Amp Envelope', 
    enable, sc,
    [1,1,1,0,0,1,0]
    );
 }
 
-function onSynthFilter() {
-  window.zsession.reloadSynthSubSection = onSynthFilter;
+function onSynthFilter(event) {
+  zsession.reloadSynthSubSection = onSynthFilter;
   
+  let forceGlobal = (typeof event == 'object') ? false : event;
+    
+  if (forceGlobal)
+    zsession.elements['adsynth-voice'].setSelection(0,true);
+    
   let sc, enable;
   
-  if (window.zsession.voiceID == ADSYNTH_GLOBAL){
+  if (zsession.voiceID == ADSYNTH_GLOBAL || zsession.synthID != 'ad'){
     enable = null;
     sc = osc_sanitize('/synthcursor/GlobalFilter');
   } else {
@@ -992,87 +1114,95 @@ function onSynthFilter() {
     sc = osc_sanitize('/synthcursor/VoiceFilter');
   }
     
-  loadFilterEditor('VCF', 'section-synth', 
-    enable, sc, onSynthFilterLFO, onSynthFilterEnvelope);
+  loadFilterEditor('VCF', 
+    enable, sc, 
+    (window.zsession.synthID != 'sub') ? onSynthFilterLFO : null
+    , onSynthFilterEnvelope);
 }
 
 function onSynthFilterLFO() {
-  window.zsession.reloadSynthSubSection = onSynthFilterLFO;
+  zsession.reloadSynthSubSection = onSynthFilterLFO;
   
   let sc = osc_sanitize('/synthcursor/FilterLfo');
   
-  let enable = (window.zsession.voiceID == ADSYNTH_GLOBAL)
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
     : osc_sanitize('/synthcursor/PFilterLfoEnabled');
     
-  loadLFOEditor('synth-edit-filter', enable, sc);
+  loadLFOEditor( enable, sc);
 }
 
 function onSynthFilterEnvelope() {
-  window.zsession.reloadSynthSubSection = onSynthFilterEnvelope;
+  zsession.reloadSynthSubSection = onSynthFilterEnvelope;
   
   let sc = osc_sanitize('/synthcursor/FilterEnvelope');
   
-  let enable = (window.zsession.voiceID == ADSYNTH_GLOBAL)
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null : osc_sanitize('/synthcursor/PFilterEnvelopeEnabled');
     
   loadEnvelopeEditor(
-  'Filter Envelope', 'synth-edit-filter',
+  'Filter Envelope', 
   enable, sc,
   [1,1,1,1,1,0,1]
   );
 }
 
-function onSynthFrequency() {
-  window.zsession.reloadSynthSubSection = onSynthFrequency;
+function onSynthFrequency(event) {
+  zsession.reloadSynthSubSection = onSynthFrequency;
+  
+  let forceGlobal = (typeof event == 'object') ? false : event;
+  
+  if (forceGlobal)
+    zsession.elements['adsynth-voice'].setSelection(0,true);
   
   let sc = osc_sanitize('/synthcursor');
   
-  loadFrequencyEditor('VCO', 'section-synth', '', sc,
-    onSynthFrequencyLFO, onSynthFrequencyEnvelope);
+  loadFrequencyEditor('VCO', '', sc,
+    (window.zsession.synthID != 'sub') ? onSynthFrequencyLFO : null, 
+    onSynthFrequencyEnvelope);
 }
 
 function onSynthFrequencyLFO() {
-  window.zsession.reloadSynthSubSection = onSynthFrequencyLFO;
+  zsession.reloadSynthSubSection = onSynthFrequencyLFO;
   
   let sc = osc_sanitize('/synthcursor/FreqLfo');
   
-  let enable = (window.zsession.voiceID == ADSYNTH_GLOBAL)
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
     : osc_sanitize('/synthcursor/PFreqLfoEnabled');
     
-  loadLFOEditor('synth-frequency-editor', enable, sc);
+  loadLFOEditor( enable, sc);
 }
 
 function onSynthFrequencyEnvelope() {
-  window.zsession.reloadSynthSubSection = onSynthFrequencyEnvelope;
+  zsession.reloadSynthSubSection = onSynthFrequencyEnvelope;
   
   let sc = osc_sanitize('/synthcursor/FreqEnvelope');
   
-  let enable = (window.zsession.voiceID == ADSYNTH_GLOBAL)
-    ? null : osc_sanitize('/synthcursor/PAmpEnvelopeEnabled');
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
+    ? null : osc_sanitize('/synthcursor/PFreqEnvelopeEnabled');
     
   loadEnvelopeEditor(
-  'Wave Frequency Env.', 'synth-frequency-editor',
+  'Wave Frequency Env.', 
   enable, sc,
   [1,0,1,1,0,0,1]
   );
 }
 
 function onSynthFMFrequency() {
-  window.zsession.reloadSynthSubSection = onSynthFMFrequency;
+  zsession.reloadSynthSubSection = onSynthFMFrequency;
   
   let sc = osc_sanitize('/synthcursor');
   
-  loadFrequencyEditor('FM Frequency', 'section-synth-osc', 'FM', sc,
+  loadFrequencyEditor('FM Frequency',  'FM', sc,
     null, onSynthFMFrequencyEnvelope);
 }
 
 function onSynthFMFrequencyEnvelope() {
-  window.zsession.reloadSynthSubSection = onSynthFMFrequencyEnvelope;
+  zsession.reloadSynthSubSection = onSynthFMFrequencyEnvelope;
   
   let sc = osc_sanitize('/synthcursor')+'/FMAmpEnvelope';
-  loadEnvelopeEditor('FM Frequency Env', 'synth-frequency-editor',
+  loadEnvelopeEditor('FM Frequency Env', 
     osc_sanitize('/synthcursor/PFMAmpEnvelopeEnabled'),
     sc,
     [1,0,1,1,0,0,1]
@@ -1080,7 +1210,7 @@ function onSynthFMFrequencyEnvelope() {
 }
 
 function onSynthSubHarmonics() {
-  if (window.zsession.initSubH === undefined){
+  if (zsession.initSubH === undefined){
     new OSCButton(document.getElementById('sub-h-clear'));
     
     new OSCSwipeable(document.getElementById('sub-h-mag-type'),
@@ -1102,7 +1232,7 @@ function onSynthSubHarmonics() {
       let obj = new OSCKnob(document.getElementById(`sub-h-spread-${i}`));
       obj.label="Parameter " + i;
     }
-    window.zsession.initSubH = true;
+    zsession.initSubH = true;
   }
   
   osc_synch_section(document.getElementById('section-synth-harmonics'))
@@ -1112,14 +1242,14 @@ function onSynthSubHarmonics() {
 }
 
 function onSynthSubBandwidth() {
-   if (window.zsession.initSubB === undefined){
+   if (zsession.initSubB === undefined){
      new OSCSwipeable(document.getElementById('sub-band-init'),
      [0,1,2],
      ['Zero', 'Random', 'Ones']);
      
      new OSCKnob(document.getElementById('sub-band-band'));
      new OSCKnob(document.getElementById('sub-band-stretch'));
-     window.zsession.initSubB = true;
+     zsession.initSubB = true;
    }
    
    osc_synch_section(document.getElementById('subsynth-bandwidth'))
@@ -1333,7 +1463,7 @@ function onKeybSplit() {
     $('#keybSplitChannel > select').val(data.channel+1);
     $('#keybSplitChannel > label').text(data.channel+1);
     
-    window.zsession.splitdata = data;
+    zsession.splitdata = data;
     
     let table = $('#keybSplitTable');
     let btnClass = "", iconClass= null, split = null, entry = null;
@@ -1374,7 +1504,7 @@ function onKeybSplitClear(part) {
 }
 
 function onKeybSplitEdit(part) {
-  let split = window.zsession.splitdata.split[part];
+  let split = zsession.splitdata.split[part];
   let available_notes = [], available_scores = [];
   
   for (let i = 0; i < split.max; i++) {
@@ -1427,7 +1557,7 @@ doQuery('midilearn', {force: [9]}, (data)=> {
     doQuery('midilearn', {force: [9]}, (data) => {
       const maxValue = data[1];
       
-      let split = window.zsession.splitdata.split[part];
+      let split = zsession.splitdata.split[part];
       split.min = minValue;
       split.max = maxValue;
       
@@ -1464,7 +1594,7 @@ function onPartMixer() {
 function onPartControl() {
   
   // Init controls
-  if (window.zsession.initControl === undefined) {
+  if (zsession.initControl === undefined) {
      new OSCSwipeable(
       document.getElementById('part-ctl-channel'),
       OneToSixteen.map ( (e)=> e-1), 
@@ -1473,14 +1603,14 @@ function onPartControl() {
       { 'title' : 'Channel', 'class' : 'col-4' }
     );
     
-    //window.zsession.oscElements['part-ctl-channel'].setLabel('Midi channel', 'Midi');
+    //zsession.oscElements['part-ctl-channel'].setLabel('Midi channel', 'Midi');
     
       new OSCMidiNote( document.getElementById('part-ctl-minkey') );
       new OSCMidiNote( document.getElementById('part-ctl-maxkey') );
       new OSCKnob( document.getElementById('part-ctl-transpose') )
         .range = SEMITONE;
       
-    window.zsession.initControl = true;
+    zsession.initControl = true;
   }
   
   //synch osc
@@ -1495,20 +1625,19 @@ function onPartControl() {
 }
 
 function onPartControlPoly() {
-  if (window.zsession.initControlPoly === undefined) {
-     new OSCSwipeable(
+  if (zsession.initControlPoly === undefined) {
+    new OSCSwipeable(
       document.getElementById('part-ctl-polytype'),
       [0,1,2], 
       ['Poly', 'Mono', 'Legato'],
       { 'title' : 'Poly mode', 'class' : 'col-12' }
     );
-    window.zsession.oscElements['part-ctl-polytype']
+    zsession.oscElements['part-ctl-polytype']
       .setLabel('Polyphony mode', 'Polyphony');
       
     
       new OSCKnob(document.getElementById('part-ctl-keylimit'));
-      new OSCBoolean(document.getElementById('part-ctl-drummode'));
-    window.zsession.initControlPoly = true;
+    zsession.initControlPoly = true;
   }
   
   osc_synch_section(document.getElementById('section-ctl-poly'))
@@ -1519,10 +1648,10 @@ function onPartControlPoly() {
 }
 
 function onPartControlVelo() {
-  if (window.zsession.initControlVelo === undefined) {
+  if (zsession.initControlVelo === undefined) {
       new OSCKnob(document.getElementById('part-ctl-velsns'));
       new OSCKnob(document.getElementById('part-ctl-veloffs'));
-    window.zsession.initControlVelo = true;
+    zsession.initControlVelo = true;
   }
   
   osc_synch_section(document.getElementById('section-ctl-velocity'))
@@ -1533,7 +1662,7 @@ function onPartControlVelo() {
 }
 
 function onPartControlDepth() {
-  if (window.zsession.initControlDepth === undefined) {  
+  if (zsession.initControlDepth === undefined) {  
     new OSCKnob(document.getElementById('part-ctl-depth-pan'));
     new OSCKnob(document.getElementById('part-ctl-depth-cutoff'));
     new OSCKnob(document.getElementById('part-ctl-depth-q'));
@@ -1545,7 +1674,7 @@ function onPartControlDepth() {
     new OSCBoolean(document.getElementById('part-ctl-volume-receive'));
     new OSCBoolean(document.getElementById('part-ctl-fmamp-receive'));
     new OSCBoolean(document.getElementById('part-ctl-sustain-receive'));
-    window.zsession.initControlDepth = true;
+    zsession.initControlDepth = true;
   }
   osc_synch_section(document.getElementById('section-part-control-response'))
     .then ( () => { loadSection('section-part-control-response');
@@ -1553,21 +1682,21 @@ function onPartControlDepth() {
 }
 
 function onPartControlPitch() {
-  if (window.zsession.initControlPitch === undefined) {  
+  if (zsession.initControlPitch === undefined) {  
     
     new OSCKnob(document.getElementById('part-ctl-pitch-range'));
-    window.zsession.oscElements['part-ctl-pitch-range']
+    zsession.oscElements['part-ctl-pitch-range']
       .range = BEND_RANGE;
       
     new OSCBoolean(document.getElementById('part-ctl-pitch-split'));
     
     new OSCKnob(document.getElementById('part-ctl-pitch-range-down'));
-      window.zsession.oscElements['part-ctl-pitch-range-down']
+      zsession.oscElements['part-ctl-pitch-range-down']
         .range = BEND_RANGE;
     
-    window.zsession.oscElements['part-ctl-pitch-split']
+    zsession.oscElements['part-ctl-pitch-split']
       .bindEnable('part-ctl-pitch-range-down');
-    window.zsession.initControlPitch = true;
+    zsession.initControlPitch = true;
   }
   
   osc_synch_section(document.getElementById('section-part-control-pitch'))
@@ -1577,7 +1706,7 @@ function onPartControlPitch() {
 }
 
 function onPartControlPortamento() {
-  if (window.zsession.initPartControlPortamento === undefined) {
+  if (zsession.initPartControlPortamento === undefined) {
     new OSCBoolean(document.getElementById('part-ctl-port-enable'));
     new OSCBoolean(document.getElementById('part-ctl-port-receive'));
     new OSCKnob(document.getElementById('part-ctl-port-length'));
@@ -1587,7 +1716,7 @@ function onPartControlPortamento() {
     new OSCKnob(document.getElementById('part-ctl-port-proprate'));
     new OSCKnob(document.getElementById('part-ctl-port-propdepth'));
     
-    window.zsession.oscElements['part-ctl-port-proportional']
+    zsession.oscElements['part-ctl-port-proportional']
       .bindEnable( 'part-ctl-port-proprate', 'part-ctl-port-propdepth' );
     
     new OSCSwipeable(document.getElementById('part-ctl-port-pitchtype'),
@@ -1597,9 +1726,9 @@ function onPartControlPortamento() {
       );
     //new OSCBoolean(document.getElementById('part-ctl-port-pitchtype'));
     new OSCKnob(document.getElementById('part-ctl-port-pitchthresh'));
-    window.zsession.initPartControlPortamento = true;
+    zsession.initPartControlPortamento = true;
     
-    window.zsession.oscElements['part-ctl-port-enable'].bindEnable(
+    zsession.oscElements['part-ctl-port-enable'].bindEnable(
       'part-ctl-port-length', 'part-ctl-port-updown',
       'part-ctl-port-proportional', 'part-ctl-port-pitchtype',
       'part-ctl-port-pitchthresh');
@@ -1612,7 +1741,7 @@ function onPartControlPortamento() {
 }
 
 function onPartFX() {
-  if (window.zsession.initPartFX == undefined){
+  if (zsession.initPartFX == undefined){
     
       //initialize send to global
       for (let i = 0; i < 4; i++)
@@ -1632,11 +1761,11 @@ function onPartFX() {
          //obj.HTMLElement.addEventListener('sync',onPartFXMatrixUpdate);
       }
       
-    window.zsession.initPartFX = true;
+    zsession.initPartFX = true;
   }
   
   new ZynthoREST().query('/status/partfx', 
-    {id: window.zsession.partID} ).then ( (data) => {
+    {id: zsession.partID} ).then ( (data) => {
     //fx buttons
     for (let i = 0; i < 3; i++) {
       let element = document.getElementById(`part-fx-${i}`);
@@ -1648,7 +1777,7 @@ function onPartFX() {
      
      onPartFxSetMatrixValue(i, data.efx[i].route);
       
-      //window.zsession.oscElements[`part-fx-route-${i}`].setValue(data.efx[i].route);
+      //zsession.oscElements[`part-fx-route-${i}`].setValue(data.efx[i].route);
       //onPartFXMatrixUpdate(data);
     }
     
@@ -1656,8 +1785,8 @@ function onPartFX() {
     for (let i = 0; i < 4; i++) {
       let id = `part-fx-send-${i}`;
       //let element = document.getElementById(id);
-      window.zsession.oscElements[id].setLabel(data.sysefxnames[i]);
-      window.zsession.oscElements[id].setEnabled((data.sysefxnames[i] != 'None'));
+      zsession.oscElements[id].setLabel(data.sysefxnames[i]);
+      zsession.oscElements[id].setEnabled((data.sysefxnames[i] != 'None'));
     }
     
     loadSection('section-part-fx');
@@ -1686,8 +1815,8 @@ function onPartFXMatrixAct(data){
 }
 
 function onPartFXEdit(fxid) {
-    window.zsession.fxcursor=`/part${window.zsession.partID}/partefx${fxid}`;
-    new ZynthoREST().query('status/fx', {'path': window.zsession.fxcursor})
+    zsession.fxcursor=`/part${zsession.partID}/partefx${fxid}`;
+    new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
       .then ( (data) => {
         loadFXEditor(data, `Edit Part FX #${fxid}`, 'section-part-fx');
         document.querySelector('#fx-type select')
@@ -1699,12 +1828,12 @@ function onPartFXEdit(fxid) {
 
 function onPartFXEditFxChanged(event) {
   let changed = event.target.options[event.target.selectedIndex].text;
-  let fxid = /\d+$/.exec(window.zsession.fxcursor)[0];
+  let fxid = /\d+$/.exec(zsession.fxcursor)[0];
   document.getElementById(`part-fx-${fxid}`).innerHTML = changed;
 }
 
 function onPartFXEditFxBypass(event) {
-  let fxid = /\d+$/.exec(window.zsession.fxcursor)[0];
+  let fxid = /\d+$/.exec(zsession.fxcursor)[0];
   if (OSC_BOOL(event.detail[0]) == 'T')
     document.getElementById(`part-fx-${fxid}`).classList.add('disabled');
   else
@@ -1712,7 +1841,7 @@ function onPartFXEditFxBypass(event) {
 }
 
 function onKeybMidi(part) {
-  let split = window.zsession.splitdata.split[part];
+  let split = zsession.splitdata.split[part];
   let midiChan = parseInt($('#keybSplitChannel > select').val())-1;
   
   if (midiChan != split.channel) {
@@ -1753,7 +1882,7 @@ function onKeybSplitChange(val) {
   
   for (let i = 0; i < 16; i++) {
     button = $(btns.get()[i]);
-    split = window.zsession.splitdata.split[i];
+    split = zsession.splitdata.split[i];
     button.find('span').removeClass('i-midi i-midi-alt');
     button.removeClass('selected');
     
@@ -1814,9 +1943,9 @@ function onTempo() {
   if (isNaN(newTempo) || newTempo < 1)
     return;
   else {
-    window.zsession.oscElements['global-tempo'].act(newTempo)
+    zsession.oscElements['global-tempo'].act(newTempo)
     .then ( () => {
-      window.zsession.oscElements['global-tempo'].setValue(newTempo)
+      zsession.oscElements['global-tempo'].setValue(newTempo)
       }) ;
   }
 }
@@ -1836,15 +1965,15 @@ function onToobarFavoriteClick() {
           
           //Then we update client, without ajax
           if (!value) {
-            window.zsession.banks['Favorites']= 
-            window.zsession.banks.Favorites.filter( (entry) => {
+            zsession.banks['Favorites']= 
+            zsession.banks.Favorites.filter( (entry) => {
               return (entry.path != instrument.path);});
           } else {
-            window.zsession.banks.Favorites.push(instrument);
+            zsession.banks.Favorites.push(instrument);
           }
           
           //last we update display
-          if (instrument.name == window.zsession.getInstrument().name) {
+          if (instrument.name == zsession.getInstrument().name) {
             $('#btnDoFavorite i').removeClass('far fas');
             $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
           }
@@ -1866,19 +1995,19 @@ callback result
 function onToolbarChangePart(index) {
   
   if (index !== undefined && index !== '')
-    window.zsession.partID = parseInt(index);
+    zsession.partID = parseInt(index);
   
   //retrieve part info
   new ZynthoREST().query('status/part', 
-      {id: window.zsession.partID})
+      {id: zsession.partID})
   .then ( (data) => {
     if (data.name == '') data.name = 'Unloaded';
   
     displayOutcome('Switched part');
     document.getElementById('instrumentName').innerHTML = 
             (data.enabled)
-            ? `#${window.zsession.partID+1}: ${data.name}`
-            : `#${window.zsession.partID+1}: Disabled`;
+            ? `#${zsession.partID+1}: ${data.name}`
+            : `#${zsession.partID+1}: Disabled`;
             
    
   });
@@ -1887,6 +2016,6 @@ function onToolbarChangePart(index) {
 
 //this currently only updates volume
 function onToolbarUpdate() {
-  window.zsession.oscElements['global-volume'].sync();
-  window.zsession.oscElements['global-tempo'].sync();
+  zsession.oscElements['global-volume'].sync();
+  zsession.oscElements['global-tempo'].sync();
 }

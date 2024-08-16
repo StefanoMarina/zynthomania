@@ -18,6 +18,7 @@
 
 const SWRIGHT = new Event("swipe-right");
 const SWLEFT  = new Event("swipe-left");
+const SWANY  = new Event("swipe");
 
 class Swipeable {
   constructor(htmlElement) {
@@ -160,11 +161,13 @@ function enableSwiping(object, sensitive=4) {
     let touchEndX = e.changedTouches[0].screenX;
     let res = touchEndX - object.touchStartX;
     
-    if ( (res - object.swipeSensitiveness) > 0)
+    if ( (res - object.swipeSensitiveness) > 0) {
       object.dispatchEvent(SWRIGHT);
-    else if ( (res + object.swipeSensitiveness) < 0)
+      object.dispatchEvent(SWANY);
+    } else if ( (res + object.swipeSensitiveness) < 0) {
       object.dispatchEvent(SWLEFT);
-    else
+      object.dispatchEvent(SWANY);
+    } else
       object.click();
   });
 }

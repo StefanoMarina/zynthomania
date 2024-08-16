@@ -74,16 +74,23 @@ function osc_synch_section(section,force=false) {
         && !el.classList.contains('osc-button'))
   ).map ( el => el.id);
   
+  if (allElements.length == 0) {
+    console.log('osc_synch_section: empty request');
+    return Promise.resolve(0);
+  }
+  
   return osc_synch(...allElements);
 }
 
 function osc_synch(...elements) {
-  let objects = Array.from(arguments).map ( (id) => window.zsession.oscElements[id] )
+  let objects = Array.from(arguments).map ( (id) => zsession.oscElements[id] )
       .filter( element => element != undefined && element.isEnabled() && 
       (element.oscpath != "" && element.oscpath != null) );
   
-  if (objects.length == 0)
+  if (objects.length == 0) {
+    console.log(`osc_synch: empty request despite original length ${elements.length}`);
     return Promise.resolve(0);
+  }
   
   let oscDictionary = new Map(
     objects.map ( obj => [obj.getAbsolutePath(), obj.HTMLElement.id] )
@@ -103,9 +110,16 @@ function osc_synch(...elements) {
           let id = oscDictionary.get(path);
           let oscObject = window.zsession.oscElements[id];
           oscObject.setValue(result[path][0],true);
+          /**
+           * BUG
+           * Events are triggered by 2D arrays:
+           * { "path" : value[0] }
+           * this returns a 1D array
+           */
           oscObject.HTMLElement.dispatchEvent(
-            new CustomEvent('sync', {'detail' : result[path]})
-          );
+            new CustomEvent('sync', {'detail' :
+                { [`${path}`]:  result[path]}
+            }));
         }
     })
     .catch ( (msg) => {
@@ -289,7 +303,12 @@ class OSCElement extends OSCChannel{
        content.classList.add('content');
        this.HTMLElement.append(content);
     }
-    content.append(html);
+    if ( typeof html === "string")
+      content.innerHTML = html;
+    else
+      content.append(html);
+    
+    return content;
   }
   
   //set responsive label
@@ -354,7 +373,7 @@ class OSCElement extends OSCChannel{
    * setValue
    */
   setValue(value, fromServer=false) {
-    this.HTMLElement.dataset.value = value;
+    this.HTMLElement.dataset.oscValue = value;
   }
   
   setEnabled(bool) {
@@ -403,20 +422,15 @@ class OSCBoolean extends OSCElement {
     super(clickableObject, bind,  range);
     this.HTMLElement.dataset.oscValue = 'T';
     
-    //auto create content
-    //minimal booleans get the label
-    let content = this.HTMLElement.querySelector('.content');
-    
-    if (content == null) {
-      this.setContent();
-      content = this.HTMLElement.querySelector('.content');
+    if (this.HTMLElement.querySelector('.content') == null) {
       if (this.HTMLElement.classList.contains('minimal') &&
         this.HTMLElement.dataset.label != null) {
-          content .innerHTML = this.HTMLElement
-            .dataset.label;
-      } else
-        content.innerHTML = '<i class="fa fa-power-off"></i>';
+          this.setContent(this.HTMLElement.dataset.label);
+      } else {
+        this.setContent('<i class="fa fa-power-off"></i>');
+      }
     }
+    
     
     this.boundObjects = [];
     
@@ -428,26 +442,31 @@ class OSCBoolean extends OSCElement {
       this.act(OSC_BOOL(value)).then( () =>{
         
         this.setValue(value, false);
+        /*
         this.HTMLElement.dispatchEvent( 
-          new CustomEvent('sync', {
+          new CustomEvent('act', {
               'detail':[value]
           }));
-          
+          */
         displayOutcome(`${this.label} is `+ (value ? 'ON' : 'OFF'));
       });
     });
   }
   
+  
   setValue(bool) {
-    
     let oscBool = OSC_BOOL(bool);
     this.HTMLElement.dataset.oscValue = oscBool;
     this.refresh();
   }
   
+  /**
+   * This is not ok anymore
+   */
+   /*
   isEnabled() {
     return this.HTMLElement.dataset.oscValue == 'T';
-  }
+  }*/
   
   /* 
    * sets the enable / disable status bind to osc controllers 
@@ -464,9 +483,9 @@ class OSCBoolean extends OSCElement {
   }
   
   refresh() {
-    let enabled = this.isEnabled();
+    let on = this.HTMLElement.dataset.oscValue == 'T';
     this.boundObjects.forEach ( (id) => { 
-        window.zsession.oscElements[id].setEnabled(enabled); 
+        window.zsession.oscElements[id].setEnabled(on); 
     });
   }
 }
@@ -599,8 +618,6 @@ class OSCSwipeable extends OSCElement {
     this.setOptions = this.swipeable.setOptions.bind(this.swipeable);
   }
   
-
-    
   setValue(value, fromServer=false) {
     value = (value === undefined) ? 0 : value;
     for (let i = 0; i < this.selectElement.length; i++) {
@@ -639,7 +656,7 @@ class OSCMidiNote extends OSCNumber {
         (res) =>{
           this.act(res).then( () => {
             this.setValue(res);
-            displayOutcome(`set note to ${noteObj.str}`);
+            displayOutcome(`set note to ${this.lastNote.str}`);
           });
       });
     })
@@ -652,5 +669,31 @@ class OSCMidiNote extends OSCNumber {
       this.lastNote = noteObj;
     } else
       displayOutcome(`invalid note ${note}`, true);
+  }
+}
+
+// click: enable/disable, swipe: enter section
+class OSCPathElement extends OSCBoolean {
+  constructor (clickableObject, bind=undefined, onswipe ) {
+    super(clickableObject,bind);
+   enableSwiping(clickableObject, 2);
+   enableMultiTouch(clickableObject);
+   clickableObject.addEventListener('pressed', onswipe);
+   clickableObject.addEventListener('swipe', onswipe);
+  }
+  
+  setLabel(label) {
+    this.label = label;
+  }
+  
+  setContent(content) {
+    this.HTMLElement.classList.add('content');
+  }
+}
+
+class OSCMixer extends OSCElement {
+  constructor( element, grid ) {
+    super (element, null, null);
+    
   }
 }

@@ -57,7 +57,7 @@ small, .small {font-family: VCRJP}
   }
   
   .fx-btn label {font-size: 12px}
-   small, .small {font-size: 8px} 
+   small, .small {font-size: 8px !important} 
 }
 
 @media only screen and (min-width: 768px) {
@@ -70,10 +70,11 @@ small, .small {font-family: VCRJP}
     --base-height:24px;
   }
   
-  small, .small {font-size: 10px} 
+  small, .small {font-size: 10px !important} 
 }
 p { margin: 0.1em; }
 h4 { margin: 1em 0 0.5em 0; text-align:center }
+div > h4 { margin: 0; line-height: 1}
 
 /* Gradient color */
 body, dialog {
@@ -88,8 +89,6 @@ body {
   margin-right: 15px;
 }
 
-table td, table th {text-align: center}
-  
 /*
  * utilities for bordering
  *  */
@@ -147,12 +146,16 @@ nav > div {display: inline-block}
 table {
   width: 100%;
   table-layout: fixed;
-  font-family: vcrjp;
+  font-family: LCD;
 }
 
-td { font-size: 60%; font-variant: small-caps; }
+td, td * { font-size: 1em; font-variant: small-caps; }
 
+td, th {text-align: center}
 
+@media only screen and (min-width : 768px) {
+  td { padding: 10px}
+}
 /* Icons */
 
 .icon {
@@ -237,12 +240,10 @@ td { font-size: 60%; font-variant: small-caps; }
 
 /* Buttons */
 
-/*
-Buttons (probably deprecated)
-*/
-button, select, .btn, .fx-btn {
+button, select {
   background-color: transparent;
   color: black;
+  border: none;
 }
 
 
@@ -251,7 +252,7 @@ button:hover, button:hover *, .fx-btn:hover, .fx-btn:hover *, .send-btn,  .selec
   color: var(--color-lcd) !important;
 }
 
-button[disabled] {color : red !important}
+button[disabled] {color : gray !important}
 
 select {border: none; min-width: 45%}
 
@@ -457,7 +458,10 @@ section.row.opened {display: flex !important}
   border-right: var(--border-type);
 }
 
-.osc-element.osc-boolean[data-osc-value="F"] {color: gray !important}
+.osc-element.osc-boolean[data-osc-value="F"],
+.osc-element.osc-path-element[data-osc-value="F"], .gray  {
+  color: gray !important;
+}
 
 .osc-element {
   padding-top: 0;
@@ -478,7 +482,8 @@ section.row.opened {display: flex !important}
 }
 
 .osc-element .content, .osc-content {
-  //padding: 5% 25% 5% 25%;
+  /*padding: 5% 25% 5% 25%;*/
+  padding-bottom: 5%;
   min-width: var(--base-size);
   cursor:pointer;
   font-size: inherit;
@@ -486,16 +491,17 @@ section.row.opened {display: flex !important}
 }
 
 .minimal.small {font-variant: small-caps}
+/*button.minimal {border-width: 1px; font-weight:bold}*/
 
 /* force control to fill content */
 .osc-element .content div {width: 100%}
 
 .osc-container > div {margin-top: 10px}
 
-
 .disabled {
   border-color:gray;
   color: gray;
+  text-decoration:line-through;
 }
 
 .osc-element.disabled header {background-color: gray; color: black}
@@ -504,12 +510,11 @@ section.row.opened {display: flex !important}
 /*.osc-element.disabled .content {display: none}*/
 
 /* minimal display */
-.osc-element.minimal { border: none !important }
+.osc-element.minimal, .osc-path-element { border: none !important }
 .osc-element.minimal header {display: none !important}
 .osc-element.minimal .content {padding: 0 !important}
 
 /* OSC Swipeables */
-
 @media only screen and (max-width: 768px) {
   .osc-knob header,.osc-swipeable.minimal, .swipeable.minimal { margin-bottom: 0.5em; }
   .osc-knob.minimal {padding-top: 0.2em}

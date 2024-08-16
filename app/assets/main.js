@@ -132,15 +132,21 @@ function setSelectedToolbarButton(button) {
  * Loads a section
  * TODO: Unload all unnecessary osc elements
  */
-function loadSection(sectionID) {
-  document.querySelectorAll("section.opened")
-    .forEach ( (sel) => sel.classList.remove("opened"));
-  
+function loadSection(sectionID, subsection=false) {
   let section = document.getElementById(sectionID);
   if (section == null){
     console.log('error: cannot find section ' + sectionID);
     return;
   }
+  
+  if (subsection) {
+      let main_section = document.querySelector('section.opened');
+      if (main_section != null && main_section.id != sectionID)
+        section.dataset.back = main_section.id;
+  }
+  
+  document.querySelectorAll("section.opened")
+    .forEach ( (sel) => sel.classList.remove("opened"));
   
   document.getElementById('content-title').innerHTML =
      (section.dataset.title)
@@ -218,6 +224,12 @@ function set_synth_cursor(cursor) {
       break;
     }
   }
+  
+ document.querySelectorAll('#synthSelector button.selected')
+      .forEach ( (btn)=>btn.classList.remove('selected'));
+  document.getElementById(`synth-toolbar-${zsession.synthID}-enabled`)
+          .classList.add('selected');
+  showIf('adsynth-voice', cursor == 'ad');
 }
 
 /**
@@ -235,3 +247,18 @@ function showIf ( elementOrId, bool, className="hidden" ) {
   else
     element.classList.add(className);
 } 
+
+function enableMultiTouch(element, time = 500) {
+  element.time = time;
+  element.addEventListener('touchstart', (event)=> {
+    element.start = Date.now();
+  });
+  element.addEventListener('touchend', (event)=> {
+    let duration  = Date.now()-element.start;
+    delete element.start;
+    
+    if (duration > element.time)
+      element.dispatchEvent(new CustomEvent('pressed'));
+    
+  });
+}
