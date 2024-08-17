@@ -1591,6 +1591,32 @@ function onPartMixer() {
   });
 }
 
+function onMixer() {
+  if (zsession.initMixer === undefined) {
+    let bundleArray = [];
+    
+    for (let i = 0; i < 16; i++) {
+      new OSCBoolean(document.getElementById(`mixer-part-${i+1}-enabled`));
+      new OSCKnob(document.getElementById(`mixer-part-${i+1}-volume`))
+      new OSCKnob(document.getElementById(`mixer-part-${i+1}-pan`))
+      bundleArray.push(`/part${i}/Pname`);
+    }
+    zsession.oscElements['bundle-mixer-names'] = new OSCBundle(bundleArray);
+    
+    zsession.initMixer = true;
+  }
+  osc_synch_section(document.getElementById('section-mixer'))
+    .then ( ()=>{
+        return zsession.oscElements['bundle-mixer-names'].sync();
+   }).then ( (data)=>{
+        
+        for (let i = 1; i < 17; i++){
+          document.getElementById(`mixer-part-${i}-name`).innerHTML =
+            (`${i}. `+data[`/part${i-1}/Pname`][0]);
+        }
+        loadSection('section-mixer');
+    });
+}
 function onPartControl() {
   
   // Init controls

@@ -577,3 +577,16 @@ section.row.opened {display: flex !important}
 #note-editor {
   max-height: 100%;
 }
+
+.mixer { table-layout: auto; }
+
+.mixer thead *{
+  font-size: 0.8em;
+}
+
+.mixer p {
+  font-family: VCRJP;
+  font-size: 0.5em;
+  text-align: left;  
+}
+
