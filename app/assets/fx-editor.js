@@ -13,7 +13,7 @@ function loadFXEditor(data, title, backTo) {
       [0,1,2,3,4,5,6,7,8],
       ['None', 'Reverb', 'Echo', 'Chorus', 'Phaser', 'Alienwah',
         'Distorsion', 'EQ', 'DynamicFilter'],
-      {'title': 'Select effect', 'class': 'col-6'});
+      {'title': 'Select effect', 'buttonClass': 'col-12 col-md-6'});
     
     window.zsession.oscElements['fx-type'].HTMLElement
       .addEventListener( 'act', ( ev) => {

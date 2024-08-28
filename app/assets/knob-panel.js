@@ -64,12 +64,6 @@ function initKnobEditorDialog(){
   knobEditorArea.addEventListener('touchend', ()=> {
     let knobObject = window.zsession.oscElements[
       document.getElementById('knobEditor').dataset.knobID ];
-      
-    /*let val = (knobObject.range.itype == 'i')
-      ? parseInt()
-      : parseFloat(document.getElementById('knob-editor-value').value)
-      ;
-    knobObject.setValue(val);*/
     knobObject.act(document.getElementById('knob-editor-value').value);
   });
   
@@ -101,8 +95,8 @@ function loadKnobEditor(knobObject) {
   knobEditorDialog.dataset.knobID = knobObject.HTMLElement.id;
   editorKnob.style.rotate = knobObject.knob.style.rotate;
   
-  document.getElementById('knob-editor-range').innerHTML
-    = `Value is ${knobObject.range.type}, Range ${knobObject.range.min} to ${knobObject.range.max}`;
+  //document.getElementById('knob-editor-range').innerHTML
+ //   = `Value is ${knobObject.range.type}, Range ${knobObject.range.min} to ${knobObject.range.max}`;
     
   document.getElementById('knob-editor-osc-path').innerHTML = 
     knobObject.getAbsolutePath();
@@ -123,3 +117,70 @@ function loadKnobEditor(knobObject) {
   //knobEditorDialog.open = true;
 }
 
+function onKnobBind() {
+  let knobObject = window.zsession.oscElements[
+      document.getElementById('knobEditor').dataset.knobID ];
+  
+  let range = knobObject.serverRange;
+  
+  let obj = {};
+  if (range === CC_RANGE) {
+    obj['fader'] = 'abs';
+  } else {
+    obj['fader'] = (range.itype == 'i') ? 'int' : 'float';
+    obj['min'] = range.min;
+    obj['max'] = range.max;
+  }
+  
+  obj['osc'] = knobObject.getAbsolutePath();
+  loadBindEditor(obj, true);
+}
+
+function onKnobMinus() {
+  let knobObject = window.zsession.oscElements[
+      document.getElementById('knobEditor').dataset.knobID ];
+  
+  let step = (knobObject.range.max - knobObject.range.min) / 8;
+  if ( knobObject.range.itype == 'i')
+    step = Math.round(step);
+  else
+    step = toFixed(step, 2);
+    
+  let input =  document.getElementById('knob-editor-value');
+  let newval = Math.max ( knobObject.range.min, 
+    parseFloat(input.value) - step);
+  input.value = ( knobObject.range.itype == 'i') ? Math.round(newval)
+    : toFixed(newval, 2);
+  
+  input.dispatchEvent(new Event('change'));
+}
+
+function onKnobPlus() {
+  let knobObject = window.zsession.oscElements[
+      document.getElementById('knobEditor').dataset.knobID ];
+  
+  let step = (knobObject.range.max - knobObject.range.min) / 8;
+  if ( knobObject.range.itype == 'i')
+    step = Math.round(step);
+  else
+    step = toFixed(step, 2);
+    
+  let input =  document.getElementById('knob-editor-value');
+  let newval = Math.min ( knobObject.range.max, 
+    parseFloat(input.value) + step);
+  input.value = ( knobObject.range.itype == 'i') ? Math.round(newval)
+    : toFixed(newval, 2);
+  
+  input.dispatchEvent(new Event('change'));
+}
+
+function onKnobReset() {
+  let knobObject = window.zsession.oscElements[
+      document.getElementById('knobEditor').dataset.knobID ];
+  let input =  document.getElementById('knob-editor-value');
+  let newval = ((knobObject.range.max-knobObject.range.min) / 2)
+    + knobObject.range.min;
+  input.value = ( knobObject.range.itype == 'i') ? Math.round(newval)
+    : toFixed(newval, 2);
+  input.dispatchEvent(new Event('change'));
+}

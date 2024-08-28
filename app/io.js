@@ -96,6 +96,11 @@ module.exports.createIOConfig = function (config) {
   return IO;
 }
 
+
+exports.sanitizeString = function ( name ) {
+  return name.replace(/[<>:;,?"*|/]+$/g,"_");
+}
+
 var zconsole = {};
 module.exports.zconsole = zconsole;
 /**

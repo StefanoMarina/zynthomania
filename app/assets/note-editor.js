@@ -73,7 +73,7 @@ class NoteEditor {
       //close and call
       this.dialog.open=false;
       
-      if (onOk !== undefined)
+      if (onCancel !== undefined)
         onCancel();
     }, {once: true});
     
@@ -181,6 +181,8 @@ function noteEditorSetSelection(value) {
       'piano-editor/piano_none.svg';
     document.getElementById('note-editor-selection').innerHTML = '---';
   }
+  
+  document.getElementById('note-editor').dataset.selection = value;
 }
 
 function noteEditorNoteOff(){
@@ -190,3 +192,23 @@ function noteEditorNoteOff(){
     noteEditorSetSelection(undefined);
   }
 }
+
+function onNoteDialogMidiLearn() {
+  let txt = document.getElementById('note-editor-selection');
+  txt.innerHTML ="* LEARNING *";
+  
+  startTimerDisplay();
+  
+  new ZynthoREST().post('midilearn', {'force': 9 } )
+    .then ( (data)=> {
+      noteEditorSetSelection(data[1]);
+      noteEditorSetOctave(Math.floor(data[1]/12));
+    })
+    .catch( ()=> {
+      txt.innerHTML ="* timeout *";    
+    })
+    .finally ( () => {
+      stopTimerDisplay();
+    });
+}
+

@@ -17,6 +17,7 @@
     <script src="note-editor.js"></script>
     <script src="fx-editor.js"></script>
     <script src="synth-editor.js"></script>
+    <script src="bind-editor.js"></script>
     
     <title>ZynthoMania!</title>
   </head>
@@ -25,22 +26,20 @@
     
     <!-- Dialog box -->
     <dialog id="selectBox">
-      <header class="header">
-        <h4></h4>
-      </header>
-      <div class="container">
+      <header class="header"><h4></h4></header>
+      <div class="container main">
         <div class="row"></div>
       </div>
       <footer class="row">
-        <div class="col-6"><button class="button selected col-12" onclick="selectBoxOk()">Ok</button></div>
-        <div class="col-6"><button class="button selected col-12" onclick="selectBoxCancel()">Cancel</button></div>
+        <div class="col-6"><button class="button selected" onclick="selectBoxOk()">Ok</button></div>
+        <div class="col-6"><button class="button selected" onclick="selectBoxCancel()">Cancel</button></div>
       </footer>
     </dialog>
     
     <!-- Note Selector -->
   <dialog id="note-editor" data-min="0" data-max="127" class="container">
     <header class="header"><H4 id="note-editor-selection">Select Note</H4></header>
-    <div>
+    <div class="main">
       <div class="row">
         <div class="col-2 col-md-3">OCT<span class="d-none d-md-inline">AVE</span></div>
         <div class="col-8 col-md-7">
@@ -73,21 +72,117 @@
     </div>
     
     <footer class="row">
-      <div class="col-4"><button class="d-block button"><i class="icon icon-inline i-midi"></i>LEARN</button></div>
+      <div class="col-4"><button class="button selected"
+        onclick="onNoteDialogMidiLearn()"><i class="icon icon-inline sm i-midi-alt"></i> Learn</button></div>
       <div class="col-4"><button id="note-editor-ok" class="d-block button selected">OK</button></div>
       <div class="col-4"><button id="note-editor-cancel" class="d-block button selected">Cancel</button></div>
     </footer>
   </dialog>
-    
+  
+  <!-- Binding editor dialog -->
+  <dialog id="bind-editor" class="container">
+     <header class="header"><H4>Edit binding</H4></header>
+     <div class="main container">
+       <h4>MIDI Controller</h4>
+       <div class="row">
+         <div class="col-2 col-lg-1"><label>Ch.</label></div>
+         <div class="col-4 col-lg-2"><select id="bind-editor-channel"></select></div>
+         <div class="col-2 col-lg-1"><label>CC</label></div>
+         <div class="col-4 col-lg-2"><input type="number" value="1" min="1" max="127" id="bind-editor-cc-value"></div>
+         <div class="col-3 col-lg-2 p-top p-lg-top-0">
+            <button id="bind-editor-reverse" class="button toggle"><i class="fa fa-exchange-alt"></i><span class="d-none d-md-inline"> Invert</span></button>
+         </div>
+         <div class="col-5 col-lg-2 p-top p-lg-top-0">
+           <select style="height:100%" id="bind-editor-type">
+              <option value="abs">Midi CC</option>
+              <option value="bool">On/Off</option>
+              <option value="trigger">Action</option>
+              <option value="float">Freq</option>
+              <option value="int">Range</option>
+            </select>
+         </div>
+         <div class="col-4 col-lg-2 p-top p-lg-top-0">
+           <button onclick="onBindLearn()" class="button selected"><span class="icon sm i-midi-alt"></span> Learn</button>
+         </div>
+       </div>
+       <div class="row p-top" id="bind-editor-range">
+         <div class="col-3"><label>Min</label></div>
+         <div class="col-9 col-lg-3"><input type="number" id="bind-editor-min" value="0"></div>
+         <div class="col-3 p-sm-top"><label>Max</label></div>
+         <div class="col-9 p-sm-top col-lg-3"><input type="number" id="bind-editor-max" value="0"></div>
+       </div>
+       <h4 class="hidden" id="bind-editor-learning">* LEARNING *</h4>
+       <hr/>
+        <div id="bind-editor-database" class="hidden">
+         <div class="row">
+          <div class="col-12 col-lg-6">Category</div>
+          <div class="col-12 col-lg-6"><select id="bind-editor-categories"></select></div>
+         </div>
+         <div class="row">
+          <div class="col-12 col-lg-6">OSC</div>
+          <div class="col-12 col-lg-6"><select id="bind-editor-paths"></select></div>
+         </div>
+       </div>
+       <h4>Path keys</h4>
+       <div class="row">
+         <div class="col-3 col-lg "><label>Part </label></div>
+         <div class="col-3 col-lg "><select id="bind-editor-part-key"></select></div>
+         <div class="col-3 col-lg "><label>Layer </label></div>
+         <div class="col-3 col-lg "><select id="bind-editor-layer-key"></select></div>
+         <div class="col-3 col-lg p-top"><label>Voice </label></div>
+         <div class="col-3 col-lg p-top"><select id="bind-editor-ad-voice-key"></select></div>
+         <div class="col-6 col-lg p-top"><button class="button d-block selected"
+          onclick="onBindEditorApplyKeys()">Apply</button></div>
+       </div>
+      <textarea id="bind-editor-osc-paths"></textarea>
+      </div>
+      <footer class="container">
+        <div class="row" id="bind-editor-target-row">
+          <div class="col-6 panel "><label>Add to:</label></div>
+          <div class="col-6 panel"><select style="width:100%" id="bind-editor-target"></select></div>
+        </div>
+        <div class="row">
+          <div class="col-6 ">
+              <button class="button selected" id="bind-editor-ok"
+                onclick="onBindDialogOk()">Ok</button>
+              <button class="button selected" id="bind-editor-add" onclick="onBindDialogAdd()">Add</button>
+          </div>
+          <div class="col-6 "><button class="button selected" id="bind-editor-cancel">Cancel</button></div>
+        </div>
+      </footer>
+  </dialog>
+  
+  <!-- File Dialog -->
+  <dialog id="file-dialog">
+    <header class="header">File</header>
+    <div class="main container">
+      <div class="row">
+        <div class="col-12">
+          <p id="file-dialog-folder"></p>
+          <ul class="border" id="file-dialog-file-list"></ul>
+          <p><small>Filename:</small></p>
+          <input class="p-top" type="text" id="file-dialog-filename" pattern="[A-Za-z0-9\+\-_ ]+">
+        </div>
+      </div>
+    </div>
+    <footer class="container">
+      <div class="row p-top">
+        <div class="col-6"><button class="button selected" id="file-dialog-ok">Ok</button></div>
+        <div class="col-6"><button class="button selected" id="file-dialog-cancel">Cancel</button></div>
+      </div>
+    </footer>
+  </dialog>
+  
     <div id="main-panel" class="row">
       <!--toolbar fissa-->
       <header class="col-12 col-sm-5">
         <!-- system toolbar -->
         <nav>
           <button><i class="fas fa-sd-card"></i></button>  <!--system -->
+          <button onclick="onController()"><span class="icon i-midi"></span></button>  <!--system -->
           <button><i class="fas fa-save"></i></button>  <!-- session -->
           <button onclick="onMixer()"><i class="fa fa-sliders-h"></i></button> <!-- mixer -->
-          <button class="br"><i class="fa fa-terminal"></i></button>  <!-- OSC -->
+          <button class="br" onclick="onFXGlobal()">FX</button>  <!-- Global/Insert FX -->
           <button><i class="fas fa-download"></i></button> <!-- quick save -->
           <button onclick="onTempo()" class="osc-element minimal" id="global-tempo"
             data-osc-path="/tempo"></button>
@@ -96,13 +191,13 @@
           <button id="global-panic" class="osc-element minimal d-inline"
               data-osc-path="/Panic" data-osc-type="">
                 <i class="fas fa-exclamation-triangle"></i> </button>
-        </navbar>
+        </nav>
         
         <!-- Info Display -->
         <div class="col-12 partDisplay bt bb">
           <p><small><span id="q-status" class="fa" style="padding-right: 2px"></span><span id="message" style="padding-left:0px">No session file</span></small></p>
           <h3><span id="instrumentName">---- </span></h3>
-          <p><small><i class='fa fa-terminal'></i>&nbsp;<span id="osc-message"></span></small></p>
+          <p onclick="onBind()"><small><i class='fa fa-terminal'></i>&nbsp;<span id="osc-message"><i>Click on OSC path to bind</i></span></small></p>
         </div>
         
         <!-- Part controls -->
@@ -154,6 +249,13 @@
             <p><small>Zynthomania! created by Stefano Marina under GPLV3 (2021-)</small></p>
             <p><small><strong>Copyright:</strong></small></p>
             <p><small>Piano &amp; midi icons from <a href="http://www.onlinewebfonts.com">oNline Web Fonts </a> under CC-3</small></p>
+            <h4>Help</h4><small>
+            <ul>
+              <li>Touch OSC path to bind</li>
+              <li>Swipe left/right option lists (&lt;&gt;)</li>
+              <li>Touch matrix elements to on/off, swipe/hold to open section</li>
+            </ul>
+            </small>
           </div>
         </section>
         

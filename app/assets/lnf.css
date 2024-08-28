@@ -72,8 +72,16 @@ small, .small {font-family: VCRJP}
   
   small, .small {font-size: 10px !important} 
 }
+
+@media only screen and (min-width: 1224px) {
+  :root{
+    --border: 4px dotted black;
+  }
+}
 p { margin: 0.1em; }
 h4 { margin: 1em 0 0.5em 0; text-align:center }
+.main > h4 { margin: 0.25em 0 0.25em 0; }
+
 div > h4 { margin: 0; line-height: 1}
 
 /* Gradient color */
@@ -109,7 +117,7 @@ body {
 /*
  * Toolbars
  */
-nav, .navbar {
+menu, nav, .navbar {
   margin-top: 5px;
   margin-bottom: 5px;
   display: table;
@@ -120,13 +128,23 @@ nav, .navbar {
   font-size: 50%;
 }
 
-nav > button, nav > div { 
+nav > button, nav > div, menu > button, menu > div { 
   border: none;
   min-width: 30px !important;
   font-size: var(--base-height);
+  display:table-cell;
 }
 
-nav > div {display: inline-block}
+menu > div, nav > div {display: inline-block}
+
+.row.v-align > div, .v-align {
+  display:table-cell !important;
+  vertical-align:middle;
+}
+
+.row.v-align > div > *, .row > .v-align > * {
+  height: 100%;
+}
 
 /* replace with d-none */
 .hidden {display: none !important}
@@ -143,21 +161,39 @@ nav > div {display: inline-block}
   width: 100%
 }
 
-table {
+
+/* matrix tables */
+table.matrix {
   width: 100%;
   table-layout: fixed;
   font-family: LCD;
 }
 
-td, td * { font-size: 1em; font-variant: small-caps; }
+.matrix td, .matrix td * { font-size: 1em; font-variant: small-caps; }
+
+.table {
+  font-family: VCRJP;
+  font-size: 0.5em;
+  width: 100%;
+}
+
+table.table > thead th { background-color: black; color: var(--color-lcd);}
+
+.table td {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow:ellipsis;
+  max-width: 200px;
+}
+
 
 td, th {text-align: center}
 
 @media only screen and (min-width : 768px) {
   td { padding: 10px}
 }
-/* Icons */
 
+/* Icons */
 .icon {
   display: flex;
   width: var(--base-size);
@@ -165,6 +201,14 @@ td, th {text-align: center}
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }
+
+.icon.sm { height: 10pt }
+.icon.md { height: 14pt }
+.icon.lg { height: 18pt }
+.icon.xl { height: 20pt }
+.icon.xxl { height: 24pt }
+
+button > .icon {display:inline-block; }
 
 .icon-inline {
   min-height: var(--small-size);
@@ -202,6 +246,7 @@ td, th {text-align: center}
 .i-midi-alt {
  background-color: var(--color-lcd) !important;
  mask: url('midi.svg');
+ mask-repeat: no-repeat;
 }
 
 .send-btn::after {
@@ -239,11 +284,11 @@ td, th {text-align: center}
 }
 
 /* Buttons */
-
 button, select {
   background-color: transparent;
   color: black;
   border: none;
+  text-align:center;
 }
 
 
@@ -254,7 +299,9 @@ button:hover, button:hover *, .fx-btn:hover, .fx-btn:hover *, .send-btn,  .selec
 
 button[disabled] {color : gray !important}
 
-select {border: none; min-width: 45%}
+select {border: var(--border); min-width: 45%; font-family: VCRJP;}
+
+hr { border-top: none; border-bottom: var(--border); }
 
 ul, .select {
    list-style: none;
@@ -271,23 +318,7 @@ ul, .select {
 ul li { padding: 2px 6px 0.2em; }
 ul li:hover {  cursor: pointer; }
 
-/*
-ul + ul, .select + .select {
-  border-left: var(--border);
-}
 
-ul li, .select li, .smallEntry {
-   padding: 2px 6px;
-}
-ul li:hover, .select li:hover {
-   cursor: pointer;
-}
-
-ul li.selected, .select li.selected {
-   background-color: black;
-   color: var(--color-lcd);
-}
-*/
 .h-ul {
   padding-bottom: 10px;
 }
@@ -305,6 +336,8 @@ ul li.selected, .select li.selected {
 .swipeable > label::before { content : '<'; }
 .swipeable > label::after { content : '>'; }
 .swipeable > label {
+  font-family: LCD;
+  font-size: inherit;
   text-align: center;
   display: inline-block;
   width: 100%;
@@ -324,14 +357,23 @@ section .swipeable {padding-top: 0.1em}
  * Numbers
  */
  
-input {
+input, textarea, select {
+  width: 100%;
+  color:black;
+  font-family: VCRJP;
+}
+
+input[type=number], textarea {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   border: var(--border);
   background-color:transparent;
   text-align: center;
-  color:black;
+}
+
+textarea {
+  min-height: 200px;
 }
 
 /* unsupported in firefox */
@@ -342,23 +384,34 @@ input[type=number]::-webkit-outer-spin-button {
   color:var(--color-lcd);
 }
 
-/*
- * Checkboxes
-*/
-input[type=checkbox] {display:none;}
-input[type=checkbox] + label {
-  border: none !important;
-  margin-left: 5px !important;
+/* Checkboxes */
+input[type=checkbox] {  display:none; }
+input[type=checkbox] ~ span::before {
+  font-family:"Font Awesome 5 Free";
+  font-weight:bold;
+  content: "\f204";
 }
 
-input[type=checkbox] + label::before {content: '[ ] '; }
-input[type=checkbox][value=checked] + label::before { content: '[X]';}
+input[type=checkbox]:checked ~ span::before,
+  label:hover input[type=checkbox] ~ span::before
+  {
+    font-family:"Font Awesome 5 Free";
+    font-weight:bold;
+    content: "\f205";
+  }
 
-.itext {
+/* Text input */
+input[type=text], .itext {
   background-color: transparent;
   border: var(--border);
   padding-right: 0 !important;
 }
+
+label, .label {
+  font-family: VCRJP;
+  font-size: 0.7em;
+}
+
 .toggle {
   border-radius: 10px;
 }
@@ -369,12 +422,28 @@ input[type=checkbox][value=checked] + label::before { content: '[X]';}
 dialog {
   position: absolute;
   z-index: 9999;
-  top: 0;
-  left: 0;
-  width: 100%;
   /*height: 100%;*/
   background-color: var(--color-lcd);
   overflow: auto;
+  padding: 5px;
+  height: 100vh;
+}
+
+@media only screen and (max-width: 768px) {
+  dialog {
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}
+
+@media only screen and (min-width: 1224px) {
+  dialog {
+    top: 0;
+    left: 25vh;
+    max-width: 50%;
+    width: 50vh;
+  }
 }
 
 dialog header {
@@ -387,25 +456,16 @@ dialog header {
   background-color: black;
 }
 dialog header > * {margin: 0 !important}
-/*
-dialog > div {
-  border: var(--border);
-}
-*/
-dialog footer { 
-  margin-top: 20px !important; 
-  position:absolute;
-  bottom: 0;
-  width: 95%;
-  /*padding-top: 10px;*/
-  /*padding: 10px;*/
-  border-top: var(--border);
+
+dialog > .main {
+  max-height: 80%;
+  overflow-y: scroll;
 }
 
 @media only screen and (max-width: 768px) {
-  dialog > div {
+  /*dialog > div {
      top: 0;
-  }
+  }*/
   
   #selectBox div.container button {
     margin-bottom: 5px !important;
@@ -413,11 +473,11 @@ dialog footer {
 }
 
 @media only screen and (min-width: 768px) {
-  dialog > div {
+  /*dialog > div {
     top: 20%;
     left: 20%;
     width: 80%;
-  }
+  }*/
   
   #selectBox div.container button {
     margin-bottom: 10px !important;
@@ -443,10 +503,26 @@ section {display : none !important;}
 section.opened {display: block !important}
 section.row.opened {display: flex !important}
 
- .panel {padding-top: 5%; padding-bottom: 5%}
- .panel > * {height: 100%; min-height: 50px}
+.panel {padding-top: 5%; padding-bottom: 5%}
+.panel > * {height: 100%; min-height: 50px}
 
+.p-top { padding-top: 5%; }
+.p-top-0 {padding-top: 0}
 
+@media only screen and (max-width: 768px) {
+  .p-sm-top { padding-top: 5%; }
+  .p-sm-top-0 {padding-top: 0}
+}
+
+@media only screen and (min-width: 768px and max-width: 1224px) {
+  .p-md-top { padding-top: 5%; }
+  .p-md-top-0 {padding-top: 0}
+}
+
+@media only screen and (min-width: 1224px) {
+  .p-lg-top { padding-top: 5%; }
+  .p-lg-top-0 {padding-top: 0}
+}
 
 /*
  * Adjacent cell osc elements border management
@@ -578,7 +654,7 @@ section.row.opened {display: flex !important}
   max-height: 100%;
 }
 
-.mixer { table-layout: auto; }
+.mixer { table-layout: auto; width: 100%}
 
 .mixer thead *{
   font-size: 0.8em;
@@ -590,3 +666,11 @@ section.row.opened {display: flex !important}
   text-align: left;  
 }
 
+
+#file-dialog ul {
+	overflow: scroll;
+	height: 50vh;
+	font-family: VCRJP;
+	font-size: 0.5em;
+  margin-bottom: 10px;
+}

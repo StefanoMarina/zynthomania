@@ -104,506 +104,236 @@ function onBanksInstrumentClick(instrument) {
    );
 }
 
-function onBindChain() {
-  doQuery("status/binds", null, (data) =>{
+function onBind() {
+  if (zsession.lastosc['osc'] == null)
+    return;
     
-    const chain = $('#chainContainer');
-    $(chain).empty();
+  
+  //  let knobObject = window.zsession.oscElements[
+  //    document.getElementById('knobEditor').dataset.knobID ];
+  
+  let range = zsession.lastosc.range;
+  let obj = {};
+  
+  if (range === CC_RANGE) {
+    obj['fader'] = 'abs';
+  } else if (range == BOOL_RANGE) {
+    obj['max'] = 64;
+    obj['fader'] = 'bool';
+  }else {
+    obj['fader'] = (range.itype == 'i') ? 'int' : 'float';
+    obj['min'] = range.min;
+    obj['max'] = range.max;
+  }
+  
+  obj['osc'] = zsession.lastosc.osc;
+  loadBindEditor(obj, true);
+}
+
+function onController() {
+  loadSection('section-controller-main');
+}
+
+function onControllerDevices() {
+  new ZynthoREST().query('/controllers').then ( (devices) =>{
+    //console.log(data);
+    showIf('controller-empty', devices.length == 0);
     
-    if (data.chain == null || data.chain.length == 0)
-      return;
-    
-    data.chain.forEach( (item) => {
-      $(chain).append('<div class="col-12 panel"><button class="col-12 smallEntry">'+item+'</button></div>');
-    });
-    if (data.hasInstrument) {
-      $(chain).append('<button class="col-12 smallEntry" data-remove="instrument">Remove instrument bind</button>');
-    }
-    
-    $(chain).find('button').on('click', (e) => {
-      let value = 
-       ($(e.target).attr('data-remove') !== undefined) 
-          ? "instrument"
-          : $(e.target).text();
-          
-      doAction('binds/remove', {file : value}, (data) =>{
-            onBindChain();
-      });
+    if (devices.length>0) {
+      var div = document.getElementById('controller-device-list');
+      div.innerHTML = '';
+      
+      for (index in devices) {
+        let toggleButton = document.createElement('button');
+        toggleButton.classList.add('button','toggle');
+        if (devices[index].connected)
+          toggleButton.classList.add('selected');
+        toggleButton.dataset.devid = devices[index].port;
+        toggleButton.innerHTML = devices[index].name;
+        toggleButton.addEventListener('click', onToggleButtonClick);
+        toggleButton.addEventListener('click', onControllerDeviceChangeStatus);
         
-    });
-  });
-}
-
-function onBindFile() {
-  doQuery("status/binds", null, (data) =>{
-  
-    zsession.bind.session = data.sessionConfig;
-    
-    const saveMode = zsession.bind.session != null
-    && Object.keys(zsession.bind.session).length > 0;
-    
-    const ul=$('#selBinds');
-    
-    $(ul).empty();
-    if (saveMode)
-      $(ul).append('<li>(Save to new file)</li>');
-    data.files.forEach( (item) => {
-      $(ul).append('<li>'+item+'</li>');
-    });
-    
-    if (saveMode)
-      $('#bindSave').removeClass('hidden');
-    else
-      $('#bindSave').addClass('hidden');
-  });
-}
-
-function onBindEdit(config) {
-  if (config === undefined) {
-    zsession.bind.current = {
-      "type" : "trigger",
-      "cc" : 0,
-      "trigger" : 64,
-      "osc" : []
-    };
-    $('#bindApply').text('Add');
-  } else {
-    zsession.bind.current = config;
-    $('#bindApply').text('Update');
-  }
-  
-  let bind = zsession.bind;
-  
-  if (bind.info == null) {
-    bind.info = {source : 'cc', channel: 1};
-  }
-  
-  let item = $('#bindEditChannel');
-  
-  /*if ($(item).find('option').length == 0) {
-    $(item).append('<option value="all">All</option>');
-    for (let i = 1; i < 17; i++)
-      $(item).append(`<option value="${i}">${i}</option>`);
-  }*/
-  
-  $(item).val(bind.info.channel);
-  let current = bind.current;
-  
-  //We need to sanitize current to lowerCase, in case of hand written binds
-  let oldKeys = Object.keys(current);
-  oldKeys.forEach( (key) => {
-    if (key.match(/[A-Z]/)) {
-      let newKey = oldKeys.toLowerCase(), oldValue  = current[key];
-      delete current[key];
-      current[newKey] = oldValue;
+        let cell = document.createElement('div');
+        cell.classList.add('col-12','col-lg-6', 'panel');
+        cell.append(toggleButton);
+        
+        div.append(cell);
+      }
     }
-  });
-  
-  let source = bind.info.source;
-  $('#bindEditSource').val(source);
-  $('#bindEditData1').val(current[source]);
-  $('#bindEditType').val( ( 'fader' == current.type.toLowerCase() ) 
-        ? current.fader : current.type );  
-  
-  
-  /* Note: triggering the change updates value */
-  $('#bindEditType').trigger('change');
-  
-  
-  //refresh switch list
-  if (current['switch'] !== undefined) {
-    let switchSource = $('#bindEditSwitch');
-    $('#bindEditTrigger button').addClass('hidden');
-    
-    $(switchSource).empty();
-    for (let key in current['switch']) {
-      $(switchSource).append(`<li>${key}</li>`);
-    }
-    
-    $(switchSource).find('li').on('click', onBindEditSwitchTableListClick);
-    
-  } else if (current['trigger'] !== undefined) {
-    let value = current['trigger'];
-    if (typeof value == 'string') {
-      current.hmode = (current.hmode === undefined) 
-          ? value.match(/\^/) != null 
-          : current.hmode;
-      current.trigger = parseInt(value.match(/\d+/)[0]);
-    }
-    
-    $('#bindEditData2').val(current.trigger);
-    
-    $('#bindEditTrigger button').removeClass('selected hidden').
-      addClass( (current['hmode']) ? 'selected' : '');
-  }
-  
-  if (current['osc'] !== undefined)
-    bindSetOSC(current['osc']);
-  
-  if (bind.info.isEditing){}
-    //refresh instead of add
-}
-
-function onBindEditApply() {
-  let current = zsession.bind.current;
-  let info = zsession.bind.info;
-  
-  let d1source= $('#bindEditSource').val();
-  
-  console.log(`::onBindEditApply: changing ${d1source} to ${$('#bindEditData1').val()}`);
-  
-  switch (d1source)  {
-    case 'noteon' :
-      current.noteon = $('#bindEditData1').val();
-      delete current.cc;
-    break;
-    case 'cc':
-      current.cc = $('#bindEditData1').val();
-      delete current.noteon;
-    break;
-  }
-  
-  let type = $('#bindEditType').val();
-  ['switch','trigger','fader'].forEach( (tt) => {
-    if (current[tt] && tt != type)
-        delete current[tt];
-  });
-  
-  switch (type) {
-    case 'trigger': 
-      current[type] = $('#bindEditData2').val();  
-      current.osc = $('#bindEditOSC').val().split(/[\n\r]+/);
-    break;
-    case 'switch' : bindSaveCurrentEdit(); break;
-    default: 
-      current['fader'] = type;
-      current.osc = $('#bindEditOSC').val().split(/[\n\r]+/);
-    break;
-  }
-  
-  let newChannel = String($('#bindEditChannel').val());
-  
-  if (zsession.bind.session == null)
-    zsession.bind.session = {};
-  
-  let session =  zsession.bind.session;
-  
-  //find if new config and channel !=, remove old position
-  if (newChannel != info.channel && (info.channel != null
-            && session[info.channel] != null)) {
-    console.log('::onBindEditApply: divergent channel');
-    let index = session[info.channel].indexOf(current);
-    if (index != -1) {
-      console.log('::onBindEditApply: bind found, removing.');
-      session[info.channel].splice(index, 1);
-    }
-  }
-
-  //if unset, add
-  if (session[newChannel] == null)
-      session[newChannel] = [];
-    
-  if (session[newChannel].indexOf(current) == -1) {
-    console.log('::onBindEditApply: bind not found, adding.');
-    session[newChannel].push(current);
-  }
-
-  $('#bindApply').text('Update');
-  
-  bindUpdateRemoteSession();
-}
-
-function onBindEditChange(e) {
-  let current = zsession.bind.current;
-  let newMode = $(e.target).val();
-  $('.bindSubEditor').addClass('hidden');
-  
-  switch (newMode) {
-    case 'trigger' :
-    $('#bindEditTrigger').removeClass('hidden');
-    $('#bindEditTrigger button').removeClass('hidden');
-    $('#bindEditOSC').removeClass('hidden');
-    if (undefined === current[newMode]) {
-      if (current.fader) delete current.fader;
-      if (current.switch) delete current.switch;
-      current.trigger = 127;
-      $('#bindEditOSC').val('');
-    } else {
-      bindSetOSC(current['osc']);
-    }
-    
-    break;
-    case 'switch':
-    current.type = 'switch';
-     $('#bindEditTrigger button').addClass('hidden');
-     $('#bindEditSwitch').removeClass('hidden');
-     if (undefined === current[newMode]){
-       if (current.fader) delete current.fader;
-       if (current.trigger) delete current.trigger;
-       current.switch = {};
-       if(current.osc) delete current.osc;
-    }
-    break;
-    default :
-    current.type = 'fader';
-    $('#bindEditOSC').removeClass('hidden');
-    if (undefined === current[newMode]){ 
-      if (current.trigger) delete current.trigger;
-      if (current.switch) delete current.switch;
-      current.fader = newMode;
-    } else {
-      bindSetOSC(current['osc']);
-    }
-    break;
-  }
-  
-}
-
-function onBindEditMidilearn() {
-doQuery('midilearn', {force: [9,11]}, (data)=>{
-    let dataType = (data[0] >> 4);
-    
-    if (dataType != 9 && dataType != 11) {
-      displayMessage('Only CC or Note events');
-      return;
-    }
-    
-    zsession.bind.info.channel = (data[0] & 0xf)+1;
-    
-    let current = zsession.bind.current;
-    if (dataType == 9) {
-      zsession.bind.info.source = 'noteon';
-      current.noteon = data[1];
-      if (current.cc) delete current.cc;
-    } else {
-      zsession.bind.info.source = 'cc';
-      current.cc = data[1];
-      if (current.noteon) delete current.noteon;
-    }
-    
-    if (current.trigger)
-      current.trigger = data[2];
-    else if (current['switch'] && undefined === current['switch'][data[2]])
-      current['switch'][data[2]] = "";
-      
-    onBindEdit(current);
-  });
-}
-
-function onBindEditSwitchListClick(e) {
-  let value = $(e.target).text();
-  zsession.bind.selectedSwitch = value;
-  let source = zsession.bind.current['switch'];
-  
-  $('#bindEditData2').val(value);
-  $('#bindEditTrigger').removeClass('hidden');
-  bindSetOSC(source[value]);
-  $('#bindEditOSC').removeClass('hidden');
-  $('#bindEditUpdate').removeClass('hidden');
-}
-
-function bindSaveCurrentEdit() {
-  const current = zsession.bind.current;
-  const switchTable = $('#bindEditSwitchTable');
-  
-   //check if there is a current edit, save
-  let selection = $(switchTable).find('li.selected');
-  
-  if (selection.length != 0) {
-    let switchValue = $(selection).text();
-    let editValue = $('#bindEditData2').val();
-    
-    if (editValue != switchValue) {
-      delete current['switch'][switchValue];
-      current['switch'][editValue] = $('#bindEditOSC').val().split(/[\n\r]+/);
-    } else
-      current['switch'][switchValue] = $('#bindEditOSC').val().split(/[\n\r]+/);
-  }
-}
-
-function bindSetOSC(osc) {
-  $('#bindEditOSC'). val ( (Array.isArray(osc))
-      ? osc.join("\n") : osc );
-}
-
-function bindUpdateRemoteSession() {
-  let session = zsession.bind.session;
-  if (session == null || Object.keys(session).length == 0) {
-    displayMessage('No session to save');
-    return;
-  }
-  
-  doAction('binds/session/set', {'session': session}, (data) =>{
-    displayMessage('Session updated');
-  });
-}
-function onBindEditSetHigherMode(button) {
-  let qb = $(button);
-  if (qb.hasClass('selected')) {
-    zsession.bind.current.hmode = 0;
-    qb.removeClass('selected')
-  } else {
-    zsession.bind.current.hmode = 1;
-    qb.addClass('selected')
-  }
-}
-
-function onBindEditSwitchAddClick() {
-  let current = zsession.bind.current;
-  let keys = Object.keys(current['switch']);
-  if (keys.length >= 127)
-    return; //what?
-    
-  bindSaveCurrentEdit();
-  
-  //new entry, randomic
-  let number = 64;
-  do {
-    number = Math.floor(Math.random()*128);
-  } while (keys.indexOf(number) != -1);
-  
-  number = String(number);
-  
-  current['switch'][number] = [];
-  
-  const switchTable = $('#bindEditSwitchTable');
-  $(switchTable).append(`<li>${number}</li>`);
-  let list = $(switchTable).find('li');
-  $(list[list.length-1]).on('click', onBindEditSwitchListClick);
-}
-
-function onBindEditSwitchDeleteClick() {
-  let element = $('#bindEditSwitchTable li.selected');
-  if (element.length == 0)
-    return;
-  let value = $(element).text();
-  delete zsession.bind.current['switch'][value];
-  $(element).remove();
-  if ( $('#bindEditSwitchTable').find('li').length == 0) {
-    $('#bindEditTrigger').addClass('hidden');
-    $('#bindEditOSC').addClass('hidden');
-    $('#bindEditUpdate').addClass('hidden');
-  }
-}
-
-function onBindFileAddClick (source) {
-  let file = $('#selBinds').children('li.selected').text();
-  //console.log(file);
-  if (file == "") return;
-  doAction('binds/add', {file: file}, (data) =>{
-    $(source).removeClass('selected');
-  });
-}
-
-function onBindFileEditClick() {
-  let file = $('#selBinds').children('li.selected').text();
-  if (file == "") return;
-  
-  doAction('binds/session', {'file': file}, 
-    (data) => {
-      
-    zsession.bind.session = data;
-    
-  });
-}
-function onBindFileSaveClick() {
-   let select = $('#selBinds').find('li.selected');
-  if (select.length == 0)
-    return;
-  let filename = $(select).text();
-  
-  if (filename.match(/^\(Save to new file\)/)) {
-    filename = prompt ("New binds name:", "default.json");
-    if (filename == null)
-      return;
-    if (!filename.match(/\.json$/)) {
-      alert('Please save as .json file.');
-      return;
-    }
-    if ($('#selBinds').find(`li:contains(${filename})`)) {
-      let res = confirm(`${filename} exists! Overwrite?`)
-      if (!res) return;
-    }
-  }
-  
-  doAction ('binds/session/save', {file: filename});
-}
-
-function onBindSession() {
-  doQuery('status/binds', null, (data) => {
-    zsession.bind.session = data.sessionConfig;
      
-    if (zsession.bind.session == null) {
-      zsession.bind.session = {};
-    }
-    
-    let session = zsession.bind.session;
-    let pnlSession = $('#pnlBindSession');
-    if (Object.keys(session).length ==0) {
-      $('#pnlBindSession > div').addClass('hidden');
-      $(pnlSession).find('p').removeClass('hidden');
-      return;
-    }
-    
-    $(pnlSession).find('p').addClass('hidden');
-    let content = $('#bindSessionTable');
-    
-    $('#pnlBindSession > div').removeClass('hidden');
-    $(content).empty();
-    
-    let ch = null, type = null, val = null, id= null, html = null;
-    for (let channel in session) {
-      ch = session[channel];
-      ch.forEach ( (bind) => {
-        type = (bind.cc === undefined) ? 'NOTE' : 'CC';
-        val = ('NOTE' == type) ? bind.noteon : bind.cc;
-        id = `bind-ses-${channel}-${ch.indexOf(bind)}`
-        
-        if (bind.type === undefined) {
-          bind.type = (bind.trigger) ? 'trigger'
-                      : (bind['switch'] ? 'switch': 'fader')
-        }
-        
-        html = 
-        `<div class="row no-gutters">
-            <div class="col-2 tc">${channel}</div>
-            <div class="col-5 tc">${bind.type.substr(0,1).toUpperCase()} ${type} ${val}</div>
-            <div class="col-5 row no-gutters">
-              <button class="bindEditSes col-5" onclick="onBindSessionEditClick('${id}')"><i class="fa fa-edit"></i></button>
-              <button class="bindRmSes col-5" onclick="onBindSessionDelClick('${id}')"><i class="fa fa-trash-alt"></i></button>
-            </div>
-        </tr>
-        `
-        
-        $(content).append(html);
-      });
-    }
+    loadSection('section-controller-devices');
   });
 }
 
-function onBindSessionEditClick(id) {
-  let rx = id.match(/^bind-ses-(\d+|all)-(\d+)/);
-  let channel = rx[1], index = parseInt(rx[2]);
-  //emulate click
-  $('#pnlBindSession').addClass('hidden');  
-  $('#pnlBindEdit').removeClass('hidden');
-  $('#pnlBinds header button[data-open=pnlBindSession]').removeClass('selected');
-  $('#pnlBinds header button[data-open=pnlBindEdit]').addClass('selected');
-  
-  let info = zsession.bind.info;
-  info.channel = channel;
-  let bind = zsession.bind.session[String(channel)][index];
-  info.source = (bind.cc) ? 'cc' : 'noteon';
-  onBindEdit(bind);
+function onControllerDeviceChangeStatus(event) {
+  let plugRequest = event.target.classList.contains('selected');
+  new ZynthoREST().post('controller/plug', {
+      'name': event.target.dataset.devid,
+      'status' : plugRequest
+  }).then ( ()=> {
+    displayOutcome( 
+      ((plugRequest) ? 'Plugged ' : 'Unplugged ')
+      + event.target.innerHTML
+    );
+  });
 }
 
-function onBindSessionDelClick(id) {
-  let rx = id.match(/^bind-ses-(all|\d+)-(\d+)/);
-  let channel = rx[1], index = parseInt(rx[2]);
+function onControllerBindings() {
+  if (zsession.initBindListEditor === undefined) {
+    let swipe = zsession.elements['bind-list-pointer'] =
+      new Swipeable ( document.getElementById('bind-list-pointer'));
+    
+    swipe.setDialogData({'title':'Select Bindings', 
+        'buttonClass': 'col-12 col-md-12 col-lg-6'});
+        
+    swipe.selectElement.addEventListener('change', (ev)=>{
+      new ZynthoREST().query('status/binds', {
+          'id': swipe.selectElement.value
+      }).then ( (data)=> {
+        zsession.bindListEditor.currentSession = data;
+        selectIf('bind-editor-bypass', !data.enabled);
+        loadBindMap(data.bindings);    
+      })
+    });
+    
+    /*zsession.bindListEditor = {};*/
+    zsession.initBindListEditor = true;
+  }
   
-  zsession.bind.session[channel].splice(index,1);
-  bindUpdateRemoteSession();
-  onBindSession();
+  new ZynthoREST().query('status/binds').then ( (data) =>{
+    
+    let binds = Object.keys(data);
+    zsession.elements['bind-list-pointer'].setOptions(
+      binds,
+      binds.map ( bind => (bind.length>14)?bind.substring(0,14)+'…':bind)
+    );
+    
+    zsession.elements['bind-list-pointer'].setValue('session');
+    
+    return new ZynthoREST().query('status/binds', {'id':'session'});
+  }).then ((data)=>{
+    console.log(data);
+    zsession.bindListEditor.currentSession = data;
+    selectIf('bind-editor-bypass', !data.enabled);
+    loadBindMap(data.bindings);
+    loadSection('section-bind-list-editor');
+  });
+}
+
+function onControllerAddBinding() {
+  loadBindEditor({}, true);
+}
+
+function onControllerEditBinding() {
+  let path = zsession.bindListEditor.currentPath;
+  
+  if (path == null){
+    console.log('no path!');
+    return;
+  }
+  
+  let bind = zsession.bindListEditor.currentSession
+    .bindings[path[0]][path[1]];
+  
+  loadBindEditor(bind);
+}
+
+function onControllerRemoveBinding() {
+  let path = zsession.bindListEditor.currentPath;
+  
+  if (path == null){
+    console.log('no path!');
+    return;
+  }
+  
+  if (confirm ( 'Really delete bind?')){
+    zsession.bindListEditor.currentSession
+      .bindings[path[0]].splice(path[1], 1);
+    zsession.bindListEditor.currentPath = null;
+    ['bf-edit-del', 'bf-edit-edit'].forEach ( 
+      id =>  document.getElementById(id).disabled = true);
+    
+    new ZynthoREST().post('setbinding', 
+      { 'id' : zsession.bindListEditor.currentSession.id,
+        'bindings': zsession.bindListEditor.currentSession
+      }).then ( ()=> { 
+        loadBindMap(zsession.bindListEditor.currentSession.bindings)
+      });
+  }
+}
+
+function onControllerResetList() {  
+  if (confirm ( 'Really delete all bindings?')){
+    zsession.bindListEditor.currentSession
+      .bindings = {};
+    zsession.bindListEditor.currentPath = null;
+    ['bf-edit-del', 'bf-edit-edit'].forEach ( 
+      id =>  document.getElementById(id).disabled = true);
+    
+    new ZynthoREST().post('setbinding', 
+      { 'id' : zsession.bindListEditor.currentSession.id,
+        'bindings': zsession.bindListEditor.currentSession
+      }).then ( ()=> { 
+        loadBindMap(zsession.bindListEditor.currentSession.bindings)
+      });
+  }
+}
+
+function onControllerBindingsLoadDialog() {
+  new ZynthoREST().query('files', {'dir': 'binds'})
+    .then( (files)=> {
+      fileDialog('open', files, {'folder':'/binds'}, 
+        onControllerBindingsLoad);
+    });
+}
+
+function onControllerBindingsLoad() {
+  let filename = document.getElementById('file-dialog-filename').value;
+  new ZynthoREST().post('loadbind', {'file' : filename})
+    .then ( ()=> {displayOutcome('Bindings succesfully loaded.')})
+    .catch ( ()=> {displayOutcome('Error while loading bindings.', 
+      true)});
+}
+
+function onControllerBindingsExportDialog() {
+  new ZynthoREST().query('files', {'dir': 'binds'})
+    .then( (files)=> {
+      fileDialog('save', files, {'extension': 'json','folder':'/binds'},
+        onControllerBindingsExport);
+      });
+}
+
+function onControllerBindingsExport() {
+  let filename = document.getElementById('file-dialog-filename').value;
+          
+  new ZynthoREST().post('save', { 'file' : filename, 'dir': 'binds',
+      'data': zsession.bindListEditor.currentSession.bindings})
+  .then ( ()=> {displayOutcome('Bindings succesfully saved.')})
+  .catch ( (err)=> {displayOutcome(err,true)});
+}
+
+function onFXGlobal() {
+  if (zsession.initFxGlobal == undefined) {
+    new OSCKnob(document.getElementById('glob-fx-0to1'));
+    new OSCKnob(document.getElementById('glob-fx-0to2'));
+    new OSCKnob(document.getElementById('glob-fx-0to3'));
+    new OSCKnob(document.getElementById('glob-fx-1to2'));
+    new OSCKnob(document.getElementById('glob-fx-1to3'));
+    new OSCKnob(document.getElementById('glob-fx-2to3'));
+    
+    zsession.initFxGlobal = true;
+  }
+    new ZynthoREST().post('script', {
+        'requestResult': 1, 'script': '/sysefx[0-3]/efftype'})
+      .then ( (data) => {
+        console.log(data);
+        
+        for (let i = 0; i < 4; i++) {
+          let btn = document.getElementById(`glob-fx-${i}`);
+          
+        }
+        loadSection('section-global-fx');
+    });
 }
 
 function onFxDry() {

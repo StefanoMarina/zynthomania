@@ -54,7 +54,11 @@ function onLoad() {
     synthname : 'adpars', //synth osc element
     synthcursor: 'part0/kit0/adpars/VoicePar0',
     voiceID : 0, //adsynth voice id, 127 for 'global'
-    osccursor : 'part0/kit0/adpars/VoicePar0/OscilSmp' //current 
+    osccursor : 'part0/kit0/adpars/VoicePar0/OscilSmp', //current 
+    bindListEditor: {  //bindings
+      currentSession : null
+    },
+    lastosc: {}
   };
   
   initKnobEditorDialog(); //knob-panel.js
@@ -248,6 +252,10 @@ function showIf ( elementOrId, bool, className="hidden" ) {
     element.classList.add(className);
 } 
 
+function selectIf ( elementOrId, bool, className = 'selected') {
+  return showIf (elementOrId, !bool, className);
+}
+
 function enableMultiTouch(element, time = 500) {
   element.time = time;
   element.addEventListener('touchstart', (event)=> {
@@ -261,4 +269,121 @@ function enableMultiTouch(element, time = 500) {
       element.dispatchEvent(new CustomEvent('pressed'));
     
   });
+}
+
+function onToggleButtonClick(event) {  
+  showIf(event.target, event.target.classList.contains('selected'), 'selected');
+}
+
+function setLastOSC(oscpath, range) {
+  zsession.lastosc.osc = oscpath;
+  zsession.lastosc.range = range;
+  
+  document.getElementById('osc-message').innerHTML = 
+    (Array.isArray(oscpath)) ? '[Multiple OSC]' : oscpath;
+}
+
+function fileDialog(mode="open", files, data, onOk) {
+  let filedialog = document.getElementById('file-dialog');
+  
+  if (zsession.initFileDialog === undefined) {
+    document.getElementById('file-dialog-cancel')
+      .addEventListener('click', ()=> {
+        filedialog.open = false;
+      });
+  
+    document.getElementById('file-dialog-ok')
+      .addEventListener('click', (event) =>{
+          
+        //ask if same file
+        let input = document.getElementById('file-dialog-filename');
+        let filename = input.value;
+        
+        if (mode == 'save' &&
+            data['extension'] && 
+            !filename.endsWith(data['extension']))
+        {
+          input.value = filename = `${filename}.${data.extension}`;
+        }
+        
+        let stop = false;
+        if (filename = '') {
+          stop = true;
+        } else if (filename.search(/\..*$/)>-1) {
+          alert('No extension on files please');
+          stop = true;
+        } else  if (filename.search(/[\/]/)>-1) {
+          alert('No paths please');
+          stop = true;
+        }
+        
+        if (mode=='save' && files.indexOf(filename) != -1) {
+          let stop = !confirm("Overwrite?");
+        }
+        
+        if (stop) {
+          event.stopPropagation();
+        } else 
+          filedialog.open = false;
+      });
+    
+    zsession.initFileDialog = true;
+  }
+  
+  let title = filedialog.querySelector("header");
+  if (mode == "open") {
+    title.innerHTML = 'Open file';
+    document.getElementById('file-dialog-filename').disabled = true;
+  } else  {
+    title.innerHTML = 'Save file';
+    document.getElementById('file-dialog-filename').disabled = false;
+  }
+
+  let fileList = document.getElementById('file-dialog-file-list');
+  fileList.innerHTML = '';
+  
+  for (file of files) {
+    let entry = document.createElement('li');
+    entry.innerHTML = file;
+    entry.addEventListener('click', onFileDialogFileClick);
+    fileList.append(entry);
+  }
+  
+  document.getElementById('file-dialog-filename').value = '';
+  
+  document.getElementById('file-dialog-folder').innerHTML = data['folder'];
+  document.getElementById('file-dialog-ok')
+    .addEventListener('click', onOk, {once: true});
+  
+  filedialog.open = true;
+}
+
+function onFileDialogFileClick(event) {
+  let list = event.target;
+  if (list.classList.contains('selected')) {
+    list.classList.remove('selected');
+  }
+  
+  document.getElementById('file-dialog-file-list')
+    .querySelectorAll('li.selected').forEach ( (el) => el.classList.remove('selected'));
+  
+  list.classList.add('selected');
+  document.getElementById('file-dialog-filename').value = 
+    list.innerHTML;
+}
+
+// from zyntho.js
+function effectTypeToString(type, reduced = false) {
+  switch (type) {
+     case 0: return (reduced) ? '-' : 'None'; break;
+     case 1: return (reduced) ? 'Rev' : 'Reverb'; break;
+     case 2: return (reduced) ? 'Ech' : 'Echo'; break;
+     case 3: return (reduced) ? 'Cho' : 'Chorus'; break;
+     case 4: return (reduced) ? 'Pha' : 'Phaser'; break;
+     case 5: return (reduced) ? 'Wah' : 'Alienwah'; break;
+     case 6: return (reduced) ? 'Dis' : 'Distorsion'; break;
+     case 7: return 'EQ'; break;
+     case 8: return (reduced) ? 'Fil' : 'DynamicFilter'; break;
+     default: return (reduced) ? '??' : `Unk (${type})`; break;
+  }
 }

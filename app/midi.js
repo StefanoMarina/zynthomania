@@ -29,7 +29,82 @@ const zconsole = ZynthoIO.zconsole;
 const {UADSR4, UADSR8} = require ('./uadsr.js');
 
 var exports = module.exports = {};
+ 
+ /**
+  * Knot configuration chain
+  */
+ class KnotChain {
+   constructor() {
+     this.chain = {};
+   }
+   
+   /**
+    * adds a new filter configuration
+    * @params id a valid id
+    * @params file (opt) KNOT file
+    */
+   addBindings(id, path=null) {
+     var knotConfig = null;
+     
+     if ( path != null) {
+       if (!Fs.existsSync(path))
+         throw `KnotChain::addBindings: missing file ${path}` ; 
+       try {
+         knotConfig = JSON.parse(Fs.readFileSync(path));
+       }catch (err) {
+         zconsole.error(`KnotChain::addBindings: failure in loading file '${path}': ${err}`);
+       }
+     } else {
+       knotConfig = {};
+     }
+     
+     if (knotConfig != null)
+      this.chain[id] = { 'id' : id, 'file' : path, 'bindings' : knotConfig,
+          'enabled' : true};
+   }
+   
+   getBindings(id) {
+     return this.chain[id];
+   }
+   
+   getChainElements() {
+     return Object.keys(this.chain);
+   }
+   
+   /**
+    * removes a binding map from the chain
+    */
+    deleteMap(id) {
+      if (Object.keys(this.chain).indexOf(id) < 0){
+        zconsole.error(`KnotChain: cannot find id ${id}`);
+        return;
+      }
+      
+      delete this.filters[id];
+   }
+   
+    createFilterMap() {
+      if ( Object.keys(this.chain).length == 0)
+        return new KNOT.FilterMap();
+     
+     return  Object.values(this.chain)
+        .filter( (obj) => obj.enabled )
+        .reduce ( (merge, obj) =>  (( merge != null) 
+          ? KNOT.FilterMap.merge(merge,
+              new KNOT.FilterMap(obj.bindings))
+          : new KNOT.FilterMap(obj.bindings))
+        , null);
 
+   }
+ }
+ 
+/* 
+ * Note - Filter chain of version 1.0
+ * [default.json]>[static filters]>[midi filter]>[uadsr]>[instrument]>[session]
+ * Filter chain of version 2.0
+ * [ controllers ] - [session/file] - [instrument!]
+ */
+   
 class ZynthoMidi extends EventEmitter {
   
   constructor(IODir, config) {
@@ -40,24 +115,32 @@ class ZynthoMidi extends EventEmitter {
     this.midiOutput = null;
     this.knot = new KNOT.Knot(null);
     this.knot.setEmitOnly(true);
+    
+    /*
+     * List of all active bindings files. controller names get replaced.
+     */
+    this.chainController = new KnotChain();
+    this.chainSession = new KnotChain();
+    
+    //default session map
+    (Fs.existsSync(this.cartridgeDir + "/default.json")) 
+    this.chainSession.addBindings('session');
+    
     this.filterList = [];
     this.baseFilterMap = null;
-    
     //Midi instrument map. still single map
     this.instrumentMap = null;
-    
     //Session map. this is the currently edited session.
     this.sessionMap = null;
-    
     //Session config. this is the currently edited session.
     this.sessionConfig = null;
     
     this.cartridgeDir = IODir + "/binds";
     
-    if (Fs.existsSync(this.cartridgeDir + "/default.json")) {
+    /*if (Fs.existsSync(this.cartridgeDir + "/default.json")) {
       this.filterList.push(this.cartridgeDir + "/default.json");
       this.basefilterMap = new KNOT.FilterMap(this.filterList[0]);
-    }
+    }*/
     
     this.oscParser = new KNOT.OSCParser();
     this.uadsrConfig = config.uadsr;
@@ -67,7 +150,7 @@ class ZynthoMidi extends EventEmitter {
   }
   
    /**
-   * adds a bind file and refresh current configuration.
+   * adds a bind file and refresh current session.
    * @param path full path to .json file.
    * @return false if file does not exist or is already present in the queue.
    */
@@ -77,7 +160,9 @@ class ZynthoMidi extends EventEmitter {
       return false;
     }
     
-    this.filterList.push(path);
+    this.chainSession.addBindings(path, path);
+    
+    //this.filterList.push(path);
     this.refreshFilterMap(true);
     return true;
   }
@@ -144,12 +229,21 @@ class ZynthoMidi extends EventEmitter {
     return result;
   }
   
+  getSessionBindings() {
+    return this.chainSession.chain['session'];
+  }
+  
+  /**
+   * getMidiInput
+   * @returns the object's midi input object
+   */
   getMidiInput() {
     if (this.midiInput == null)
       this.midiInput = new MIDI.Input();
       
     return this.midiInput;
   }
+  
   getMidiOutput() {
     if (this.midiOutput == null)
       this.midiOutput = new MIDI.Output();
@@ -243,11 +337,11 @@ class ZynthoMidi extends EventEmitter {
   * @param filter (opt) a list of midi codes to be ignored.
   */
   midiLearn(filter) {
-    if (filter !== undefined && !Array.isArray(filter))
+    if (filter !== undefined && !Array.isArray(filter)) {
       filter = [filter];
-    
-    //sanitize
-    filter = filter.map ( e=> parseInt(e));
+      //sanitize
+      filter = filter.map ( e=> parseInt(e));
+    }
     
     if (this.learnCallback === undefined) {
       this.learnCallback = (delta, msg) => {
@@ -285,6 +379,13 @@ class ZynthoMidi extends EventEmitter {
     return true;
   }
   
+  loadSessionBind(path) {
+    if (path != null)
+      this.chainSession.addBindings('session', path);
+    else
+      this.chainSession.addBindings('session');
+  }
+  
   /**
    * Refresh the static filter map. A static bind map is composed of
    * default.json, the bind file for keyboard, and any custom performance
@@ -295,52 +396,26 @@ class ZynthoMidi extends EventEmitter {
    * [default.json]>[static filters]>[midi filter]>[uadsr]>[instrument]>[session]
    * @param force (default=false) if true, reloads the default bindings 
    */
-  refreshFilterMap(force) {
-    force = (force === undefined) ? false : force;
-    
-    let list = this.filterList.filter((item) => {return item != null});
-    
-    //default, keyboard and static binds are flushed only on request
-    if (force) {
-      this.baseFilterMap = null;
-      let map;
-      for (let i = 0; i < list.length; i++){
-        
-        map  = new KNOT.FilterMap(JSON.parse(Fs.readFileSync(list[i])));
-        
-        this.baseFilterMap = (this.baseFilterMap == null)
-          ? map
-          : KNOT.FilterMap.merge(this.baseFilterMap, map);
-      }
+  refreshFilterMap(force = false) {
+    var map = null;
+    try {
+      map = KNOT.FilterMap.merge(
+        this.chainController.createFilterMap(),
+        this.chainSession.createFilterMap()
+      );
+    } catch (err) {
+      zconsole.error(`ZynthoMidi::refreshFilterMap: merge error. ${err}`);
     }
     
-    let map = this.baseFilterMap;
-    let mapMerge = [];
-    
-    if (this._uadsr != null && this.uadsrConfig.type != "none")
-      mapMerge.push(this._uadsr.getFilterMap(this.uadsrConfig.mode));
-    if (this.instrumentMap != null)
-      mapMerge.push(this.instrumentMap);
-    
-    if (this.sessionMap != null) {
-      mapMerge.push(this.sessionMap);
-    } else if (this.sessionConfig != null) {
-      try {
-        this.sessionMap = new KNOT.FilterMap(this.sessionConfig, false)
-        mapMerge.push(this.sessionMap);
-      } catch (err) {
-        zconsole.error(`Invalid session filter map : ${err}`);
-      }
+    try {
+      if (this.knot.filterMap != null)
+        delete this.knot.filterMap;
+      
+      if ( map != null && Object.keys(map).length > 0)
+        this.knot.filterMap = map;
+    } catch (err) {
+      zconsole.error(`ZynthoMidi::refreshFilterMap: ${err}`);
     }
-    
-    mapMerge.forEach( (fmap) => {
-      map =  ( map == null) ? fmap : KNOT.FilterMap.merge(map, fmap);
-    });
-    
-    if (map != null)
-      this.knot.filterMap = map;
-    
-   // console.log(`Final filter map : ${JSON.stringify(this.knot.filterMap,null,2)}`);
   }
   
  /**
@@ -400,25 +475,53 @@ class ZynthoMidi extends EventEmitter {
       this.emit('device-in', inputs[deviceID].name);
     }
     
+    /*
+     * load/unload binds. If deviceName has unsupported characters, replace
+     * bad character with lower line "_".
+     *
+    */  
     if (this.cartridgeDir != null) {
-      //load/unload binds. If deviceName has unsupported characters, replace
-      //bad character with lower line "_".
-      
       let deviceName = devicePort.match(/[^:]+:(.*) \d+:\d+.*/)[1];
-      let deviceBindFile = deviceName.replace(/[<>:;,?"*|/]+$/g,"_"),
+      let deviceBindFile = ZynthoIO.sanitizeString(deviceName),
           deviceBindPath = this.cartridgeDir+`/${deviceBindFile}.json`;
+      
+      if (!Fs.existsSync(deviceBindPath))
+        deviceBindPath = null;
       
       try {
         if (status)
-          this.addBind(deviceBindPath);
+          this.chainController.addBindings(deviceName, deviceBindPath);
         else
-          this.removeBind(deviceBindPath);
+          this.chainController.removeBindings(deviceName); 
       } catch (err) {
            zconsole.warning(`Something went wrong while managing bind: ${err}`);
+      } finally {
+        this.refreshFilterMap();
       }
     }
   }
   
+  
+  /**
+   * saves a knot configuration
+   */
+   saveKnotConfiguration(chainObject) {
+      if ( chainObject.file == null) {
+        let path = ZynthoIO.sanitizeString(chainObject.id);
+        chainObject.file = `${this.cartridgeDir}/${path}.json`;
+      }
+      
+      try {
+        Fs.writeFileSync(chainObject.file, 
+          JSON.stringify(chainObject.bindings)
+        );
+        return true;
+      } catch (err) {
+        zconsole.error(`Error while saving Knot config: ${err}`);
+        return false;
+      }
+   }
+   
     /**
    * Check if all devices from the `plugged_device` config list is connected.
    * If not, tries to connect it.

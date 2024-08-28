@@ -104,16 +104,30 @@ function get_files_banks_xiz (req, res, next) {
 }
 app.get('/files/banks/xiz', get_files_banks_xiz);
 
-function get_files_scripts (req, res, next) {
+function get_files(req, res, next) {
   zconsole.logGet(req);
-  let dir = app.zyntho.IO.workingDir + "/scripts";
+  
+  if (req.query.dir === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  if (req.query.dir.search(/[\/\.\:]+/) > -1) {
+    res.status(403).end();
+    return;
+  }
+  
+  let dir = `${app.zyntho.IO.workingDir}/${req.query.dir}`;
   let files = [];
   if (Fs.existsSync(dir)){
     files = Fs.readdirSync (dir);
+  } else {
+    res.status(401).end();
+    return;
   }
   res.json(files);
 }
-app.get('/files/scripts', get_files_scripts);
+app.get('/files', get_files);
 
 /**
  * loadInstrument
@@ -133,6 +147,30 @@ function post_loadInstrument (req, res) {
 }
 app.post('/loadInstrument', post_loadInstrument);
 
+/**
+ * /midilearn
+ * POST request a midi learn event
+ * Will wait for an event for 3 seconds, then sends error
+ */
+function post_midilearn(rq, res, next) {
+  zconsole.logPost(rq);
+  
+  app.zyntho.midiService.once('learn', (msg) => {
+    if (!res._headerSent)
+      res.json(msg);
+  });
+  
+  app.zyntho.midiService.midiLearn(rq.query.force);
+  
+  setInterval( ()=> {
+    if (!res._headerSent) {
+      res.statusMessage='Midi learn timeout';
+      res.status(408).end();
+    }
+  }, 3000);
+  
+}
+app.post('/midilearn', post_midilearn);
   
 /**
  * setFavorite
@@ -357,64 +395,45 @@ function get_status_part( req, res, next) {
 app.get('/status/part',get_status_part);
 
 /**
- * /status/binds
+ * /status/binds/chain
  * GET return array with bind information
+ * @params id may be session, or controlles, or instrument. if not specified,
+ *  an array is returned the size of each map
  */
+ 
 function get_status_binds( req, res, next) {
   zconsole.logGet(req);
+  let midi = app.zyntho.midiService;
   
-  let result = {};
+  var result = {};
   
-  let list = app.zyntho.midiService.filterList;
-  result.chain = list.map( item => item.match(/[^/]+$/)[0]);
-  result.hasInstrument = app.zyntho.midiService.instrumentMap != null;
-  result.sessionConfig = app.zyntho.midiService.sessionConfig;
-  
-  try {
-    result.files = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"binds");
-   // console.log(JSON.stringify(result, null, 2));
-    res.json(result);
-  } catch (err) {
-    zconsole.error(`Error on file parsing: ${err}`);
-    res.status(500).end();
+  if ( req.query.id == undefined ) {
+    Object.entries (midi.chainController.chain).forEach ( ([id, obj]) => { 
+        result[id] = { 'enabled' : obj.enabled };
+    });
+    
+    Object.entries (midi.chainSession.chain).forEach ( ([id, obj]) => { 
+        result[id] = { 'enabled' : obj.enabled };
+    });
+    
+  } else if ('session' == req.query.id) {
+    result = midi.getSessionBindings();
+  } else {
+    result = (midi.chainController.getBindings(req.query.id) !== undefined)
+      ? midi.chainController.getBindings(req.query.id)
+      : midi.chainSession.getBindings(req.query.id)
   }
+  
+  if (result == null) {
+    res.status(400).end();
+  } else
+  res.json(result);
 }
+
 app.get('/status/binds', get_status_binds);
 
-function get_binds_session (rq, res) {
-  zconsole.logGet(rq);
-  
-  if (app.zyntho.midiService.sessionConfig == null) {
-    res.json({});
-  } else
-    res.json(app.zyntho.midiService.sessionConfig);
-}
-app.get('/binds/session', get_binds_session);
 
-/**
- * /midilearn
- * GET request a midi learn event
- * Will wait for an event for 3 seconds, then sends error
- */
-function get_midilearn(rq, res) {
-  zconsole.logGet(rq);
-  
-  app.zyntho.midiService.once('learn', (msg) => {
-    if (!res._headerSent)
-      res.json(msg);
-  });
-  
-  app.zyntho.midiService.midiLearn(rq.query.force);
-  
-  setInterval( ()=> {
-    if (!res._headerSent) {
-      res.statusMessage='Midi learn timeout';
-      res.status(408).end();
-    }
-  }, 3000);
-  
-}
-app.get('/midilearn', get_midilearn);
+
 
 /**
  * /status/subsynth
@@ -487,15 +506,16 @@ function get_system (rq, res) {
 }
 app.get('/system', get_system);
 
-function get_system_midi (req, res, next) {
+function get_controllers (req, res, next) {
   zconsole.logGet(req);
   res.json(app.zyntho.midiService.enumerateInputs());
 }
-app.get('/system/midi', get_system_midi);
+app.get('/controllers', get_controllers);
 
 /**
  * POST
  */
+ 
 /**
 * /fx/set
 * [POST] set an FX effect type. returns a call to get_fx
@@ -598,17 +618,16 @@ function post_fx_dry(req, res) {
 app.post('/fx/dry', post_fx_dry);
 
 /**
- * POST /system/midi/plug
+ * POST /controller/plug
  * connect or disconnect midi device
  * @body : {plug: device id, status: desired action, true for connect}
  */
-function post_system_midi_plug(req, res) {
+function post_controller_plug(req, res) {
   zconsole.logPost(req);
   if (req.body.name === undefined || req.body.status === undefined){
     res.status(400).end();
     return;
   }
-  
   
   try {
     app.zyntho.midiService.setConnection(req.body.name, req.body.status);
@@ -619,177 +638,166 @@ function post_system_midi_plug(req, res) {
   }
   
 }
-app.post('/system/midi/plug', post_system_midi_plug);
+app.post('/controller/plug', post_controller_plug);
+
 
 /**
- * POST /binds/add
- * add a new file to the bind chain.
- * @body : {file}
+ * POST /setbindings
+ * loads a chain configuration object
  */
-function post_binds_add(req, res) {
+function post_set_binding(req, res) {
   zconsole.logPost(req);
-  if (req.body.file === undefined) {
+  
+  if (req.body.id === undefined || req.body.bindings === undefined) {
     res.status(400).end();
     return;
   }
+    
+  let bindings = req.body.bindings;
+  if ( req.body.id == 'session') {
+    app.zyntho.midiService.chainSession
+    .chain[req.body.id] = req.body.bindings;
+  } else {
+    app.zyntho.midiService.chainController
+      .chain[req.body.id] = req.body.bindings;
+  }
   
-  try {
-    let path = app.zyntho.IO.workingDir + "/binds/" + req.body.file;
-    app.zyntho.midiService.addBind(path);
+  app.zyntho.midiService.refreshFilterMap();
+  
+  //only controllers are saved each time. save session to save session binds.
+  if (!app.zyntho.IO.readOnlyMode && req.body.id != 'session')
+      app.zyntho.midiService.saveKnotConfiguration(req.body.bindings);
+      
+  res.status(200).end();
+}
+app.post ( '/setbinding', post_set_binding);
+
+/**
+ * POST /binds/add
+ * add a new file or bind to the bind chain without having to download
+ * the whole object.
+ * @body : {file} load a file or
+ * @params {channel} midi channel
+ * @params {bind} bind object
+ * @params {target} session or controller name
+ */
+ 
+function post_binds_add(req, res) {
+  zconsole.logPost(req);
+  
+  if (req.body.file) {
+    try {
+      let path = app.zyntho.IO.workingDir + "/binds/" + req.body.file;
+      app.zyntho.midiService.addBind(path);
+      res.status(200).end();
+      return;
+    } catch (err) {
+      zconsole.error(err);
+      res.status(500).end();
+      return;
+    } 
+  }
+  
+  if (req.body.channel && req.body.bind && req.body.target) {
+    var obj = ('session' == req.body.target)
+      ? app.zyntho.midiService.getSessionBindings()
+      : app.zyntho.midiService.chainController.getBindings
+        (req.body.target);
+      
+    if (obj == null) {
+      res.status(404).end();
+      return;
+    }
+    
+    let bindings = obj.bindings;
+    
+    if (bindings[req.body.channel] === undefined)
+      bindings[req.body.channel] = [];
+      
+    bindings[req.body.channel].push(req.body.bind);
+    app.zyntho.midiService.refreshFilterMap();
+    
+    if (!app.zyntho.IO.readOnlyMode &&
+      req.body.target != 'session')
+      app.zyntho.midiService.saveKnotConfiguration(obj);
+    
     res.status(200).end();
-  } catch (err) {
-    zconsole.error(err);
-    res.status(500).end();
+    
+  } else {
+    res.status(400).end();
+    return;
   }
 }
 app.post('/binds/add', post_binds_add);
 
 
-/**
- * POST /binds/add
- * add a new file to the bind chain.
- * @body : {file}
- */
-function post_binds_remove(req, res) {
+function post_loadbind(req,res) {
   zconsole.logPost(req);
+  
   if (req.body.file === undefined) {
     res.status(400).end();
     return;
   }
   
-  if (req.body.file == "instrument") {
-    try {
-      app.zyntho.midiService.instrumentMap = null;
-      app.zyntho.midiService.refreshFilterMap(false);
-      res.status(200).end();
-    } catch (err) {
-      zconsole.error(err);
-      res.status(500).end();
-    }
-  } else {  
-    try {
-      let path = app.zyntho.IO.workingDir + "/binds/" + req.body.file;
-      app.zyntho.midiService.removeBind(path);
-      res.status(200).end();
-    } catch (err) {
-      zconsole.error(err);
-      res.status(500).end();
-    }
-  }
-}
-app.post('/binds/remove', post_binds_remove);
-
-function post_binds_session (req, res) {
-  zconsole.logPost(req);
-  if (req.body.file === undefined){
-     res.status(400).end();
-     return;
+  if (req.body.file.search(/[\/\:]+/) > -1) {
+    res.status(403).end();
+    return;
   }
   
-  let file = app.zyntho.midiService.cartridgeDir + `/${req.body.file}`;
+  let file = `${app.zyntho.IO.workingDir}/binds/${req.body.file}`;
+  
   if (!Fs.existsSync(file)) {
-    res.statusMessage='Invalid file.';
     res.status(404).end();
     return;
   }
   
+  zconsole.notice(`Replacing session bindings with ${file}`);
+   
   try {
-    let sessionData = JSON.parse(Fs.readFileSync(file));
-    app.zyntho.midiService.sessionConfig = sessionData;
-    app.zyntho.midiService.sessionMap = null;
-    app.zyntho.midiService.refreshFilterMap(false);
-    res.json(sessionData);
+    app.zyntho.midiService.chainSession.addBindings('session', file);
+    app.zyntho.midiService.refreshFilterMap();
   } catch (err) {
-    zconsole.error(err);
-    res.statusMessage='Invalid session file';
-    res.status(402).end();
+    zconsole.error('Cannot replace bindings: ' + err);
+    res.status(501).end();
+    return;
   }
+  
+  res.status(200).end();
 }
-app.post('/binds/session', post_binds_session);
+app.post('/loadbind', post_loadbind);
 
-/**
- * POST /binds/session/set
- * add a new file to the bind chain.
- * @body : {file}
- */
- 
-function post_binds_session_set (req, res) {
+function post_save(req, res) {
   zconsole.logPost(req);
-  
-  if (req.body.session === undefined){
-     res.status(400).end();
-     return;
-  }
-  
-  Object.keys(req.body.session).forEach( (ch) => {
-    req.body.session[ch].forEach( (e) => {
-      try {
-        Filter.sanitize(e);
-      } catch (err) {
-        zconsole.notice(`Bad filter : ${err}`);
-        res.statusMessage='Invalid session file';
-      res.status(402).end();
-      }
-    })
-  });
-  
-  app.zyntho.midiService.sessionConfig = req.body.session;
-  app.zyntho.midiService.sessionMap = null;
-  
-  let oldConfig = app.zyntho.midiService.knot.filterMap;
-  
-  try {
-    app.zyntho.midiService.refreshFilterMap(false);
-    res.end();
-  } catch (err) {
-    zconsole.error(err);
-    app.zyntho.midiService.sessionConfig = null;
-    app.zyntho.midiService.sessionMap = null;
-    app.zyntho.midiService.knot.filterMap = oldConfig;
-    res.statusMessage='Invalid session file';
-    res.status(402).end();
-  }
-}
-app.post('/binds/session/set', post_binds_session_set);
-
-/**
- * POST /binds/session/save
- * add a new file to the bind chain.
- * @body : {file}
- */
+  if (req.body.file === undefined || req.body.data === undefined
+    || req.body.dir == undefined) {
+      res.status(400).end();
+    }
  
-function post_binds_session_save (req, res) {
-  zconsole.logPost(req);
-  
-  if (req.body.file === undefined){
-     res.status(400).end();
-     return;
+  if (req.body.file.search(/[\\/\:]+/) > -1
+      || req.body.dir.search(/[\\\/\:\.]+/)>-1  ) {
+      res.statusMessage='Invalid path';
+    res.status(403).end();
+    return;
   }
   if (app.zyntho.IO.readOnlyMode){
     res.statusMessage='System is read only.';
     res.status(403).end();
     return;
-  }
-  if (app.zyntho.midiService.sessionConfig == null) {
-    res.statusMessage='Empty session binding';
-    res.status(403).end();
-    return;
-  }
+  }  
   
-  let bindDir = app.zyntho.midiService.cartridgeDir+`/${req.body.file}`;
-  
-  try {
-    Fs.writeFile(bindDir, JSON.stringify(app.zyntho.midiService.sessionConfig,null,2), 'utf-8', ()=>{
+  let path = `${app.zyntho.IO.workingDir}/${req.body.dir}/${req.body.file}`;
+   try {
+    Fs.writeFile(path, 
+      JSON.stringify(req.body.data,null,2), 'utf-8', ()=>{
       res.end();
     });
   } catch (err) {
     zconsole.error(`Cannot save file: ${err}`);
-    
     res.statusMessage='Cannot save!';
     res.status(500).end();
   }
 }
-app.post('/binds/session/save', post_binds_session_save);
+app.post('/save', post_save);
 
 /**
  * POST network/change

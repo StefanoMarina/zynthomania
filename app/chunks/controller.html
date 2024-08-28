@@ -1,0 +1,67 @@
+<!-- controller main -->
+<section id="section-controller-main" data-title="Controller"
+  class="container">
+  <div class="row">
+    <div class="col-4 panel"><button class="button" onclick="onControllerDevices()">MIDI Devices</button></div>
+    <div class="col-4 panel"><button class="button" onclick="onControllerBindings()">Bindings</button></div>
+    <div class="col-4 panel"><button class="button" onclick="onControllerBindingsLoadDialog()">Load bindings</button></div>
+  </div>
+</section>
+
+<section id="section-controller-devices" data-title="MIDI Controllers"
+  data-back="section-controller-main" class="container">
+  <p id="controller-empty">
+    <small>No device found.</small>
+    <span class="button" onclick="onControllerDevices()"><i class="fa fa-loop"></i></span>
+  </p>
+  
+  <div id="controller-device-list" class="row"></div>
+  
+</section>
+
+<!-- Binding list section -->
+<section id="section-bind-list-editor" data-title="Bind List"
+  data-back="section-controller-main"
+  class="container">
+  
+  <div class="row">
+    <div class="col-12 order-last order-lg-first col-lg-4">
+      <menu class="row" id='bind-editor-list-menu'>
+        <button class="col" id="bf-edit-add" onclick="onControllerAddBinding()"><i class="fas fa-plus-square"></i></button>
+        <button class="col" id="bf-edit-del" onclick="onControllerRemoveBinding()"
+          ><i class="fas fa-minus-square"></i></button>
+        <button class="col" id="bf-edit-reset"
+        onclick="onControllerResetList()"><i class="fas fa-trash"></i></button>
+        <button class="col" id="bf-edit-edit" onclick="onControllerEditBinding()"><i class="fa fa-pencil-alt"></i></button>
+        <button class="col" id="bf-edit-save" onclick="onControllerBindingsExportDialog()"><i class="fa fa-share-square"></i></button>
+      </menu>
+    </div>
+    <div class="col-9 col-lg-6">
+      <div class="swipeable" id="bind-list-pointer"></div>
+    </div>
+    <div class="col-3 col-lg-2">
+      <button class="toggle button" id='bind-editor-bypass'>Bypass</button>
+    </div>
+  </div>
+  
+  <table class="border table" id="bind-editor-list" style="margin-top: 5%">
+    <colgroup>
+        <col class="col-1">
+        <col class="col-1">
+        <col class="col">
+      </colgroup>
+    <thead>
+      <tr><th>Ch</th><th>CC</th><th>OSC</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+      
+  <div class="row">
+    <div class="col-12 col-lg-8">
+  
+    </div>
+  </div>
+ 
+</section>
+
+

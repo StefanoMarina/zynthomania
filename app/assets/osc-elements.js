@@ -205,10 +205,12 @@ class OSCChannel {
    * Outputs the script to the main display
    */
   displayScript() {
-    if (Array.isArray(this.oscpath))
+    let script = this.getAbsolutePath();
+    setLastOSC(script, this.serverRange);
+    /*if (Array.isArray())
       document.getElementById('osc-message').innerHTML = 'Multiple OSC';
     else
-      document.getElementById('osc-message').innerHTML = this.oscpath;
+      document.getElementById('osc-message').innerHTML = this.oscpath;*/
   }
 }
 
@@ -418,8 +420,8 @@ class OSCButton extends OSCElement {
  * Note to self: do not mix setEnable() with setValue()
  */
 class OSCBoolean extends OSCElement {
-  constructor(clickableObject, bind = undefined, range=undefined) {
-    super(clickableObject, bind,  range);
+  constructor(clickableObject, bind = undefined) {
+    super(clickableObject, bind,  BOOL_RANGE);
     this.HTMLElement.dataset.oscValue = 'T';
     
     if (this.HTMLElement.querySelector('.content') == null) {
@@ -594,7 +596,7 @@ class OSCSwipeable extends OSCElement {
   constructor(clickableObject, options, labels, swipeableData){
     super(clickableObject);
     
-    this.swipeableData = swipeableData;
+    //this.swipeableData = swipeableData;
     
     this.setContent('');
     let div = clickableObject.querySelector('.content');
@@ -616,6 +618,7 @@ class OSCSwipeable extends OSCElement {
     
     //pseudo multi-inheritance
     this.setOptions = this.swipeable.setOptions.bind(this.swipeable);
+    this.swipeable.setDialogData(swipeableData);
   }
   
   setValue(value, fromServer=false) {

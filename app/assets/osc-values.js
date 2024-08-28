@@ -39,6 +39,13 @@ const CC_RANGE = {
   'itype' : 'i'
 };
 
+const BOOL_RANGE = {
+  'type' : 'boolean (T|F)',
+  'min' : 0,
+  'max' : 1,
+  'itype' : 'i'
+};
+
 const BEND_RANGE = {
   'type' : '% of semitone',
   'min' : -6400,

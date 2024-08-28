@@ -597,7 +597,7 @@ class ZynthoServer extends EventEmitter {
    * adds a favorite
    * returns true if the favorite is removed, false if it was already set
    */
-    removeFavorite(entry) {
+  removeFavorite(entry) {
       var newFavs = this.favorites.filter(item => item.path != entry.path);
       
       if (this.favorites.length == newFavs.length)
@@ -613,11 +613,11 @@ class ZynthoServer extends EventEmitter {
     * Reset any extended info on part
     * This is called by listening to a part damage
     */
-    resetPartData(partID) {
-      zconsole.log(`Resetting part ${partID}`);
-      this.session.instruments[partID] = null;
-      this.emit('part-reset', partID);
-    }
+  resetPartData(partID) {
+    zconsole.log(`Resetting part ${partID}`);
+    this.session.instruments[partID] = null;
+    this.emit('part-reset', partID);
+  }
     
   /**
    * loadInstrument(part, instrumentPath)
@@ -652,7 +652,7 @@ class ZynthoServer extends EventEmitter {
     });
      
     this.osc.send(load_xiz);
-    this.midiService.loadInstrumentBind(instrumentPath);
+    //this.midiService.loadInstrumentBind(instrumentPath);
    }
    
    _getInstruments(index) {
@@ -662,11 +662,9 @@ class ZynthoServer extends EventEmitter {
    }
   
 
-  fxPreset (path, value) {
-    
-  }
   /**
   * changeFX
+  * @deprecated
   * Changes the current part FX, queries new preset, sends done
   * @param part part id - undefined or null for system fx
   * @param fxid fx channel id
@@ -1120,6 +1118,14 @@ class ZynthoServer extends EventEmitter {
       return;
     }
     
+    //(Un)load session binds
+    let bindPath = 
+      `${this.IO.workingDir}/binds/${file.replaceAll('.xmz','.json')}`;
+    if (Fs.existsSync(bindPath))
+      this.midiService.loadSessionBind(bindPath);
+    else
+      this.midiService.loadSessionBind(null);
+    /*
     //remove previous session automatic bind if present
     if (this.lastSession !== undefined && "default.xmz" != this.lastSession) {
       let lastBindFile = this.lastSession.replaceAll('.xmz', '.json');
@@ -1142,9 +1148,10 @@ class ZynthoServer extends EventEmitter {
         //remove configuration
         this.midiService.sessionConfig =  null;
         this.midiService.sessionMap = null;
-      }	
+      }
+      
     }
-    
+*/    
     try {
       this.midiService.refreshFilterMap(true);
     } catch (err) {
@@ -1169,6 +1176,7 @@ class ZynthoServer extends EventEmitter {
       }      
     });
     
+    //Load actual XMZ
     this.osc.send(this.parser.translate(`/load_xmz '${sessionPath}'`));
     
     //Loads extra session data
@@ -1208,6 +1216,13 @@ class ZynthoServer extends EventEmitter {
     }
     
     //Session binds
+    this.midiService.getSessionBindings().file =
+      `${this.midiService.cartridgeDir}/${extfile}`;
+      
+    this.midiService.saveKnotConfiguration(
+      this.midiService.getSessionBindings());
+    
+    /*
     if (this.midiService.sessionConfig != null) {
       zconsole.notice('Session binds found and will be saved.s');
       try {
@@ -1216,7 +1231,7 @@ class ZynthoServer extends EventEmitter {
         zconsole.warning(`Could not save session bind: ${err}`);
       }
     }
-    
+    */
     var dummyFileSave = `${this.IO.workingDir}/sessions/__dummy__${file}`,
         file = `${this.IO.workingDir}/sessions/${file}`;
     
