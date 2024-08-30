@@ -188,21 +188,10 @@ function loadLFOEditor(enabled, path) {
     zsession.oscElements['lfo-fadein'].setRange(LFO_FADER);
     zsession.oscElements['lfo-fadeout'].setRange(LFO_FADER);
     
-    let b = new OSCBundle();
-     zsession.oscElements['bundle-lfo-sync'] = b;
-    b.addEventListener('sync', ( data) => {
-      let paths = b.getAbsolutePath();
-      b.values= {
-        'numerator' : parseInt(data[paths[0]][0]),
-        'denominator' : parseInt(data[paths[1]][0])
-      };
-      
-      zsession.oscElements['lfo-frequency']
-        .setEnabled(
-        zsession.oscElements['lfo-frequency'] &&
-        (b.values['numerator'] <= 0));
-    });
+    new OSCTempo(document.getElementById('lfo-sync'))
+      .bypassable = zsession.oscElements['lfo-frequency'];
     
+   
     zsession.initLFOEditor = true;
   }
   
@@ -212,44 +201,18 @@ function loadLFOEditor(enabled, path) {
     obj.oscpath = `${path}/${obj.HTMLElement.dataset.partial}`;
   });
   
-  var bundle = zsession.oscElements['bundle-lfo-sync'];
-  bundle.oscpath = [`${path}/numerator`, `${path}/denominator`];
+  zsession.oscElements['lfo-sync'].setOscPath(path);
+  
   let section = document.getElementById('synth-lfo-editor');
   
  
    //section.dataset.back = backTo;
-  osc_synch_section(section).then( () => {
-    return bundle.sync();
+  osc_synch_section(section,true).then( () => {
+    return zsession.oscElements['lfo-sync'].sync();
   }).then( ()=>{
     loadSection('synth-lfo-editor', true);
   });
   
-}
-
-function onLFOEditorSyncButton() {
-  let b = zsession.oscElements['bundle-lfo-sync'];
-  let string = `${b.values['numerator']}/${b.values.denominator}`;
-  
-  let result = prompt ('Input time fraction according to bpm. 0 to enable manual.',
-      string);
-  
-  if (result == "0" || result == "") result = "0/0";
-  let rex = /(\d+)\s*\/\s*(\d+)/.exec(result);
-  try {
-    b.values.numerator = parseInt(rex[1]);
-    b.values.denominator = parseInt(rex[2]);
-  } catch (err) {
-    displayOutcome(err,true);
-    return;
-  }
-  
-  b.act([b.values.numerator,b.values.denominator]).then ( ()=>{
-      zsession.oscElements['lfo-frequency']
-        .setEnabled(
-        zsession.oscElements['lfo-frequency'] &&
-        (b.values['numerator'] <= 0));
-      
-  });
 }
 
 function onFilterEditorCategoryChange(ev) {

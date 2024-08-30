@@ -169,7 +169,7 @@ table.matrix {
   font-family: LCD;
 }
 
-.matrix td, .matrix td * { font-size: 1em; font-variant: small-caps; }
+.matrix td, .matrix td * { font-variant: small-caps; }
 
 .table {
   font-family: VCRJP;
@@ -405,6 +405,33 @@ input[type=text], .itext {
   background-color: transparent;
   border: var(--border);
   padding-right: 0 !important;
+}
+
+/*
+ * Faders
+ */
+input[type=range]::-webkit-slider-thumb,
+input[type=range]::-moz-range-thumb {
+  border: var(--border);
+  background: black;
+  width: 8px;
+  border-radius: 0;
+  margin:auto;
+}
+
+input[type=range] {
+  width: 8px;
+  height: initial;
+  -webkit-appearance: none;
+  border: none;
+
+  background-color: gray;
+}
+
+.faderContainer {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 
 label, .label {

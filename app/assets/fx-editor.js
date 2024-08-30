@@ -5,7 +5,7 @@ function loadFXEditor(data, title, backTo) {
   
   console.log(data);
   
-  if (window.zsession.initFXEditor === undefined) {
+  if (zsession.initFXEditor === undefined) {
     new OSCKnob(document.getElementById('fx-drywet'));
     new OSCKnob(document.getElementById('fx-pan'));
       
@@ -15,16 +15,17 @@ function loadFXEditor(data, title, backTo) {
         'Distorsion', 'EQ', 'DynamicFilter'],
       {'title': 'Select effect', 'buttonClass': 'col-12 col-md-6'});
     
-    window.zsession.oscElements['fx-type'].HTMLElement
+    zsession.oscElements['fx-type'].HTMLElement
       .addEventListener( 'act', ( ev) => {
           new ZynthoREST().query('/status/fx', 
-            {'path':window.zsession.fxcursor})
+            {'path':zsession.fxcursor})
           .then ( (data) => { loadFXEditor(data, title, backTo); });
       });
         
       //reload itself when changing fx
       
     new OSCKnob(document.getElementById('fx-reagent'));
+    new OSCTempo(document.getElementById('fx-reagent-sync'));
     new OSCKnob(document.getElementById('fx-catalyst'));
     new OSCKnob(document.getElementById('fx-base'));
     new OSCKnob(document.getElementById('fx-acid'));
@@ -33,10 +34,12 @@ function loadFXEditor(data, title, backTo) {
       [0], ['-'], { 'title' : 'Select preset' } );
     
     //override act with REST
-    window.zsession.oscElements['fx-preset'].HTMLElement
+    zsession.oscElements['fx-preset'].HTMLElement
       .addEventListener('act',
       ()=> {
         osc_synch('fx-reagent', 'fx-catalyst', 'fx-base', 'fx-acid');
+        if ( !zsession.oscElements['fx-reagent'].isEnabled() )
+          zsession.oscElements['fx-reagent-sync'].sync();
       });
   
     new OSCSwipeable(document.getElementById('fx-formula'),
@@ -45,10 +48,10 @@ function loadFXEditor(data, title, backTo) {
      
     new OSCBoolean(document.getElementById('fx-part-bypass'));
     
-    window.zsession.initFXEditor = true;
+    zsession.initFXEditor = true;
   }
   
-  window.zsession.oscElements['fx-type'].setValue(data.efftype);
+  zsession.oscElements['fx-type'].setValue(data.efftype);
   if ( data.efftype == 0) {
     loadNoneFx(data);
   } else {
@@ -59,40 +62,40 @@ function loadFXEditor(data, title, backTo) {
 }
 
 function loadNoneFx(data) {
-  let __OSCPATH =  `${window.zsession.fxcursor}/parameter`    ;
-   window.zsession.oscElements['fx-drywet'].setValue(0);
-   window.zsession.oscElements['fx-pan'].setValue(0);
+  let __OSCPATH =  `${zsession.fxcursor}/parameter`    ;
+   zsession.oscElements['fx-drywet'].setValue(0);
+   zsession.oscElements['fx-pan'].setValue(0);
    
-   window.zsession.oscElements['fx-drywet'].setEnabled(false);
-   window.zsession.oscElements['fx-pan'].setEnabled(false);
+   zsession.oscElements['fx-drywet'].setEnabled(false);
+   zsession.oscElements['fx-pan'].setEnabled(false);
       
   document.getElementById('fx-alchemy').classList.add('hidden');
 }
 
 function loadFx(data) {
-   let __OSCPATH =  `${window.zsession.fxcursor}/parameter`    
-   window.zsession.oscElements['fx-drywet'].setValue(
+   let __OSCPATH =  `${zsession.fxcursor}/parameter`    
+   zsession.oscElements['fx-drywet'].setValue(
       data.osc[`${__OSCPATH}0`].value);
-   window.zsession.oscElements['fx-pan'].setValue(
+   zsession.oscElements['fx-pan'].setValue(
       data.osc[`${__OSCPATH}1`].value);
       
-  window.zsession.oscElements['fx-drywet'].setEnabled(true);
-  window.zsession.oscElements['fx-pan'].setEnabled(true);
+  zsession.oscElements['fx-drywet'].setEnabled(true);
+  zsession.oscElements['fx-pan'].setEnabled(true);
    
   document.getElementById('fx-alchemy').classList.remove('hidden');
   
   //load presets
-  let presetObj = window.zsession.oscElements['fx-preset'];
+  let presetObj = zsession.oscElements['fx-preset'];
   if (data.config.presets > 0) {
     let presets = OSC_INT_PARAM(data.config.presets);
       presetObj.setOptions(
         presets, 
         presets.map( (el) => String(el).padStart(2,0))
       );
-      presetObj.setValue(data.osc[`${window.zsession.fxcursor}/preset`]
+      presetObj.setValue(data.osc[`${zsession.fxcursor}/preset`]
         .value);
       
-      window.zsession.oscElements['fx-preset'].setEnabled(true);
+      zsession.oscElements['fx-preset'].setEnabled(true);
   } else {
       presetObj.setOptions([0],['-']);
       presetObj.setEnabled(false);
@@ -100,13 +103,13 @@ function loadFx(data) {
   
   
   //formula
-  let obj = window.zsession.oscElements['fx-formula'];
+  let obj = zsession.oscElements['fx-formula'];
   if (data.config.algorithm.length > 0) {
     obj.setOptions(
       OSC_INT_PARAM(data.config.algorithm.length),
       data.config.algorithm
     );
-    let oscpath = `${window.zsession.fxcursor}/parameter${data.config.formula}`;
+    let oscpath = `${zsession.fxcursor}/parameter${data.config.formula}`;
     obj.oscpath = oscpath;
     obj.setValue(data.osc[oscpath].value, true);
     obj.setEnabled(true);
@@ -117,25 +120,44 @@ function loadFx(data) {
   
   //bypass
   if (data.bypass !== undefined) {
-    window.zsession.oscElements['fx-part-bypass'].
+    zsession.oscElements['fx-part-bypass'].
       HTMLElement.classList.remove('d-none');
       
-    let fxid = /partefx(\d)/.exec(window.zsession.fxcursor)[1];
-    window.zsession.oscElements['fx-part-bypass'].oscpath =
-      `/part${window.zsession.partID}/Pefxbypass${fxid}`;
+    let fxid = /partefx(\d)/.exec(zsession.fxcursor)[1];
+    zsession.oscElements['fx-part-bypass'].oscpath =
+      `/part${zsession.partID}/Pefxbypass${fxid}`;
       
-    window.zsession.oscElements['fx-part-bypass'].
+    zsession.oscElements['fx-part-bypass'].
       setValue (data.bypass);
   } else {
-    window.zsession.oscElements['fx-part-bypass'].
+    zsession.oscElements['fx-part-bypass'].
       HTMLElement.classList.add('d-none');
   }
   
   ['reagent', 'catalyst', 'acid', 'base'].forEach ( (element) => {
     let el = data.config[element];
-    let path = `${window.zsession.fxcursor}/parameter${el}`;
-    let obj = window.zsession.oscElements[`fx-${element}`];
+    let path = `${zsession.fxcursor}/parameter${el}`;
+    let obj = zsession.oscElements[`fx-${element}`];
     obj.oscpath = path;
     obj.setValue ( data.osc[path].value, true );
-  }); 
+  });
+  
+  if (data.efftype == 2){ //echo
+    zsession.oscElements['fx-reagent-sync'].setOscPath(zsession.fxcursor);
+    zsession.oscElements['fx-reagent-sync'].setEnabled(true);
+    console.log(data);
+    zsession.oscElements['fx-reagent-sync'].setValue(
+      data.osc[`${zsession.fxcursor}/numerator`].value + "/"
+      + data.osc[`${zsession.fxcursor}/denominator`].value 
+    );
+    
+    zsession.oscElements['fx-reagent-sync'].HTMLElement.classList.remove('hidden');
+    zsession.oscElements['fx-reagent'].setEnabled(false);
+    zsession.oscElements['fx-reagent'].HTMLElement.classList.add('hidden');
+  } else {
+    zsession.oscElements['fx-reagent-sync'].setEnabled(false);
+    zsession.oscElements['fx-reagent-sync'].HTMLElement.classList.add('hidden');
+    zsession.oscElements['fx-reagent'].setEnabled(true);
+    zsession.oscElements['fx-reagent'].HTMLElement.classList.remove('hidden');
+  }
 }

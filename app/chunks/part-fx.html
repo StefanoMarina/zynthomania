@@ -14,7 +14,7 @@
   </div>
   <h4>FX Routing</h4>
   <div class="col-12">
-    <table style="width:100%; table-layout:fixed" class="bb bt">
+    <table class="bb bt matrix">
       <tr>
         <td id="p-r-0-2"><span>Skip</span></td>
         <td></td>
@@ -113,7 +113,7 @@
           data-osc-path="/fxcursor/preset"
           data-label="Preset"></div>
       </div>
-      <div class="col-6 panel">
+      <div class="col panel">
         <div class="osc-element" id="fx-formula"
           data-label="Formula"></div>
       </div>
@@ -122,6 +122,9 @@
       <div class="col-3 panel">
         <div class="osc-element osc-knob" id="fx-reagent"
           data-label="Reagent"></div>
+        <div class="osc-element osc-tempo hidden" id="fx-reagent-sync"
+          data-label="sync"
+        ></div>
       </div>
       <div class="col-3 panel">
         <div class="osc-element osc-knob" id="fx-catalyst"

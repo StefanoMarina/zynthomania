@@ -148,11 +148,11 @@
       <td colspan="2"></td>
     </tr>
     <tr>
-      <td><button class="minimal button" onclick="onSynthSubHarmonics()">harm</button></td>
+      <td><button class="minimal button" onclick="onSynthSubMagnitude()">HARM</button></td>
       <td><i class="fa fa-chevron-right"></i></td>
       <td><i>VOICE</i></td>
       <td><i class="fa fa-chevron-left"></i></td>
-      <td><button class="minimal button" onclick="onSynthSubBandwidth()">band</button></td>
+      <td><button class="minimal button" onclick="onSynthSubBandwidth()">BW</button></td>
     </tr>
     <tr>
       <td colspan="2"></td>
@@ -474,7 +474,9 @@
         data-label="Type"></div>
     </div>
     <div class="col-3 col-md-4 col-lg-2 panel">
-      <button class="button" onclick="onLFOEditorSyncButton()">Sync</button>
+      <div class="osc-element osc-tempo" id="lfo-sync"
+        data-label="Sync"
+      ></div>
     </div>
   </div>
   <div class="row">
@@ -500,7 +502,7 @@
   <div class="row">
     <div class="col-4 offset-2 col-lg-2 panel">
         <div class="osc-element osc-boolean" id="lfo-cont"
-        data-partial="Pcontinuous"
+        data-partial="Pcontinous"
         data-label="Continous;C-Mode"></div>
     </div>
     <div class="col-4 col-lg-2 panel">
@@ -652,16 +654,8 @@
 <section data-title="SubSynth Harmonics" data-back="section-synth-subsynth"
   id="section-synth-harmonics"
   class="container">
-  <h4>Magnitude</h4>
   <div class="row">
-    <div class="col-3 panel">
-      <div class="osc-element osc-button"
-        id="sub-h-clear"
-        data-label="Clear"
-        data-osc-path="/synthcursor/Phmag[1-32] 0"
-        ><div class="content"><i class="fas fa-trash"></i></div></div>
-    </div>
-    <div class="col-5 panel">
+    <div class="col-6 panel">
       <div class="osc-element osc-swipeable"
         id="sub-h-mag-type"
         data-osc-path="/synthcursor/Phmagtype"
@@ -676,21 +670,17 @@
         ></div>
     </div>
   </div>
-  <h4>Generator</h4>
-  <div class="row">
-    <div class="col-6"><button class="button" onclick="onSynthSubMagnitude()">Magnitude</button></div>
-    <div class="col-6"><button class="button" onclick="onSynthSubBandwidth()">Bandwidth</button></div>
-  </div>
   <h4>Spread</h4>
-  <div class="row">
-    <div class="col-12 col-lg-6 panel">
+  <div class="row no-gutters">
+    <div class="col-6 panel">
       <div class="osc-element osc-swipeable"
       id="sub-h-spread-type"
       data-osc-path="/synthcursor/POvertoneSpread.type"
+      data-label="Spread type;Spread"
       >  
       </div>
     </div>
-    <div class="col-12 col-lg-6 panel">
+    <div class="col-6 panel">
       <div class="osc-content border">
         <header class="osc-header header">Modifiers</header>
         <div class="row">
@@ -713,28 +703,70 @@
       </div>
     </div>
   </div>
-</section>
-
-<!-- subsynth generator -->
-<section id="subsynth-harmonics" class="container"
-data-title="Harmonics generator" data-back="section-synth-harmonics">
-  <h4>Harmonics generator</h4>
   <div class="row">
-    <div class="col-12 col-lg-6 panel">
-      <div class="swipeable" id='hgen-type'></div>
+    <div class="col-1">
+      <div class="osc-element osc-button minimal"
+        id="sub-h-clear"
+        data-osc-path="/synthcursor/Phmag[0-31] 0"
+        ><div class="content"><i class="fa fa-undo"></i></div></div>
     </div>
-    <div class="col-4 col-lg-3 panel">
-      <div class="osc-element osc-knob" id='hgen-offset'
-        data-label="offset"></div>
-    </div>
-    <div class="col-4 col-lg-3 panel">
-      <div class="osc-element osc-knob" id='hgen-q'
-        data-label="Q"></div>
-    </div>
-    <div class="col-4 panel">
-      <button class="button selected" id="hgen-generate">Generate</button>
+    <div class="col">
+      <h4 class="d-none d-lg-block">Magnitude</h4>
+      <div class="swipeable d-lg-none" id="magnitude-selector"></div>
     </div>
   </div>
+  
+  <div class="row p-top">
+    <div class="col-12 col-md-6 col-lg-4 d-lg-block mag-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block mag-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+        <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block mag-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block mag-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+  </div>
+  
 </section>
 
 <!-- subsynth bandwidth -->
@@ -760,6 +792,68 @@ data-title="Harmonics generator" data-back="section-synth-harmonics">
         data-osc-path="/synthcursor/Pbwscale"
         data-label="Stretch;Scale"
         ></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-3">
+      <div class="osc-element osc-button minimal"
+        id="sub-bw-clear"
+        data-osc-path="/synthcursor/Phmrelbw[0-31] 64"
+        ><div class="content"><i class="fa fa-undo"></i></div></div>
+    </div>
+    <div class="col">
+      <h4 class="d-none d-lg-block">Relative Bandwidth</h4>
+      <div class="swipeable d-lg-none" id="bw-selector"></div>
+    </div>
+  </div>
+  <div class="row p-top">
+    <div class="col-12 col-md-6 col-lg-4 d-lg-block bw-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block bw-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+        <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block bw-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block bw-sec-page">
+      <div class="faderContainer">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+        <input type="range" orient="vertical" class="osc-element osc-fader">
+      </div>
     </div>
   </div>
 </section>

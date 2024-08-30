@@ -57,6 +57,8 @@ function osc_script_to_single_value(data) {
   let keys = Object.keys(data);
   if (keys.length == 1)
     return data[keys[0]][0];
+  else
+    return data;
 }
 
 
@@ -283,10 +285,14 @@ class OSCElement extends OSCChannel{
         : range;
     this.serverRange = this.range;
     
-    this.oscpath = (clickableObject !== null && clickableObject.dataset.oscPath)
+    this.oscpath = (clickableObject !== null 
+      && clickableObject.dataset.oscPath)
       ? clickableObject.dataset.oscPath
       : "";
 
+    if ( this.oscpath.indexOf(';')>-1)
+      this.oscpath = this.oscpath.split[';'];
+    
     //set predefined label
     if (clickableObject.dataset.label !== undefined){
       let lb = clickableObject.dataset.label.split(';');
@@ -343,13 +349,8 @@ class OSCElement extends OSCChannel{
   sync() {
     return super.sync().then ( (data) => {
       this.HTMLElement.dispatchEvent (new CustomEvent('sync',
-        { 
-          'detail' : data
-        }));
-      
-      /*
-       * This assumes OSCElements only handle a single value
-       */  
+        {  'detail' : data}));
+
       this.setValue(osc_script_to_single_value(data), true);
       return data;
     });
@@ -694,9 +695,80 @@ class OSCPathElement extends OSCBoolean {
   }
 }
 
-class OSCMixer extends OSCElement {
-  constructor( element, grid ) {
-    super (element, null, null);
+class OSCTempo extends OSCNumber {
+  constructor(clickableObject) {
+    super(clickableObject);
+    this.bypassable = null;
+    this.lastValue='';
     
+    clickableObject.addEventListener('click', (ev)=>{
+      let osc = zsession.oscElements[clickableObject.id];
+      let result = prompt ('Input time fraction according to bpm. 0 to enable manual.',
+        this.lastValue);
+      if (result == "0" || result == "") result = "0/0";
+      let rex = /(\d+)[^\d]+(\d+)/.exec(result);
+      try {
+        let params = [parseInt(rex[1]), parseInt(rex[2])];
+        osc.act(params).then ( ()=>{
+          osc.setValue(`${params[0]}/${params[1]}`, false);
+          if (osc.bypassable != null)
+            osc.bypassable.setEnabled(result != "0/0");
+        });
+      } catch (err) {
+        displayOutcome(err,true);
+        return;
+      }
+    });
   }
+  
+  
+  setOscPath(path) {
+    this.oscpath = [
+      `${path}/numerator`,
+      `${path}/denominator`
+    ];
+  }
+  
+  setValue(value, fromServer=false) {
+    if ( !fromServer ) {
+      this.lastValue = value;
+      super.setValue(value);
+    }
+    else {
+      let paths = Object.keys(value);
+      if ( paths[0].endsWith ('numerator') )
+        this.lastValue = `${value[paths[0]]}/${value[paths[1]]}`;
+      else
+        this.lastValue = `${value[paths[1]]}/${value[paths[0]]}`;
+      
+      super.setValue(this.lastValue);
+    }
+  }
+}
+
+class OSCFader extends OSCElement {
+  constructor(fader, range) {
+    super(fader, null, range);
+    fader.min = range.min;
+    fader.max = range.max;
+    fader.orient = 'vertical';
+    
+    fader.addEventListener('change', ()=>{
+      let value = fader.value;
+      if (this.serverRange != this.range)
+        value = convert_value(this.range, this.serverRange, value);
+      
+      super.act(value);
+    });
+  }
+  
+  setValue(value, fromServer=false){
+    if (fromServer && this.serverRange != this.range)
+      value = convert_value(this.serverRange, this.range, value);
+    
+    this.HTMLElement.value = value;
+  }
+  
+  setContent(){}
+  setLabel(){}
 }

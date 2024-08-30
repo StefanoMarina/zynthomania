@@ -30,8 +30,6 @@ const {registerOSC} = require('./osc.js');
 const OSCFile = require('./oscfile.js');
 const OSCWorker = require('./oscworker.js').OSCWorker;
 
-const SubsynthHarmonics = require('./subsynth').SubsynthHarmonics;
-
 var exports = module.exports = {};
 
 class ZynthoServer extends EventEmitter {
@@ -53,8 +51,6 @@ class ZynthoServer extends EventEmitter {
     */
     this.session = ZynthoServer.defaultExtendedSession();
     
-    //creates a subsynth custom manager
-    this.ssHarmonics = new SubsynthHarmonics();
     
     /*
     * Adds all zynthomania's internal OSC commands
@@ -426,7 +422,9 @@ class ZynthoServer extends EventEmitter {
           this.parser.translate(`${path}/parameter${cfg.reagent}`),
           this.parser.translate(`${path}/parameter${cfg.catalyst}`),
           this.parser.translate(`${path}/parameter${cfg.acid}`),
-          this.parser.translate(`${path}/parameter${cfg.base}`)
+          this.parser.translate(`${path}/parameter${cfg.base}`),
+          this.parser.translate(`${path}/numerator`),
+          this.parser.translate(`${path}/denominator`),
         ]
       );
       

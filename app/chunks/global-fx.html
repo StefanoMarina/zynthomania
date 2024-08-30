@@ -1,0 +1,90 @@
+<section id="section-global-fx-menu" class="container">
+    <div class="row">
+      <div class="col-4 panel"><button class="button">Global FX</button></div>
+      <div class="col-4 panel"><button class="button" disabled>Insert FX</button></div>
+      <div class="col-4 panel"><button class="button" disabled>Route</button></div>
+    </div>
+</section>
+
+<!-- global FX  -->
+<section id="section-global-fx" data-title="Part FX" class="container">
+  <!-- access to FX  -->
+  <div class="row">
+    <div class="col-6 col-lg-3 panel">
+      <button class="button" id="glob-fx-0" onclick="onFXGlobalEdit(0)"></button>
+    </div>
+    <div class="col-6 col-lg-3 panel">
+      <button class="button" id="glob-fx-1" onclick="onFXGlobalEdit(1)"></button>
+    </div>
+    <div class="col-6 col-lg-3 panel">
+      <button class="button" id="glob-fx-2" onclick="onFXGlobalEdit(2)"></button>
+    </div>
+    <div class="col-6 col-lg-3 panel">
+      <button class="button" id="glob-fx-3" onclick="onFXGlobalEdit(3)"></button>
+    </div>
+  </div>
+  <h4>FX Matrix</h4>
+  <div class="col-12">
+    <table class="bb bt matrix">
+      <tr>
+        <td></td>
+        <td class="gfx-name0">1</td>
+        <td class="gfx-name1">2</td>
+        <td class="gfx-name2">3</td>
+        <td class="gfx-name3">4</td>
+      </tr>
+      <tr>
+        <td class="gfx-name0">1</td>
+        <td></td>
+        <td>
+          <div class="osc-element osc-knob minimal"
+            id="glob-fx-0to1"
+            data-osc-path="/sysefxfrom0/to1"
+            data-label="1 &gt; 2"></div>
+        </td>
+        <td>
+          <div class="osc-element osc-knob minimal"
+            id="glob-fx-0to2"
+            data-osc-path="/sysefxfrom0/to2"
+            data-label="1 &gt; 3"></div>
+        </td>
+        <td>
+          <div class="osc-element osc-knob minimal"
+            id="glob-fx-0to3"
+            data-osc-path="/sysefxfrom0/to3"
+            data-label="1 &gt; 4"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="gfx-name1">2</td>
+        <td></td>
+        <td></td>
+        <td>
+          <div class="osc-element osc-knob minimal"
+            id="glob-fx-1to2"
+            data-osc-path="/sysefxfrom1/to2"
+            data-label="2 &gt; 3"></div>
+        </td>
+        <td>
+          <div class="osc-element osc-knob minimal"
+            id="glob-fx-1to3"
+            data-osc-path="/sysefxfrom1/to3"
+            data-label="2 &gt; 4"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="gfx-name2">3</td>
+        <td></td>
+        <td></td>
+        <td>     
+        </td>
+        <td>
+          <div class="osc-element osc-knob minimal"
+            id="glob-fx-2to3"
+            data-osc-path="/sysefxfrom2/to3"
+            data-label="3 &gt; 4"></div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</section>

@@ -328,12 +328,41 @@ function onFXGlobal() {
       .then ( (data) => {
         console.log(data);
         
+        let section = document.getElementById('section-global-fx');
+        
         for (let i = 0; i < 4; i++) {
           let btn = document.getElementById(`glob-fx-${i}`);
+          let val = data[`/sysefx${i}/efftype`][0];
           
+          btn.innerHTML = effectTypeToString(val);
+          
+          section.querySelectorAll(`.gfx-name${i}`).forEach ( (el) => {
+            el.innerHTML = effectTypeToString(val,true);
+          });
         }
+        
         loadSection('section-global-fx');
     });
+}
+
+function onFXGlobalEdit(fxid) {
+    zsession.fxcursor=`/sysefx${fxid}`;
+    new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
+      .then ( (data) => {
+        loadFXEditor(data, `Edit Glob FX #${fxid}`, 'section-global-fx');
+        document.querySelector('#fx-type select')
+          .addEventListener('change', onFXGlobalEditFxChanged);
+        
+        zsession.oscElements['fx-part-bypass'].setEnabled(false);
+        zsession.oscElements['fx-part-bypass']
+          .HTMLElement.parentNode.classList.add('hidden');
+    });
+}
+
+function onFXGlobalEditFxChanged(event) {
+  let changed = event.target.options[event.target.selectedIndex].text;
+  let fxid = /\d+$/.exec(zsession.fxcursor)[0];
+  document.getElementById(`glob-fx-${fxid}`).innerHTML = changed;
 }
 
 function onFxDry() {
@@ -939,20 +968,20 @@ function onSynthFMFrequencyEnvelope() {
   );     
 }
 
-function onSynthSubHarmonics() {
+function onSynthSubMagnitude() {
   if (zsession.initSubH === undefined){
     new OSCButton(document.getElementById('sub-h-clear'));
     
     new OSCSwipeable(document.getElementById('sub-h-mag-type'),
     [0,1,2,3,4],
     ['Linear', '-40 Db', '-60 Db', '-80 Db', '-100 Dd'],
-    {'title' :'Magnitude type'}
+    {'title' :'Magnitude type', 'buttonClass': 'col-4 col-lg-2'}
     );
     
     new OSCSwipeable(document.getElementById('sub-h-spread-type'),
     [...Array(8).keys()],
     ['Harmonic', 'Shift U', 'Shift L', 'Power U', 'Power L', 'Sine', 'Power', 'Shift'],
-    {'title' :'Spread type'}
+    {'title' :'Spread type', 'buttonClass': 'col-6 col-lg-4'}
     );
     
     new OSCKnob(document.getElementById('sub-h-stages'),
@@ -962,6 +991,46 @@ function onSynthSubHarmonics() {
       let obj = new OSCKnob(document.getElementById(`sub-h-spread-${i}`));
       obj.label="Parameter " + i;
     }
+    
+    
+    //Magnitude faders
+    let swipe = zsession.elements['magnitude-selector'] =
+      new Swipeable ( document.getElementById('magnitude-selector') );
+    
+    swipe.setOptions (
+      [...Array(4).keys()],
+      ['Harms 1-8', 'Harms 9-16', 'Harms 17-24', 'Harms 25-32']
+    );
+    swipe.setDialogData({'title': 'section', 'buttonClass': 'col-12'});
+    
+    swipe.selectElement.addEventListener('change', ()=>{
+        let pages = Array.from(document.getElementById('section-synth-harmonics')
+          .querySelectorAll('.mag-sec-page'));
+        let page = pages[swipe.selectElement.selectedIndex];
+        pages.filter ( p => p != page).
+          forEach ( (pg) => pg.classList.add('d-none'));
+          
+        page.classList.remove('d-none');
+    });
+    
+    let faders = document.getElementById('section-synth-harmonics')
+      .querySelectorAll('input[type=range]');
+    
+    for (let i = 0; i < 32; i++) {
+      let id = `magnitude-ph-${i}`;
+      faders[i].id = id;
+      faders[i].dataset.oscPath = `/synthcursor/Phmag${i}`;
+      new OSCFader(faders[i], CC_RANGE);//.oscpath=`/synthcursor/Phmag${i}`;
+    }
+    
+    //clear btn
+    zsession.oscElements['sub-h-clear'].HTMLElement
+      .addEventListener('act', ()=> {
+        document.getElementById('section-synth-harmonics')
+          .querySelectorAll('input[type=range]')
+          .forEach ( (el) => el.value = 0);
+    });
+    
     zsession.initSubH = true;
   }
   
@@ -975,10 +1044,48 @@ function onSynthSubBandwidth() {
    if (zsession.initSubB === undefined){
      new OSCSwipeable(document.getElementById('sub-band-init'),
      [0,1,2],
-     ['Zero', 'Random', 'Ones']);
+     ['Zero', 'Rand', 'Ones']);
      
      new OSCKnob(document.getElementById('sub-band-band'));
      new OSCKnob(document.getElementById('sub-band-stretch'));
+     new OSCButton(document.getElementById('sub-bw-clear'));
+     
+      let swipe = zsession.elements['bw-selector'] =
+      new Swipeable ( document.getElementById('bw-selector') );
+    
+    swipe.setOptions (
+      [...Array(4).keys()],
+      ['RelBW 1-8', 'RelBW 9-16', 'RelBW 17-24', 'RelBW 25-32']
+    );
+    swipe.setDialogData({'title': 'section', 'buttonClass': 'col-12'});
+    
+    swipe.selectElement.addEventListener('change', ()=>{
+        let pages = Array.from(document.getElementById('subsynth-bandwidth')
+          .querySelectorAll('.bw-sec-page'));
+        let page = pages[swipe.selectElement.selectedIndex];
+        pages.filter ( p => p != page).
+          forEach ( (pg) => pg.classList.add('d-none'));
+          
+        page.classList.remove('d-none');
+    });
+    
+    let faders = document.getElementById('subsynth-bandwidth')
+      .querySelectorAll('input[type=range]');
+    
+    for (let i = 0; i < 32; i++) {
+      let id = `bw-ph-${i}`;
+      faders[i].id = id;
+      faders[i].dataset.oscPath = `/synthcursor/Phrelbw${i}`;
+      new OSCFader(faders[i], CC_RANGE);//.oscpath=`/synthcursor/Phmag${i}`;
+    }
+    //clear btn
+    zsession.oscElements['sub-bw-clear'].HTMLElement
+      .addEventListener('act', ()=> {
+        document.getElementById('subsynth-bandwidth')
+          .querySelectorAll('input[type=range]')
+          .forEach ( (el) => el.value = 64);
+    });
+    
      zsession.initSubB = true;
    }
    
@@ -987,21 +1094,6 @@ function onSynthSubBandwidth() {
       loadSection('subsynth-bandwidth');
     });
 }
-
-function onSynthSubMagnitudeGen() {
-  new ZynthoREST().query('status/subsynth'). then ( (data) => {
-    loadHarmonicsEditor('H. Magnitude', data, 'magnitude', 
-      osc_sanitize('/synthcursor/Phmag'));
-  });
-}
-
-function onSynthSubBandwidthGen() {
-  new ZynthoREST().query('status/subsynth'). then ( (data) => {
-    loadHarmonicsEditor('R. Bandwidth', data, 'bandwidth', 
-      osc_sanitize('/synthcursor/Phrelbw'));
-  });
-}
-
 
 
 function onScriptOK() {
@@ -1575,8 +1667,13 @@ function onPartFXEdit(fxid) {
     new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
       .then ( (data) => {
         loadFXEditor(data, `Edit Part FX #${fxid}`, 'section-part-fx');
+          
         document.querySelector('#fx-type select')
           .addEventListener('change', onPartFXEditFxChanged);
+        zsession.oscElements['fx-part-bypass'].setEnabled(true);
+        zsession.oscElements['fx-part-bypass']
+          .HTMLElement.parentNode.classList.remove('hidden');
+          
         document.querySelector('#fx-part-bypass')
           .addEventListener('sync', onPartFXEditFxBypass);
     });
