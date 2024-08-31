@@ -98,10 +98,13 @@ function onBanksBankSelect(event) {
 function onBanksInstrumentClick(instrument) {
   new ZynthoREST().post( "loadInstrument", {'instrument': instrument, 
     'id': zsession.partID} )
-   .then (
-    
-    ()=>{onToolbarChangePart()}
-   );
+   .then ( ()=>{    
+      //try to store program id
+      let rex = /\/(\d+)\-.*xiz$/.exec(instrument);
+      zsession.lastLoadedInstrument[zsession.partID] = 
+          (rex != null) ? parseInt(rex[1]) : null;
+      onToolbarChangePart()
+  });
 }
 
 function onBind() {
@@ -529,7 +532,7 @@ function initSynthToolbar() {
     let zeroTo15 = [...Array(16).keys()];
     let swipe = new Swipeable(document.getElementById('synth-layer'));
     swipe.setOptions(zeroTo15, 
-      zeroTo15.map ( el => "Layer "+(String(el+1).padStart(2,0)) )
+      zeroTo15.map ( el => "L"+(String(el+1).padStart(2,0)) )
     );
     swipe.setDialogData({'title': 'Select layer', 'buttonClass' : 'col-4'});
     swipe.selectElement.addEventListener('change', onSynthToolbarUpdate);
@@ -547,7 +550,7 @@ function initSynthToolbar() {
     swipe.setOptions(
       [ADSYNTH_GLOBAL,...zeroToEight],
       ['Global'].concat(zeroToEight.map ( 
-        (el) => 'Voice '+(String(el+1).padStart(2,0))
+        (el) => 'V'+(String(el+1).padStart(2,0))
         )
       ));
     swipe.setDialogData({'title': 'Select voice', 'buttonClass' : 'col-3'});
@@ -572,7 +575,7 @@ function onSynthEnableSync(event) {
 
 function onSynth(synth) {
   initSynthToolbar();
-   setSelectedToolbarButton(document.getElementById('part-toolbar-synth'));
+  setSelectedToolbarButton(document.getElementById('part-toolbar-synth'));
    
   //refresh synth cursor
   set_synth_cursor(synth);
@@ -1206,202 +1209,78 @@ function onSystemInfoShutdown(reboot) {
    }
   });
 }
-function onKeybSession() {
-  doQuery('status/session', null, (data) =>{
-    const currentSession = data.currentSession;
-    const sessionList = data.sessionList;
-    
-    $('#keybCurSession').text( (currentSession != null)
-        ? currentSession : 'New session' );
-    
-    const list = $('#keybSessionList');
-    
-    $(list).empty();
-    sessionList.unshift('(Save to new session)');
-    sessionList.forEach( (item) => {
-      const li = `<li>${item}</li>`;
-      $(list).append(li);
-    });
-  });
-}
 
-function onKeybSessionSaveClick() {
-  let select = $('#keybSessionList').find('li.selected');
-  if (select.length == 0)
-    return;
-  let filename = $(select).text();
+function onPartInstrumentSave(backTo) {
+  let section = document.getElementById('section-save-instrument');
+  section.dataset.back = backTo;
   
-  if (filename.match(/^\(Save to new session\)/)) {
-    filename = prompt ("New session name:", "default.xmz");
-    if (filename == null)
-      return;
-    if (!filename.match(/\.xmz$/i)) {
-      alert('Please save as .xmz file.');
-      return;
-    }
-    if ($('#keybCurSession').find(`li:contains(${filename})`).length>0) {
-      let res = confirm(`${filename} exists! Overwrite?`)
-      if (!res) return;
-    }
-  }
-  
-  doAction('script', {script : `/zmania/save_xmz '${filename}'`}, () =>{
-    onKeybSession();
-  });
-}
-
-function onKeybSessionLoadClick() {
-  let select = $('#keybSessionList').find('li.selected');
-  if (select.length == 0)
-    return;
-  let filename = $(select).text();
-  if (filename.match(/^\(Save to new session\)/)) 
-    return;
-  
-  doAction('script', {script :`/zmania/load_xmz '${filename}'`}, () =>{
-    //displayMessage('Loaded session.');
-    onToolbarChangePart(0);
-    onKeybSession();
-  });
-}
-
-const NOTE_LIST = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-function splitValueToKey(value) {
-  if (value <= 0) return 'C-1';
-  
-  let channel = Math.floor(value/12)-1;
-  let note = NOTE_LIST[value-((channel+1)*12)];
-  return `${note}${channel}`;
-}
-
-function keyToSplitValue(key) {
-  let match = key.match(/(\w\#?)(\d+)/);
-  let note = match[1], octave = parseInt(match[2])+1;
-  return (octave*12)+NOTE_LIST.indexOf(note);
-}
-
-function onKeybSplit() {
-  doQuery('status/split', null, (data) =>{
-    $('#keybSplitChannel > select').val(data.channel+1);
-    $('#keybSplitChannel > label').text(data.channel+1);
+  new ZynthoREST().query('files/banks', null).then((data) =>{
+    let select = document.getElementById('save-instrument-bank-folder');
+    select.innerHTML = '';
+    data.forEach ( (dir) => select.options.add(new Option(dir, dir)));
     
-    zsession.splitdata = data;
-    
-    let table = $('#keybSplitTable');
-    let btnClass = "", iconClass= null, split = null, entry = null;
-    
-    table.empty();
-    for (let i = 0; i < 16; i++) {
-      split = data.split[i];
-      if (split.channel == data.channel) {
-        iconClass='i-midi-alt';
-        btnClass='selected';
-      } else {
-        iconClass='i-midi';
-        btnClass='';
+    return new ZynthoREST().post('script', 
+      { 'requestResult': 1,
+        'script': [
+          osc_sanitize('/part/Pname'),
+          osc_sanitize('/part/info.Pauthor') 
+        ]
       }
+    );
+  }).then ( (data)=> {
+    document.getElementById('save-instrument-name')
+      .value = data[osc_sanitize('/part/Pname')][0];
+    document.getElementById('save-instrument-author')
+      .value = data[osc_sanitize('/part/info.Pauthor')][0];
       
-      entry = `<div class="col-2">${i+1}</div><div class="col-2">${splitValueToKey(split.min)}</div> 
-<div class="col-2">${splitValueToKey(split.max)}</div>
-<div class="col row no-gutters">
-  <button class="col-3" onclick='onKeybSplitEdit(${i})'><i class='fa fa-edit'></i></button>
-  <button class="col-3"  onclick='onKeybSplitClear(${i})'><i class='fa fa-trash-alt'></i></button>
-  <button class="col-3"  onclick='onKeybSplitLearn(${i})'><span class="icon i-send"></span></button>
-  <button class="col-3 ${btnClass}"  onclick='onKeybMidi(${i})'><span class="icon ${iconClass}"></span></button>
-</div>`;
-      table.append(`<div class="row no-gutters">${entry}</div>`);
+    if (!isNaN(zsession.lastLoadedInstrument[zsession.partID]))
+      document.getElementById('save-instrument-program')
+        .value = zsession.lastLoadedInstrument[zsession.partID];
+    else
+      document.getElementById('save-instrument-program').value = -1;
+      
+    loadSection('section-save-instrument');
+  });
+}
+
+function onPartInstrumentSaveClick() {
+  let folder = 
+    document.getElementById('save-instrument-bank-folder').value;
+  
+   new ZynthoREST().query('files/banks/xiz', {'bank': folder} )
+    .then( (data)=> {
+      let rex = /.*\/(.+)$/;
+      let files = data.map ( (d) => rex.exec(d.path)[1]);
+      
+      fileDialog('save', files, {'folder':`/${folder}`}, 
+        onPartInstrumentSaveOk);
+      
+      document.getElementById('file-dialog-filename').value =
+        document.getElementById('save-instrument-name').value
+        .replace(/[ :,\/]+/, '_')
+        .concat('.xiz');
+    });   
+}
+
+function onPartInstrumentSaveOk() {
+  let file = document.getElementById('file-dialog-filename').value;
+  if ( file == '' ) throw 'Empty file';
+  
+  if (!file.endsWith('xiz'))
+    file = file + '.xiz';
+    
+  new ZynthoREST().post('save_xiz',
+    {
+      'program' : document.getElementById('save-instrument-program').value,
+      'bank' : document.getElementById('save-instrument-bank-folder').value,
+      'partID' : zsession.partID,
+      'file' : file,
+      'name' : document.getElementById('save-instrument-name').value,
+      'author': document.getElementById('save-instrument-author').value
     }
-    
-  });
-}
-
-function onKeybSplitClear(part) {
-   doAction('script', {script: [
-    `/part${part}/Pminkey 0`,
-    `/part${part}/Pmaxkey 127`
-   ]}, ()=>{
-      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text('C-1');
-      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text('G9');
-   });
-}
-
-function onKeybSplitEdit(part) {
-  let split = zsession.splitdata.split[part];
-  let available_notes = [], available_scores = [];
-  
-  for (let i = 0; i < split.max; i++) {
-    available_notes.push(splitValueToKey(i));
-    available_scores.push(i);
-  }
-  
-  let data = { 'title' : 'Select lower key' , 
-        'buttonClass': 'col-3 col-md-2',
-        'scores' : available_scores,
-        'defValue' : splitValueToKey(split.min)
-  };
-  
-  dialogBox(available_notes, data, (minValue) => {
-    console.log(`split: min value ${minValue}`);
-    
-    available_notes = [];
-    available_scores = [];
-    
-    for (let i = parseInt(minValue)+1; i < 127; i++){
-      available_notes.push(splitValueToKey(i));
-      available_scores.push(i);
-    }
-    
-    data.title = 'Select higher key';
-    data.defValue = splitValueToKey(split.max);
-    data.scores = available_scores;
-    
-    dialogBox(available_notes, data, (maxValue) => {
-      split.min = parseInt(minValue);
-      split.max = parseInt(maxValue);
-      
-      doAction('script', {script: [
-        `/part${part}/Pminkey ${split.min}`,
-        `/part${part}/Pmaxkey ${split.max}`
-      ]});
-      
-      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
-        splitValueToKey(minValue));
-      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
-        splitValueToKey(maxValue));
-    });
-  });
-}
-
-function onKeybSplitLearn(part) {
-doQuery('midilearn', {force: [9]}, (data)=> {
-    const minValue = data[1];
-    
-    doQuery('midilearn', {force: [9]}, (data) => {
-      const maxValue = data[1];
-      
-      let split = zsession.splitdata.split[part];
-      split.min = minValue;
-      split.max = maxValue;
-      
-      doAction('script', {script: [
-        `/part${part}/Pminkey ${split.min}`,
-        `/part${part}/Pmaxkey ${split.max}`
-      ]});
-      
-      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(2)`).text(
-        splitValueToKey(minValue));
-      $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(3)`).text(
-        splitValueToKey(maxValue));
-        
-    }, ()=>{
-      displayMessage('Aborted', true)
-    });
-    
-    displayMessage('Enter highest key', true);
-  }, ()=>{
-    displayMessage('Aborted', true);
-  });
-  displayMessage('Enter lowest key', true);
+  ).then ( (msg)=>{
+      displayOutcome(msg);
+  })
 }
 
 //controls are created at start as this is the default page see main.js
@@ -1691,101 +1570,6 @@ function onPartFXEditFxBypass(event) {
     document.getElementById(`part-fx-${fxid}`).classList.add('disabled');
   else
     document.getElementById(`part-fx-${fxid}`).classList.remove('disabled');
-}
-
-function onKeybMidi(part) {
-  let split = zsession.splitdata.split[part];
-  let midiChan = parseInt($('#keybSplitChannel > select').val())-1;
-  
-  if (midiChan != split.channel) {
-    doAction('script', {script: `/part${part}/Prcvchn ${midiChan}`}, ()=>{
-      displayMessage(`Part #${part+1} chan set to ${midiChan}`);
-      split.channel = midiChan;
-      
-      let btn = $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
-      let span = btn.find('span');
-      btn.addClass('selected');
-      span.removeClass('i-midi');
-      span.addClass('i-midi-alt');
-    });
-  } else {
-    doAction('script', {script: `/part${part}/Prcvchn ${part}`}, ()=>{
-      displayMessage(`Part #${part+1} chan restored.`);
-      split.channel = part;
-      
-      let btn = $(`#keybSplitTable > .row:nth-child(${part+1}) > div:nth-child(4) > button:nth-child(4)`);
-      let span = btn.find('span');
-      btn.removeClass('selected');
-      span.removeClass('i-midi i-midi-alt');
-      
-      if (part == midiChan) {
-        btn.addClass('selected');
-        span.addClass('i-midi-alt');
-      } else {
-        span.addClass('i-midi');
-      }
-      
-    });
-  }
-}
-
-function onKeybSplitChange(val) {
-  let btns = $(`#KeybSplitTable >  .row > div:nth-child(4) > button:nth-child(4)`);
-  let split = null, button = null;
-  
-  for (let i = 0; i < 16; i++) {
-    button = $(btns.get()[i]);
-    split = zsession.splitdata.split[i];
-    button.find('span').removeClass('i-midi i-midi-alt');
-    button.removeClass('selected');
-    
-    if (split.channel == val) {
-      button.addClass('selected');
-      button.find('span').addClass('i-midi-alt');
-    } else {
-      button.find('span').addClass('i-midi');
-    }
-  }
-  
-  doAction('session/set', {splitChannel : val });
-}
-
-function onKeybUADSR(type) {
-  doQuery("status/options", null, (data) => {
-    let uadsr = data.uadsr;
-    
-    $('.uadsrControl').addClass('hidden');
-    
-    if (type === undefined) type = uadsr.type;
-    $(`#pnlUADSR button[value=${type}]`).addClass('selected');
-    let query = null;
-    
-    switch (type) {
-      case "none": break;
-      case "uadsr4":
-        $('#u4config p').text('General ADSR');
-        $('#u4config, #u4switch, #uadsrApply').removeClass('hidden');
-        
-        query = $('#u4config input');
-        for (let i = 0; i < 4; i++)
-          query[i].value = uadsr['uadsr4_binds'][i];
-          
-        $('#u4switch input').val(uadsr['uadsr4_binds'][4]);
-      break;
-      case "uadsr8":
-        $('#u4config p').text('Amplitude');
-        $('#u4config, #u8config, #uadsrApply').removeClass('hidden');
-        
-        query = $('#u4config input');
-        for (let i = 0; i < 4; i++)
-          query[i].value = uadsr['uadsr8_binds'][i];
-          
-        query = $('#u8config input');
-        for (let i = 0; i < 4; i++)
-          query[i].value = uadsr['uadsr8_binds'][i+4];
-      break;
-    }
-  });
 }
 
 function onTempo() {

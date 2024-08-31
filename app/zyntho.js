@@ -492,9 +492,10 @@ class ZynthoServer extends EventEmitter {
     var _this = this;
     var bankList = ['Favorites'];
     var files = Fs.readdirSync (this.config.bank_dir)
-                .filter(function (file) {
-                    return Fs.statSync(_this.config.bank_dir+'/'+file).isDirectory();
-                });
+                .filter(
+                  (file) => Fs.statSync(this.config.bank_dir+'/'+file)
+                    .isDirectory()
+                );
     
     files.forEach(file => { bankList.push(file); });
     
@@ -515,7 +516,7 @@ class ZynthoServer extends EventEmitter {
    * Zynthoserver::getInstruments
    * retrieve all instrument name by filename
    */
-  getInstruments(bank, bankID) {
+  getInstruments(bank) {
     if ('Favorites' === bank)
       return this.favorites;
       
@@ -527,9 +528,9 @@ class ZynthoServer extends EventEmitter {
 //    zconsole.debug(fullpath);
     
     var files = Fs.readdirSync (fullpath)
-                  .filter(function (file) {
-                      return !Fs.statSync(fullpath+'/'+file).isDirectory();
-                });
+                  .filter(
+                    file => !Fs.statSync(fullpath+'/'+file).isDirectory()
+                  );
           
     var regex = /(\d*)\-?([^\.]+)\.xiz/;
       

@@ -27,21 +27,6 @@ function onLoad() {
   //timers
   window.timers = {};
   
-  /*window.zsession = {
-    oscElements : {},
-    
-    buttons : {},
-    instruments : [],
-    instrument : {}, //current instrument
-    partefx : new Array(15), //last part efx query
-    fx : { path : ''}, //fx panel data
-    banks : {}, //banks panel data
-    bind : {
-      current : null,
-      info : { channel : 1, source: 'cc'}
-    } //bind editor data
-  };*/
-  
   window.zsession = {
     oscElements : {},  //OSCelement class pointers
     elements : {},
@@ -55,6 +40,7 @@ function onLoad() {
     synthcursor: 'part0/kit0/adpars/VoicePar0',
     voiceID : 0, //adsynth voice id, 127 for 'global'
     osccursor : 'part0/kit0/adpars/VoicePar0/OscilSmp', //current 
+    lastLoadedInstrument: Array(16),  //program id
     bindListEditor: {  //bindings
       currentSession : null
     },

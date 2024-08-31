@@ -634,14 +634,16 @@ section.row.opened {display: flex !important}
  * Specific elements
  */
 
+#synth-header .swipeable {line-height: 1}
+
 /*@media screen and (max-width < 768px) {
   #synth-header .swipeable {padding-top: 6%}
 }*/
-
+/*
 #synth-header nav * {font-size: 14px;}
 #synth-header row:nth-child(2) {padding-bottom: 5%}
 #synth-header row:nth-child(2) .swipeable {padding: 0}
-
+*/
 #content-title { padding: 10px }
 
 #current-synth { font-weight: bold; text-align: center}

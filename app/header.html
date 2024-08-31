@@ -230,6 +230,25 @@
         
         <!-- special synth navigation section -->
         <header id="synth-header" class="hidden container bb" style="position:sticky;padding-bottom: 5px">
+          
+          <div class="row no-gutters">
+            <div class="col-1">
+              <button class="osc-element minimal osc-boolean"
+                id="synth-toolbar-layer-enabled"
+                data-osc-path="/part/kit/Penabled" ></button>
+            </div>
+            <div class="col-3"><div class="swipeable" id="synth-layer"></div></div>
+            <div class="col-5">
+              <nav id="synthSelector">  
+                <button class="minimal" id="synth-toolbar-ad-enabled" onclick="onSynth('ad')">ad</button>
+                <button class="minimal" id="synth-toolbar-sub-enabled" onclick="onSynth('sub')">sub</button>
+                <button class="minimal" id="synth-toolbar-pad-enabled" onclick="onSynth('pad')">pad</button>
+              </nav>
+            </div>
+            <div class="col-3"><div class="swipeable" id="adsynth-voice"></div></div>
+          </div>
+          
+          <!--
           <div class="row">
             <div class="col-6 col-lg-4"><div class="swipeable" id="synth-layer"></div></div>
             <div class="col-6 col-lg-4"><div class="swipeable" id="adsynth-voice"></div></div>
@@ -242,6 +261,7 @@
               <button class="minimal" id="synth-toolbar-pad-enabled" onclick="onSynth('pad')">pad</button>
             </nav>
           </div>                
+          -->
         </header>
         
         <section id="section-intro" class="opened" data-title="Zynthomania">

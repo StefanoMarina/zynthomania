@@ -1,23 +1,53 @@
-   <!-- part main controls -->
-   <section class="container" id="section-part-main" data-title="Part mixer">
-     <div class="row">
-       <div class="col-3 col-md-4 col-lg-6 panel">
-          <div id="part-volume" class="osc-element osc-knob"
-            data-osc-path="/part/Pvolume" data-osc-type="i"></div>
-       </div>
-       
-       <div class="col-3 col-md-4 col-lg-6 panel">
-        <div id="part-panning" class="osc-element osc-knob"
-            data-osc-path="/part/Ppanning" data-osc-type="i"></div>
+ <!-- part main controls -->
+ <section class="container" id="section-part-main" data-title="Part mixer">
+   <div class="row">
+     <div class="col-3 panel">
+        <div  id="part-enable" class="osc-element osc-boolean" 
+          data-osc-path="/part/Penabled">
+            <div class="content"><i class="fa fa-power-off"></i></div>
         </div>
-        
-        <div class="col-3 col-md-4 col-lg-6 panel">
-          <div  id="part-enable" class="osc-element osc-boolean" 
-            data-osc-path="/part/Penabled">
-              <div class="content"><i class="fa fa-power-off"></i></div>
-          </div>
-        </div>   
-      </div>  
-      <div class="row">
       </div>
-    </section>
+      
+     <div class="col-3 panel">
+        <div id="part-volume" class="osc-element osc-knob"
+          data-osc-path="/part/Pvolume" data-osc-type="i"></div>
+     </div>
+     
+     <div class="col-3 panel">
+      <div id="part-panning" class="osc-element osc-knob"
+          data-osc-path="/part/Ppanning" data-osc-type="i"></div>
+      </div>
+      
+      <div class="col-3 panel">
+        <button class="button" onclick="onPartInstrumentSave('section-part-main')">SAVE</button>
+      </div>
+    </div>  
+ </section>
+
+<!-- save instrument -->
+<section id="section-save-instrument" data-title="Save Instrument"
+  class="container">
+  
+  <p class="p-top">Program</p>
+  <small>Program is ignored if file starts with numbers.</small><br/>
+  <small>"<i class="fa fa-sort-amount-down"></i>" will assign the next free program.</small>
+  <div class="row">
+    <div class="col-7 panel">
+      <input type="number" id="save-instrument-program">
+    </div>
+    <div class="col-5 panel"><button class="button selected" 
+      onclick="document.getElementById('save-instrument-program').value = -1"
+      ><i class="fa fa-sort-amount-down"></i></button></div>
+  </div>
+  
+  <p class="p-top">Instrument</p>
+  <div class="panel"><input type="text" id="save-instrument-name"></div>
+  <p class="p-top">Author</p>
+  <div class="panel"><input type="text" id="save-instrument-author"></div>
+  
+  <p class="p-top">Folder</p>
+  <div class="row">
+    <div class="col-8 panel"><select id="save-instrument-bank-folder"></select></div>
+    <div class="col-4 panel"><button onclick="onPartInstrumentSaveClick()" class="button selected">SAVE</button></div>
+  </div>
+</section>

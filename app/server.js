@@ -722,12 +722,106 @@ function post_loadbind(req,res) {
 }
 app.post('/loadbind', post_loadbind);
 
+
+function post_save_xiz(req,res) {
+  zconsole.logPost(req);
+   if (app.zyntho.IO.readOnlyMode){
+    res.statusMessage='System is read only.';
+    res.status(403).end();
+    return;
+  }  
+  
+  try {
+  ['file', 'bank', 'partID', 'author', 'name', 'program']
+    .forEach ( (att) => {
+      if ( req.body[att] === undefined)
+        throw 'Undefined attribute';
+      });
+  } catch {
+    res.status(400).end();
+    return;
+  }
+  
+  if (req.body.bank.search(/[\\\/\:]+/)>-1
+      || req.body.file.search(/[\\\/\:]+/)>-1 ) {
+    res.statusMessage='Invalid bank/file';
+    res.status(401).end();
+    return;
+  }
+  
+  let bank = `${app.zyntho.config.bank_dir}${req.body.bank}`;
+  zconsole.debug ( bank ) ;
+  try { Fs.accessSync(bank, Fs.constants.W_OK) }
+  catch ( err ) {
+      res.statusMessage='Cannot write on bank.';
+      res.status(500).end();
+      return;
+  }
+  
+  let filename = req.body.file;
+  
+  //if program is not in filename, alter filename
+  let rex = /^(\d+)\-.*$/;
+  if (rex.test(filename) == false) {
+    let id = parseInt(req.body.program);
+    
+    if (id == -1) {
+      //turns (valid) filenames into ids
+      let ids = Fs.readdirSync (bank).filter ( (file) => 
+        (!Fs.statSync(`${bank}/${file}`).isDirectory()
+          && rex.test(file)))
+        .map ( (file) => parseInt(rex.exec(file)[1]));
+      
+      id = 1;
+      while ( ids.indexOf(id) != -1 && id < 127) id++;
+    }
+    
+    filename = String(id).padStart(4,0)+"-"+filename;
+  }
+  
+  let lines = [];
+  if ( req.body.name != '')
+    lines.push(`/part${req.body.partID}/Pname '${req.body.name}'`);
+  if (req.body.author != '')
+    lines.push(`/part${req.body.partID}/info.Pauthor '${req.body.author}'`);
+
+  let promise = null;
+  
+  if (lines.length > 0) {
+    let bundle = app.zyntho.parser.translateLines(lines);
+    let worker = new OSCWorker(app.zyntho);
+    worker.pushPacket(bundle);
+    
+    app.zyntho.sendOSC(bundle);  
+    promise = worker.listen();
+  } else {
+    promise = Promise.resolve ( true );
+  }
+  
+  promise.then( ()=>{
+    app.zyntho.sendOSC(
+      app.zyntho.parser.translate(
+        `/save_xiz ${req.body.partID} '${bank}/${filename}'`
+      ));
+    res.statusMessage = `Saving as ${filename}`;
+    res.end();
+  }).catch ( (err)=>{
+    res.statusMessage = err;
+    res.status(500).end();
+  });
+}
+app.post('/save_xiz', post_save_xiz);
+
+/**
+ * Generic function to save something inside the zyntho cartridge dir
+ * @body { file : filename, data : json data to save }
+ */
 function post_save(req, res) {
   zconsole.logPost(req);
   if (req.body.file === undefined || req.body.data === undefined
     || req.body.dir == undefined) {
       res.status(400).end();
-    }
+  }
  
   if (req.body.file.search(/[\\/\:]+/) > -1
       || req.body.dir.search(/[\\\/\:\.]+/)>-1  ) {
@@ -740,7 +834,7 @@ function post_save(req, res) {
     res.status(403).end();
     return;
   }  
-  
+    
   let path = `${app.zyntho.IO.workingDir}/${req.body.dir}/${req.body.file}`;
    try {
     Fs.writeFile(path, 
