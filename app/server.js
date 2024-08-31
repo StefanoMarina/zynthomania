@@ -294,19 +294,6 @@ function get_status_fx(req, res, next) {
 }
 app.get('/status/fx', get_status_fx);
 
-/**
- * /status/partfx
- * GET creates an object to be filled with info on part efx.
- * this is an asynch function, it will wait for all effect to return
- * before sending.
- * id: part id
- */
- 
-function get_status_systemfx (req, res, next) {
- zconsole.logGet(req);
- app.zyntho.querySystemFX((result) => { res.json(result) }, req.query.part);
-}
-app.get('/status/systemfx', get_status_systemfx);
 
 /**
  * GET returns all zynthomania options
@@ -359,7 +346,7 @@ function get_status_part( req, res, next) {
   app.zyntho.osc.send(bundle);
   
   worker.listen().then(()=>{
-    let instrument = app.zyntho._getInstruments(req.query.id);
+    let instrument = app.zyntho.getInstrumentNameFromFile(req.query.id);
     if (instrument != null) {
       result.instrument = instrument;
     }
@@ -475,7 +462,7 @@ app.get('/controllers', get_controllers);
 /**
 * /fx/set
 * [POST] set an FX effect type. returns a call to get_fx
-* body { [part: partid], fx : fx channel id, type: type id, [preset: preset id] }
+* @body { [part: partid], fx : fx channel id, type: type id, [preset: preset id] }
 * will publish the new fx preset, if available
 */
 function post_fx_set (req, res) {
@@ -531,47 +518,6 @@ function post_fx_preset(req, res) {
 }
 app.post('/fx/preset', post_fx_preset);
 
-/**
- * /fx/route
- * POST sets the new route filter
- * body: { route: route object }
- */
-
-function post_fx_route(req, res) {
-  if (req.body.route === undefined){
-    res.status(400).end();
-    return;
-  }
-  
-  app.zyntho.config.route = req.body.route;
-  app.zyntho.save();
-  
-  app.zyntho.route(undefined, undefined, () =>{
-    res.status(200).end();
-  });
-}
-app.post('/fx/route', post_fx_route);
-
-/**
- * /fx/dry
- * POST sets new dry filter
- * @body : {dry: array of names}
- */
-function post_fx_dry(req, res) {
-  if (req.body.dry === undefined){
-    res.status(400).end();
-    return;
-  }
-  
-  app.zyntho.config.dry = req.body.dry;
-  app.zyntho.save();
-  
-  //force routing
-  app.zyntho.route(undefined, undefined, (msg) =>{
-    res.status(200).end();
-  });
-}
-app.post('/fx/dry', post_fx_dry);
 
 /**
  * POST /controller/plug

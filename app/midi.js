@@ -26,8 +26,6 @@ const KNOT = require('./knot/knot.js');
 const ZynthoIO = require('./io.js');
 const zconsole = ZynthoIO.zconsole;
 
-const {UADSR4, UADSR8} = require ('./uadsr.js');
-
 var exports = module.exports = {};
  
  /**
@@ -100,7 +98,7 @@ var exports = module.exports = {};
  
 /* 
  * Note - Filter chain of version 1.0
- * [default.json]>[static filters]>[midi filter]>[uadsr]>[instrument]>[session]
+ * [default.json]>[static filters]>[midi filter]>[instrument]>[session]
  * Filter chain of version 2.0
  * [ controllers ] - [session/file] - [instrument!]
  */
@@ -143,10 +141,10 @@ class ZynthoMidi extends EventEmitter {
     }*/
     
     this.oscParser = new KNOT.OSCParser();
-    this.uadsrConfig = config.uadsr;
+
     this.midiInputDevices = config.plugged_devices;
     
-    //console.log (`ZMIDI: build ${JSON.stringify(this.uadsrConfig)}`); 
+
   }
   
    /**
@@ -251,13 +249,6 @@ class ZynthoMidi extends EventEmitter {
     return this.midiOutput;
   }
   
-  getUADSR() {
-    if (this._uadsr == null || this.uadsrConfig.type == 'none')
-      throw "UADSR is not loaded.\n";
-    else
-      return this._uadsr;
-  }
-  
   /**
    * Sets or clears the current instrument bind. this will change the
    * current chain by applying the pre-generated static chain with the
@@ -290,44 +281,6 @@ class ZynthoMidi extends EventEmitter {
     this.refreshFilterMap(false);
   }
   
-  /**
-   * loadUADSR
-   * Loads unified ASDR mode
-   * @param type adsr type (uadsr4 or uasdr8 or none)
-   * @param config configuration (optional)
-   * @throws if configuration is not defined in constructor and method, or
-   * if no midi device is opened.
-   */
-  loadUADSR(type, config) {
-
-    if (config === undefined)
-      config = this.uadsrConfig;
-    
-    if (this.uadsrConfig === undefined)
-      throw (`ZynthoMIDI: cannot configure UADSR with undefined config.`);
-      
-    if (type == config.type && this._uadsr != null) {
-      zconsole.notice('Skipping uadsr load as the type is the same.');
-      return;
-    }
-    
-    switch (type) {
-      case "uadsr4" :
-        this._uadsr = new UADSR4();
-        this._uadsr.setBinds(config.uadsr4_binds);
-      break;
-      case "uadsr8" :
-        this._uadsr = new UADSR8();
-        this._uadsr.setBinds(config.uadsr8_binds);
-      break;
-      case "none" :
-      
-      break;
-    }
-
-    this.uadsrConfig.type = type;
-    this.refreshFilterMap();
-  }
   
  
  /**

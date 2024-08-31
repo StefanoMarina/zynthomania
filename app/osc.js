@@ -45,53 +45,7 @@ module.exports.registerOSC = function (zynServer) {
     midiService.removeBind(midiService.cartridgeDir
                           +`/${args[0].value}`);
   });
-  
-  emitter.on('/zmania/uadsr/type',  function (zyn, args) {
-    if (zyn.midiService != null)
-      zyn.midiService.loadUADSR(args[0].value);
-      zyn.save();
-  });
-  
-  emitter.on('/zmania/uadsr4/mode', function (zyn, args) {
-    if (zyn.midiService != null) {
-      zyn.midiService.uadsrConfig.mode = args[0].value;
-      zyn.midiService.refreshFilterMap(false);
-      //NOTE: do not save mode change, since save is blocking and mode could
-      //change a lot due to osc calls.
-    }
-  });
-  
-  emitter.on('/zmania/uadsr4/bind', function (zyn, args) {
-    let values = args.map(arg => arg.value);
-    
-    if (zyn.midiService != null) {
-      try {
-        zyn.midiService.getUADSR().setBinds(values);
-        zyn.midiService.refreshFilterMap();
-        zyn.config.uadsr['uadsr4_binds'] = 
-          zyn.midiService.uadsrConfig['uadsr4_binds'] = values;
-        zyn.save();
-      } catch (err) {
-        zconsole.warning(`/zmania/uadsr4/bind: ${err}`);
-      }
-    }
-  });
-  
-  emitter.on('/zmania/uadsr8/bind', function (zyn, args) {
-    let values = args.map(arg => arg.value);
-    if (zyn.midiService != null) {
-      try {
-      zyn.midiService.getUADSR().setBinds(values);
-      zyn.midiService.refreshFilterMap();
-      zyn.config.uadsr['uadsr8_binds'] = 
-          zyn.midiService.uadsrConfig['uadsr8_binds'] = values;
-      zyn.save();
-      } catch (err) {
-        zconsole.error(`/zmania/uadsr8/bind:${err}`);
-      }
-    }
-  });
-  
+   
   emitter.on('/zmania/binds/dump', function (zyn) {
     if (zyn.midiService != null) {
       zconsole.log(JSON.stringify(zyn.midiService.knot.filterMap, null, 1));
@@ -125,49 +79,4 @@ module.exports.registerOSC = function (zynServer) {
        zconsole.error(`session save error: ${err}`);
      }
    });
-   
-   emitter.on('/zmania/subgenerator/path', function (zyn, args) {
-     if (args.length == 0) {
-       zyn.emit('/zmania/subgenerator/path', 
-        zyn.parser.translate(
-        `/zmania/subgenerator/path '${zyn.ssHarmonics.path}'`)
-        );
-     } else {
-       zyn.ssHarmonics.path = args[0].value;
-     }
-   });
-   
-   emitter.on('/zmania/test', function (zyn, args) {
-     let test = zyn.parser.translate('/zmania/test1');
-     const worker = new OSCWorker(zyn);
-     worker.pushPacket(test, ()=> {
-       zconsole.debug('listened to test packet');
-      });
-     zyn.emit('osc',test);
-     Promise.resolve(worker.listen());
-   });
-   
-   emitter.on('/zmania/subsynth/offset',  (zyn, args)=>{
-     if (args.length == 0) {
-       let newPacket = zyn.parser.translate(
-       '/zmania/subsynth/offset '
-       + zyn.ssHarmonics.data.offset);
-       
-       zyn.osc.emit('osc', newPacket);
-     } else {
-       zconsole.debug("offset SET");
-      try {
-        let val = parseInt(args[0].value);
-        zyn.ssHarmonics.offset = Math.max(1, Math.min(
-          32, val));
-      } catch {
-        throw '/zmania/subsynth/offset: invalid number';
-       } 
-     }
-   });
-}
-
-/* Subsynth: set bandwidth alg */
-function osc_subsynth_manager_get_alg(zyn, args) {
-  
 }

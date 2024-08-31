@@ -1,17 +1,9 @@
 {
   "user": "USERNAME",
-  "dry" : [],
-  "route": { "send": 64, "fx" : [] },
   "custom_dir": "ZYNTHODIR/custom",
   "cartridge_dir": "CARTRIDGE_DIR", 
   "fallback_dir": "/home/USERNAME/.zmania",
   "bank_dir": "/usr/local/share/zynaddsubfx/banks/",
-  "uadsr" : {
-    "type" : "none",
-    "mode" : "amp",
-    "uadsr4_binds" : [14,15,16,17,18],
-    "uadsr8_binds" : [14,15,16,17,18,19,20,21]
-  },
   "services" : { 
     "user" : { 
       "zyn_osc_port": 7777, 
