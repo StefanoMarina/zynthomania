@@ -134,10 +134,11 @@ class ZynthoServer extends EventEmitter {
     if (Fs.existsSync(fxFile)) {
       zconsole.debug('loading custom fx specs...');
       try {
-        this.config['fx-specs'] = JSON.parse(
+        this.fxConfig = JSON.parse(
           Fs.readFileSync(fxFile) );
       } catch (err) {
         zconsole.error(`Cannot read fx specs: ${err}`);
+        this.fxConfig = null;
       }
     }
     
@@ -321,9 +322,10 @@ class ZynthoServer extends EventEmitter {
       }
       
       result.name = exports.typeToString(result.efftype);
-
+      if (this.fxConfig == null)
+        return Promise.resolve ( result );
       
-      result.config = this.config['fx-specs'][result.name];
+      result.config = this.fxConfig[result.name];
       
       let cfg = result.config;
       if ('algorithm' in cfg)
