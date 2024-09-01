@@ -306,11 +306,42 @@ function get_status_options (req, res, next) {
 }
 app.get('/status/options', get_status_options);
 
+
 /**
- * GET returns MIDI information status
- * query: none
- * return: json
+ * /status
+ * Sends info for the main toolbar
+ * @query {partID: part Id}
  */
+ function get_status(req, res){
+    zconsole.logGet(req);
+    if ( req.query.partID === undefined) {
+      res.status(400).end();
+      return;
+    } 
+    
+    let part = `/part${req.query.partID}`;
+    app.zyntho.oscPromise ([
+      `${part}/Pname`,
+      `/tempo`,
+      `/volume`,
+      `${part}/Penabled`
+    ]). then ( (result) => {
+      let instrument = app.zyntho.getInstrumentNameFromFile(req.query.partID);
+      if (instrument != null) {
+        result.instrument = instrument;
+      } else 
+        result.instrument = {};
+      
+      result.session = app.zyntho.config.lastSession;
+      
+      res.json(result);
+      res.end();
+    }).catch( (err)=>{
+      res.statusMessage = err;
+      res.status(500).end();
+    });
+ } 
+ app.get('/status', get_status);
  
 /**
  * /status/part
@@ -881,6 +912,51 @@ function post_reconnect (req, res) {
   app.zyntho.osc.close();
 }
 app.post('/reconnect', post_reconnect);
+
+function post_session_reset(req,res) {
+  zconsole.logPost(req);
+  app.zyntho.sessionReset();
+  res.end(); 
+}
+
+app.post('/session/reset', post_session_reset);
+
+function post_session_load(req, res){
+  zconsole.logPost(req);
+  if (req.body.file === undefined) {
+    res.status(400).end();
+    return;
+  }
+    
+  try {
+    app.zyntho.sessionLoad(ZynthoIO.sanitizeString(req.body.file));
+  } catch ( err ) {
+    res.statusMessage = err;
+    res.status(500);
+  } finally {
+    res.end();
+  }
+}
+
+app.post('/session/load', post_session_load);
+
+function post_session_save(req, res){
+  zconsole.logPost(req);
+  
+  let file = (req.body.file === undefined) 
+    ? app.zyntho.config.lastSession
+    : ZynthoIO.sanitizeString(req.body.file);
+    
+  try {
+    app.zyntho.sessionSave(file);
+  } catch ( err ) {
+    res.statusMessage = err;
+    res.status(500);
+  } finally {
+    res.end();
+  }
+}
+app.post('/session/save', post_session_save);
 
 /**
 * Updates any extended session parameter

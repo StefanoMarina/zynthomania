@@ -31,7 +31,7 @@
         <div class="row"></div>
       </div>
       <footer class="row">
-        <div class="col-6"><button class="button selected" onclick="selectBoxOk()">Ok</button></div>
+        <div class="col-6"><button id="selectbox-ok" class="button selected">Ok</button></div>
         <div class="col-6"><button class="button selected" onclick="selectBoxCancel()">Cancel</button></div>
       </footer>
     </dialog>
@@ -178,7 +178,7 @@
       <header class="col-12 col-sm-5 col-lg-3">
         <!-- system toolbar -->
         <nav>
-          <button><i class="fas fa-sd-card"></i></button>  <!--system -->
+          <button onclick="loadSection('section-system')"><i class="fas fa-sd-card"></i></button>  <!--system -->
           <button onclick="onController()"><span class="icon i-midi"></span></button>  <!--system -->
           <button><i class="fas fa-save"></i></button>  <!-- session -->
           <button onclick="onMixer()"><i class="fa fa-sliders-h"></i></button> <!-- mixer -->
@@ -247,21 +247,7 @@
             </div>
             <div class="col-3"><div class="swipeable" id="adsynth-voice"></div></div>
           </div>
-          
-          <!--
-          <div class="row">
-            <div class="col-6 col-lg-4"><div class="swipeable" id="synth-layer"></div></div>
-            <div class="col-6 col-lg-4"><div class="swipeable" id="adsynth-voice"></div></div>
-            <nav id="synthSelector" class="col col-lg-4 offset-3 offset-lg-0">  
-              <button class="osc-element minimal osc-boolean"
-                id="synth-toolbar-layer-enabled"
-                data-osc-path="/part/kit/Penabled" ></button>
-              <button class="minimal" id="synth-toolbar-ad-enabled" onclick="onSynth('ad')">ad</button>
-              <button class="minimal" id="synth-toolbar-sub-enabled" onclick="onSynth('sub')">sub</button>
-              <button class="minimal" id="synth-toolbar-pad-enabled" onclick="onSynth('pad')">pad</button>
-            </nav>
-          </div>                
-          -->
+        
         </header>
         
         <section id="section-intro" class="opened" data-title="Zynthomania">

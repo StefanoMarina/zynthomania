@@ -185,6 +185,12 @@ function enableSwiping(object, sensitive=4) {
  *  labels
  */
 function dialogBox(elements, data) {
+  if (zsession.initSelectBox === undefined) {
+    document.getElementById('selectbox-ok')
+      .addEventListener('click', onSelectBoxOk);
+      
+    zsession.initSelectBox = true;
+  }
   
   data = Object.assign ( {
     title : 'Selection',
@@ -221,7 +227,7 @@ function dialogBox(elements, data) {
   //selection
   let list = dialogContent.getElementsByTagName('button');
   for (let btn of list) {
-      btn.addEventListener('click',onSelectBoxItemSelection);
+      btn.addEventListener('click', onSelectBoxItemSelection);
   }
   
   dialogBox.open = true;
@@ -229,7 +235,7 @@ function dialogBox(elements, data) {
 
 function onSelectBoxItemSelection(e) {
   if (e.target.classList.contains('selected')){
-    selectBoxOk();
+    onSelectBoxOk(e);
     return;
   } else {
     //remove prev selection to all
@@ -241,7 +247,8 @@ function onSelectBoxItemSelection(e) {
   }
 }
 
-function selectBoxOk() {
+function onSelectBoxOk(event) {
+  event.stopPropagation();
   let selection = document.querySelector('#selectBox .container .selected');
   if (selection == null)
     return;

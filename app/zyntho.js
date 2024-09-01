@@ -50,8 +50,7 @@ class ZynthoServer extends EventEmitter {
     * advanced data for new session
     */
     this.session = ZynthoServer.defaultExtendedSession();
-    
-    
+  
     /*
     * Adds all zynthomania's internal OSC commands
     */
@@ -111,7 +110,8 @@ class ZynthoServer extends EventEmitter {
       }  
     } else 
       this.config = defaultConfig;
-      
+    
+            
     let favFile = `${this.IO.workingDir}/favorites.json`;
     let configFile = `${this.IO.workingDir}/config.json`;
     let fxFile = `${this.IO.workingDir}/fx.json`;
@@ -246,20 +246,25 @@ class ZynthoServer extends EventEmitter {
           zconsole.error(`Error on creating zynthomania virtual port: ${err}`);
         }
         
-       /*
-        * See if the default session is present
-        */
-        let defSes = `${this.IO.workingDir}/sessions/default.xmz`;
-        if (Fs.existsSync(defSes)) {
-          zconsole.log('Loading default session.');
-          try {
-            this.sessionLoad('default.xmz');
-          } catch (err) {
-            zconsole.warning(`Error on loading default session : ${err}`);
+        //Sync with last session, use default.xmz if no last session
+        this.oscPromise('/last_xmz',500).then ( (result) =>{
+          if (result['/last_xmz'][0] == '' &&
+            this.lastSession === undefined) {
+          this.lastSession = 'default.xmz';
           }
-        }
-        
-        this.emit('ready');
+        }).catch ( ()=> {
+          zconsole.notice('Asserting last session by myself');
+          if (this.lastSession === undefined)
+          this.lastSession = 'default.xmz';
+        }).finally( () => {
+          try {
+            this.sessionLoad();
+          } catch ( err) {
+            zconsole.error('Cannot load default session: ' + err);
+          } finally {
+            this.emit( 'ready');
+          }
+        });
     });
     
     this.osc.on('error', (err) => {
@@ -714,18 +719,54 @@ class ZynthoServer extends EventEmitter {
     this.osc.send.call(this.osc, packet);
   }
   
+  set lastSession(file) {
+    if ( file != this.config.lastSession) {
+      this.config.lastSession = file;
+      this.save();
+    }
+  }
+  
+  get lastSession() { return this.config.lastSession; }
+  
+  /**
+   * oscPromise
+   * this method simplifies linestreaming osc calls when one or more
+   * results are expected. Will automatically call an OSCWorker.listen()
+   * method.
+   * 
+   * This should not be used if no response is needed.
+   * @params messages a string or an array
+   * @params timeout timeout for the worker to wait for promises
+   * @returns a Promise
+   */
+   
+  oscPromise(messages, timeout=5000) {
+    const worker = new OSCWorker(this);
+    const packet = (Array.isArray(messages))
+      ? this.parser.translateLines(messages)
+      : this.parser.translate(messages);
+    
+    var result = {};
+    worker.pushPacket(packet, (addr, args)=>{
+      result[addr] = args.map ( arg => arg.value );
+    });
+    
+    this.osc.send(packet);
+    return worker.listen(timeout).then( ()=> {return result;});
+  }
+  
+  
   /**
    * loads an xmz file from the sessions directory
    * @param file if undefined, default.xmz is loaded
    */
   sessionLoad(file) {
     if (file === undefined)
-      file = 'default.xmz';
+      file = this.lastSession; //defined on opening config
     
     let sessionPath = `${this.IO.workingDir}/sessions/${file}`;
     if (!Fs.existsSync(sessionPath)) {
-      zconsole.warning(`Cannot find session ${sessionPath}.`);
-      return;
+      throw `Cannot find session ${sessionPath}`;
     }
     
     //(Un)load session binds
@@ -739,7 +780,7 @@ class ZynthoServer extends EventEmitter {
     try {
       this.midiService.refreshFilterMap(true);
     } catch (err) {
-      zconsole.error(`Cannot refresh filter map upon session load.`);
+      throw `Cannot refresh filter map upon session load : ${err}.`;
     }
     
     this.lastSession = file;
@@ -762,19 +803,30 @@ class ZynthoServer extends EventEmitter {
        this.session = ZynthoServer.defaultExtendedSession();
   }
   
+  sessionReset() {
+    let packet = this.parser.translate("/reset_master");
+    
+    this.once ( '/damage' , ()=> {
+      this.session = ZynthoServer.defaultExtendedSession();
+      this.midiService.chainSession['session'] = [];
+      this.sessionSave('default.xmz');  
+    });
+    this.osc.send(packet);
+  }
+  
   /**
    * Saves a Zynthomania session. A zyntho session is composed by
    * 1) a xmz file with zynaddsubfx status, 2) additional configuration
    * 3) midi bindings.
    * Also, it will emit a 'saved' event.
    * @param file filename without path. if undefined, default.xmz is used.
+   * @throws if any
    */
-  sessionSave(file) {
+  sessionSave(file = 'default.xmz') {
     if (this.IO.readOnlyMode) {
       throw 'Session save aborted due to read only mode.';
     }
-    
-    file = (file === undefined) ? 'default.xmz' : file;
+    this.lastSession = file;
     
     // Extra session data   
     let extfile = file.replace(/xmz$/,'json');
@@ -791,16 +843,7 @@ class ZynthoServer extends EventEmitter {
     this.midiService.saveKnotConfiguration(
       this.midiService.getSessionBindings());
     
-    /*
-    if (this.midiService.sessionConfig != null) {
-      zconsole.notice('Session binds found and will be saved.s');
-      try {
-        Fs.writeFileSync(`${this.IO.workingDir}/binds/${extfile}`, JSON.stringify(this.midiService.sessionConfig));
-      } catch (err) {
-        zconsole.warning(`Could not save session bind: ${err}`);
-      }
-    }
-    */
+
     var dummyFileSave = `${this.IO.workingDir}/sessions/__dummy__${file}`,
         file = `${this.IO.workingDir}/sessions/${file}`;
     

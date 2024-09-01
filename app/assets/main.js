@@ -53,9 +53,9 @@ function onLoad() {
    * Global buttons init
    */
   
-  window.zsession.oscElements['global-volume'] = 
+  zsession.oscElements['global-volume'] = 
     new OSCKnob(document.getElementById('global-volume'));
-  window.zsession.oscElements['global-volume']
+  zsession.oscElements['global-volume']
     .setLabel("Master volume", "Master");
   
   new OSCButton(document.getElementById('global-panic'))
@@ -78,20 +78,6 @@ function onLoad() {
       onToolbarChangePart(ev.target.selectedIndex);
   })
  
-  // 'Part Mixer' is the default opened so it's initialized here
-  
-  window.zsession.oscElements['part-enable'] =
-    new OSCBoolean(document.getElementById('part-enable'));
-  window.zsession.oscElements['part-enable'].setLabel('Enable');
-  
-  let volumeKnob = new OSCKnob(document.getElementById('part-volume'));
-  volumeKnob.setLabel('Volume');
-  window.zsession.oscElements['part-volume'] = volumeKnob;
-  
-  window.zsession.oscElements['part-balance'] = 
-    new OSCKnob(document.getElementById('part-panning'));
-  window.zsession.oscElements['part-balance'].setLabel("Balance");
- 
   /* Section controls */ 
   //enable section back button
   document.getElementById('content-back').addEventListener('click', (e) =>{
@@ -103,11 +89,8 @@ function onLoad() {
   /*
    * Init note dialog
    */
-  window.zsession.noteEditor = new NoteEditor();
+  zsession.noteEditor = new NoteEditor();
    
-  // Init volume control
-  onToolbarUpdate();
-  
   //Init part
   onToolbarChangePart(0);
 }
@@ -161,11 +144,11 @@ function loadSection(sectionID, subsection=false) {
 /* Quickie to check if instrument if favorite */
 function isFavorite(instrument) {
   if (instrument == null ||
-      window.zsession.banks['Favorites'] === undefined ||
-      window.zsession.banks['Favorites'].length == 0)
+      zsession.banks['Favorites'] === undefined ||
+      zsession.banks['Favorites'].length == 0)
   return false;
   
-  return window.zsession.banks['Favorites'].filter
+  return zsession.banks['Favorites'].filter
           ((fav)=> {return fav.path == instrument.path})
       .length > 0;
 }
@@ -191,26 +174,26 @@ function toFixed(num, fixed) {
  */
 function set_synth_cursor(cursor) {
   if (cursor == undefined)
-    cursor = window.zsession.synthID;
+    cursor = zsession.synthID;
   
-  window.zsession.synthID = cursor;
-  window.zsession.synthname = `${cursor}pars`;
+  zsession.synthID = cursor;
+  zsession.synthname = `${cursor}pars`;
   
   switch (cursor) {
     case 'ad' : {
-        window.zsession.synthcursor = osc_sanitize('part/kit/synth/voice');
-        window.zsession.osccursor = osc_sanitize('synthcursor/OscilSmp');
+        zsession.synthcursor = osc_sanitize('part/kit/synth/voice');
+        zsession.osccursor = osc_sanitize('synthcursor/OscilSmp');
       break;
     }
     case 'sub' : {
-      window.zsession.synthcursor = 
-      window.zsession.osccursor =
+      zsession.synthcursor = 
+      zsession.osccursor =
         osc_sanitize('part/kit/synth');
       break;
     }
     case 'pad' : {
-      window.zsession.synthcursor = osc_sanitize('part/kit/synth');
-      window.zsession.osccursor = osc_sanitize('synthcursor/oscilgen');
+      zsession.synthcursor = osc_sanitize('part/kit/synth');
+      zsession.osccursor = osc_sanitize('synthcursor/oscilgen');
       break;
     }
   }
@@ -371,5 +354,43 @@ function effectTypeToString(type, reduced = false) {
      case 7: return 'EQ'; break;
      case 8: return (reduced) ? 'Fil' : 'DynamicFilter'; break;
      default: return (reduced) ? '??' : `Unk (${type})`; break;
+  }
+}
+
+function initSynthToolbar() {
+  if (zsession.initSynthMain === undefined) {
+    
+    // Synth toolbar init
+    let zeroTo15 = [...Array(16).keys()];
+    let swipe = new Swipeable(document.getElementById('synth-layer'));
+    swipe.setOptions(zeroTo15, 
+      zeroTo15.map ( el => "L"+(String(el+1).padStart(2,0)) )
+    );
+    swipe.setDialogData({'title': 'Select layer', 'buttonClass' : 'col-4'});
+    swipe.selectElement.addEventListener('change', onSynthToolbarUpdate);
+   
+    let toolbarUpdateObject = new OSCBundle(['/part/kit/Padenabled',
+        '/part/kit/Psubenabled', '/part/kit/Ppadenabled',
+        '/part/kit/Penabled']);
+    zsession.oscElements['bundle-synth-toolbar'] = toolbarUpdateObject;
+    
+    new OSCBoolean(document.getElementById('synth-toolbar-layer-enabled'))
+      .label = ('Layer enabled');
+    
+    swipe = new Swipeable(document.getElementById('adsynth-voice'));
+    let zeroToEight = [...Array(8).keys()];
+    swipe.setOptions(
+      [ADSYNTH_GLOBAL,...zeroToEight],
+      ['Global'].concat(zeroToEight.map ( 
+        (el) => 'V'+(String(el+1).padStart(2,0))
+        )
+      ));
+    swipe.setDialogData({'title': 'Select voice', 'buttonClass' : 'col-3'});
+    swipe.selectElement.addEventListener('change', onSynthToolbarVoiceUpdate);
+    swipe.setValue(zsession.voiceID);
+    
+    zsession.elements['adsynth-voice'] = swipe;
+    
+    zsession.initSynthMain = true;
   }
 }

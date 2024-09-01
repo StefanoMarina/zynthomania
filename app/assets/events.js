@@ -368,113 +368,67 @@ function onFXGlobalEditFxChanged(event) {
   document.getElementById(`glob-fx-${fxid}`).innerHTML = changed;
 }
 
-function onFxDry() {
-  doQuery('status/options', null, (data) => {
-    //console.log(data);
-    let fxes = data.dry;
-    $('.btnDrySelection').removeClass('selected');
-    
-    fxes.forEach( (fx) => {
-        $(`.btnDrySelection:contains(${fx})`).addClass('selected');
-    })
-  });
+/**
+ * SYSTEM / SESSION
+ */
+ 
+function onSessionNew() {
+  if (!confirm('This will reset session file and any unsaved will be lost!\n'
+    + ' Continue?')) {
+      return;
+  }
+  
+  new ZynthoREST().post('session/reset').then ( ()=> {
+    return onToolbarUpdate();
+  }).then( ()=> {
+    onToolbarChangePart();
+    loadSection('section-intro');
+  }) ;
 }
 
-/** loads part fx */
-function onFxPart() {
-  doQuery('status/partfx', {id: zsession.partID}, (data) =>{
-    console.log(data);
-      zsession.partefx[zsession.partID] = {fx : data.efx, send : data.send }
-      //onFXLoad('btnpfx', data);
-      
-      for (let i = 0; i < 3; i++)
-        window.buttons[`btnpfx${i}`].setFX(data.efx[i]);
-      
-      //update send
-      for (let i = 0; i < 4; i++) {
-          let id = `kss${i}`;
-          console.log(data.send[i]);
-          window.knobs[id].setValue(data.send[i]);
-      }
-      
-  });
-}
-      
-function onFxRoute() {
-  doQuery('status/options', null, (data) => {
-    console.log(data);
-    let route = data.route;
-    
-    let fxes = route.fx;
-    
-    $('.btnRouteSelection').removeClass('selected');
-    
-    fxes.forEach( (fx) => {
-        $(`.btnRouteSelection:contains(${fx})`).addClass('selected');
-    })
-    
-    window.knobs['routeSend'].setValue(route.send);
-  });
-}
-
-function onFxPartSystemKnobChange(id) {
-  let newValue = window.knobs[`kss${id}`].getValue();
-  doAction('script', {script : `/Psysefxvol${id}/part${zsession.partID} ${newValue}` });
-}
-
-function onFxSystem() {
-   doQuery('status/systemfx', {part: zsession.partID}, (data) =>{
-    console.log(data);
-      //zsession.partefx[zsession.partID] = {fx : data.efx, send : data.send }
-      //onFXLoad('btnpfx', data);
-      
-      for (let i = 0; i < 4; i++)
-        window.buttons[`btnsfx${i}`].setFX(data.efx[i]);
-  });
-}
-
-function onScript() {
-  doQuery("files/scripts", null, (data) =>{
-    console.log(data);
-   const ul=$('#selScripts');
-    $(ul).empty();
-    data.forEach( (item) => {
-      $(ul).append('<li>'+item+'</li>');
+function onSessionLoad() {
+  new ZynthoREST().query('files', {'dir': 'sessions'})
+    .then( (files)=> {
+      //session files only
+      files = files.filter ( f => f.endsWith('xmz') ); 
+      fileDialog('open', files, {'folder':'/sessions'}, 
+        onSessionFileLoad);
     });
-  });
 }
-      
 
-function onScriptSendClick() {
-  let data = $('#commandLine').val().split('\n')
-    .filter( e=> e != "");
-  
-  if (data.length == 1)
-      data = data[0];
-   
-  doAction('script', {script: data});
+function onSessionFileLoad() {
+  let file = document.getElementById('file-dialog-filename').value;
+  new ZynthoREST().post('session/load', {'file': file})
+    .then ( ()=>{ 
+      onToolbarUpdate();
+    });
 }
+
+function onSessionSave() {
+  new ZynthoREST().post('session/save')
+    .then ( ()=> {
+      displayOutcome ('Session saved.');
+    });
+}
+
+function onSessionSaveAs() {
+  new ZynthoREST().query('files', {'dir': 'sessions'})
+    .then( (files)=> {
+      //session files only
+      files = files.filter ( f => f.endsWith('xmz') ); 
+      fileDialog('save', files, {'folder':'/sessions',
+          'extension': 'xmz'}, 
+        onSessionFileSaveAs);
+    });
+}
+
+function onSessionFileSaveAs() {
+  let file = document.getElementById('file-dialog-filename').value;
   
-function onScriptQueryClick() {
-  let data = $('#commandLine').val().split('\n')
-    .filter( e=> e != "");
-  
-  if (data.length == 1)
-      data = data[0];
-  doAction('script', {script: data, requestResult: 1}, (data) =>{
-    let output = $('#pnlConsole div');
-    let button = $(output.siblings('button').get()[0]);
-    
-    output.removeClass('hidden');
-    $('#pnlConsole button, #pnlConsole textarea').addClass('hidden');
-    button.removeClass('hidden');
-    
-    output.empty();
-    for (let add in data) {
-      let args = JSON.stringify(data[add]);
-      output.append(`<p><strong>${add}</strong>:${args}</p>`);
-    }
-  });
+  new ZynthoREST().post('session/save', {'file': file})
+    .then ( ()=>{ 
+      onToolbarUpdate();
+    });
 }
 
 /**
@@ -522,44 +476,6 @@ function onSynthToolbarVoiceUpdate(event) {
      onSynth();
   } else {
     zsession.reloadSynthSubSection();
-  }
-}
-
-function initSynthToolbar() {
-  if (zsession.initSynthMain === undefined) {
-    
-    // Synth toolbar init
-    let zeroTo15 = [...Array(16).keys()];
-    let swipe = new Swipeable(document.getElementById('synth-layer'));
-    swipe.setOptions(zeroTo15, 
-      zeroTo15.map ( el => "L"+(String(el+1).padStart(2,0)) )
-    );
-    swipe.setDialogData({'title': 'Select layer', 'buttonClass' : 'col-4'});
-    swipe.selectElement.addEventListener('change', onSynthToolbarUpdate);
-   
-    let toolbarUpdateObject = new OSCBundle(['/part/kit/Padenabled',
-        '/part/kit/Psubenabled', '/part/kit/Ppadenabled',
-        '/part/kit/Penabled']);
-    zsession.oscElements['bundle-synth-toolbar'] = toolbarUpdateObject;
-    
-    new OSCBoolean(document.getElementById('synth-toolbar-layer-enabled'))
-      .label = ('Layer enabled');
-    
-    swipe = new Swipeable(document.getElementById('adsynth-voice'));
-    let zeroToEight = [...Array(8).keys()];
-    swipe.setOptions(
-      [ADSYNTH_GLOBAL,...zeroToEight],
-      ['Global'].concat(zeroToEight.map ( 
-        (el) => 'V'+(String(el+1).padStart(2,0))
-        )
-      ));
-    swipe.setDialogData({'title': 'Select voice', 'buttonClass' : 'col-3'});
-    swipe.selectElement.addEventListener('change', onSynthToolbarVoiceUpdate);
-    swipe.setValue(zsession.voiceID);
-    
-    zsession.elements['adsynth-voice'] = swipe;
-    
-    zsession.initSynthMain = true;
   }
 }
 
@@ -1098,11 +1014,8 @@ function onSynthSubBandwidth() {
     });
 }
 
-
-function onScriptOK() {
-  $('#pnlConsole div').addClass('hidden');
-  $('#pnlConsole button, #pnlConsole textarea').removeClass('hidden');
-  $('#pnlConsole button[value=ok]').addClass('hidden')
+function onSystem() {
+  loadSection('section-system');
 }
 
 function onSystemInfo() {
@@ -1285,6 +1198,22 @@ function onPartInstrumentSaveOk() {
 
 //controls are created at start as this is the default page see main.js
 function onPartMixer() {
+  if (zsession.initPartMixer === undefined) {
+    zsession.oscElements['part-enable'] =
+      new OSCBoolean(document.getElementById('part-enable'));
+    zsession.oscElements['part-enable'].setLabel('Enable');
+    
+    let volumeKnob = new OSCKnob(document.getElementById('part-volume'));
+    volumeKnob.setLabel('Volume');
+    zsession.oscElements['part-volume'] = volumeKnob;
+    
+    zsession.oscElements['part-balance'] = 
+      new OSCKnob(document.getElementById('part-panning'));
+    zsession.oscElements['part-balance'].setLabel("Balance");
+    
+    zsession.initPartMixer = true;
+  }
+  
   osc_synch_section(document.getElementById('section-part-main'))
   .then ( ()=> {
     loadSection('section-part-main');
@@ -1624,35 +1553,36 @@ function onToobarFavoriteClick() {
           }
         });
 }
-/*
-TODO:
-Passing this as a direct ajax callback will result in index being the
-callback result
-*/
-function onToolbarChangePart(index) {
-  
+
+function onToolbarChangePart(index) { 
   if (index !== undefined && index !== '')
     zsession.partID = parseInt(index);
   
-  //retrieve part info
-  new ZynthoREST().query('status/part', 
-      {id: zsession.partID})
-  .then ( (data) => {
-    if (data.name == '') data.name = 'Unloaded';
-  
-    displayOutcome('Switched part');
-    document.getElementById('instrumentName').innerHTML = 
-            (data.enabled)
-            ? `#${zsession.partID+1}: ${data.name}`
-            : `#${zsession.partID+1}: Disabled`;
-            
-   
-  });
-  
+  onToolbarUpdate();
 }
 
-//this currently only updates volume
 function onToolbarUpdate() {
-  zsession.oscElements['global-volume'].sync();
-  zsession.oscElements['global-tempo'].sync();
+  new ZynthoREST().query('status', {partID : zsession.partID })
+  .then ( (data) => {
+    zsession.oscElements['global-tempo'].setValue(data['/tempo'][0], true);
+    zsession.oscElements['global-volume'].setValue(data['/volume'][0], true);
+    let part = `/part${zsession.partID}`;
+    
+    let enabled = data[`${part}/Penabled`][0];
+    let name = null;
+    
+    if ( data[`${part}/Pname`][0] != '')
+      name = data[`${part}/Pname`][0];
+    else if (data['instrument']['name'])
+      name = data['instrument']['name'];
+    else
+      name = 'Base sine wave';
+  
+    document.getElementById('instrumentName').innerHTML = 
+          (enabled)
+            ? `#${zsession.partID+1}: ${name}`
+            : `#${zsession.partID+1}: Disabled`;
+    
+    displayOutcome ( data.session );
+  });
 }
