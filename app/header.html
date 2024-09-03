@@ -179,11 +179,9 @@
         <!-- system toolbar -->
         <nav>
           <button onclick="loadSection('section-system')"><i class="fas fa-sd-card"></i></button>  <!--system -->
-          <button onclick="onController()"><span class="icon i-midi"></span></button>  <!--system -->
-          <button><i class="fas fa-save"></i></button>  <!-- session -->
+          <button onclick="onSessionSave()"><i class="fas fa-save"></i></button>  <!-- quick save -->
           <button onclick="onMixer()"><i class="fa fa-sliders-h"></i></button> <!-- mixer -->
           <button class="br" onclick="onFXGlobal()">FX</button>  <!-- Global/Insert FX -->
-          <button><i class="fas fa-download"></i></button> <!-- quick save -->
           <button onclick="onTempo()" class="osc-element minimal" id="global-tempo"
             data-osc-path="/tempo"></button>
           <button id="global-volume" class="osc-element minimal osc-knob d-inline"

@@ -1,0 +1,54 @@
+<!doctype html>
+
+<html>
+  <head>
+    <link href="lnf.css" rel="stylesheet">
+    <link href="bootstrap-grid.min.css" rel="stylesheet">
+    <link href="fontawesome-free-5.15.3-web/css/all.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+      .center-screen {
+        position: absolute;
+        margin: 0;
+        top: 25vh;
+        text-align: center;
+      }
+      
+    </style>
+    <script>
+      function init() {
+        document.getElementById('anchor')
+          .href= window.location.href.replace(/\/shutdown.*$/, '');
+          
+        window.loader = document.getElementById('load');
+        window.rotation = 12;
+        
+        setInterval( () => {
+          window.rotation += 12;
+          window.loader.style.rotate = `${window.rotation}deg`;
+        },333);
+        setTimeout( () => {
+          window.location.href = 
+            window.location.href.replace(/\/shutdown.*$/, '');
+        }, 60000);
+      }
+    </script>
+  </head>
+  <body onload="init()">
+    <div class="center-screen">
+      <div class="container">
+        <h2>Rebooting</h2>  
+        <div class="col-12">
+          <i class="fa fa-lg fa-spinner" id="load"></i>
+        </div>
+        <div class="col-12 panel">
+          <p>Page will reload in 1 minute.</p>
+        </div>
+        <div class="col-12">
+          <a id="anchor" class="button selected">Do not wait</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

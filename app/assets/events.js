@@ -463,7 +463,6 @@ function onSynthToolbarVoiceUpdate(event) {
   set_synth_cursor();
   
   //update synth page regardless of position
-  showIf('global-voice-pointer', zsession.voiceID == ADSYNTH_GLOBAL);
   showIf('voice-matrix', zsession.voiceID != ADSYNTH_GLOBAL);
  
   
@@ -505,6 +504,8 @@ function onSynth(synth) {
     case 'pad': onSynthPadsynth(); break;
     default: break;
   }
+  
+  onSynthToolbarUpdate();
 }
 
 function onSynthAdsynth() {
@@ -544,16 +545,20 @@ function onSynthAdsynth() {
  
  set_synth_cursor('ad');
  
+ if ( zsession.voiceID != ADSYNTH_GLOBAL)
+  document.getElementById('adsynth-voice-enable')
+    .innerHTML = 'Voice ' + String((zsession.voiceID+1)).padStart(2,0);
+  
  let voiceControls = Array.from(document.getElementById('voice-matrix')
     .querySelectorAll('.osc-element')).map ( (el)=> el.id );
  
- showIf('global-voice-pointer', zsession.voiceID == ADSYNTH_GLOBAL);
  showIf('voice-matrix', zsession.voiceID != ADSYNTH_GLOBAL);
  
  let params = (zsession.voiceID != ADSYNTH_GLOBAL) 
   ? voiceControls : '';
   
-  osc_synch(...params).then ( ()=> {
+ 
+ osc_synch(...params).then ( ()=> {
    loadSection('section-synth-adsynth');
    zsession.reloadSynthSubSection = onSynthAdsynth;
   });
@@ -1018,6 +1023,21 @@ function onSystem() {
   loadSection('section-system');
 }
 
+function onNetwork() {
+  new ZynthoREST().query('system/network')
+    .then ( (data) =>{
+    zsession.hotspotMode = data.isHotSpot !== undefined;
+    if (zsession.hotspotMode)
+      document.getElementById('network-hotspot')
+        .innerHTML = "Restore local wifi";
+    else
+      document.getElementById('network-hotspot')
+        .innerHTML = "Enable hotspot";
+    
+    loadSection('section-system-network');
+  });
+}
+
 function onSystemInfo() {
     doQuery('system', null, (data) => {
       console.log(data);
@@ -1085,6 +1105,13 @@ function onSystemNetwork() {
 }
 
 function onSystemNetworkChange(toHotspotVal) {
+  
+  if (confirm ('Switch between Hotspot and local wifi?')){
+    new ZynthoREST.post('network-change',
+        {toHotspot : toHotspotVal}, (data) => {
+    });
+  }
+  
   doAction('network-change', {toHotspot : toHotspotVal}, (data) => {
     $('main').addClass('hidden');
     $('body').append('<small>Please change connection to reconnect to client</small>');
@@ -1100,27 +1127,18 @@ function onSystemInfoReconnect() {
   });
 }
 
-function onSystemInfoShutdown(reboot) {
-  doAction('shutdown', {'reboot':reboot}, (data)=>{
-   $('main').addClass('hidden');
-   if (!reboot) {
-     $('body').append('<div class="center-screen"><h1 class="tc">Bye bye!</h1></div>');
-   } else {
-     $('body').append('<div class="center-screen"><div class="col-12"><h1>Rebooting...</h1><div id="rebar" style="background-color:black;height:50px;width:0px"></div></div></div>');
-     
-     let respan = $('body').find('#rebar').get()[0];
-     var width = 0;
-     setInterval( () => {
-        if (width < 100){
-         width = width + 1;
-  	 respan.style.width = `${width}%`;
-        }
-     },1200);
-     setTimeout( () => {
-       window.location.reload();
-     }, 120000);
-   }
-  });
+function onSystemShutdown(reboot) {
+  
+  let msg = (!reboot)
+    ? 'Save and shut down system?'
+    : 'Save and reboot?'
+  
+  if (!confirm(msg))
+    return;
+  
+   window.location.href =
+     window.location.href.replace(/\/$/,'')
+     + '/shutdown' + ((reboot) ? '?reboot=yes' : '');
 }
 
 function onPartInstrumentSave(backTo) {

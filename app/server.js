@@ -271,7 +271,11 @@ function get_status_partfx (req, res, next) {
   
   Promise.all( [
     app.zyntho.queryPartFX(req.query.id) ,
-    app.zyntho.queryPackFXNames('/sysefx[0-3]',4)
+    app.zyntho.oscPromise('/sysefx[0-3]/efftype')
+      .then ( (result) => {
+        return Object.values(result)
+          .map ( aVal => ZynthoMania.typeToString(aVal[0]));
+      })
   ]).then( (values)=>{
     values[0].sysefxnames = values[1];
     res.json(values[0]);
@@ -477,8 +481,71 @@ function get_system (rq, res) {
   };
   
   res.json(result);
+  res.end();
 }
 app.get('/system', get_system);
+
+function get_system_info(req, res) {
+  zconsole.logGet(req);  
+  let result = {};
+  
+  //temperature
+  result.cpuTemp = execSync('cat /sys/class/thermal/thermal_zone0/temp').toString();
+  if (result.cpuTemp != null && result.cpuTemp.match(/\d+/)) {
+    result.cpuTemp = parseInt(result.cpuTemp)/1000 + " °";
+  } else
+  result.cpuTemp = "N/A";
+  
+  //working dir
+  result.workingDir = app.zyntho.IO.workingDir;
+  
+  //ram
+  try {
+    let ramRex = /(\d+(,\d+)?[GMK])/g;
+    let processOutput = execSync('free -mh').toString();
+    
+    let totalMem = ramRex.exec(processOutput)[1],
+      usedMem = ramRex.exec(processOutput)[1];
+    result.memory = `${usedMem} / ${totalMem}`;  
+  } catch (err) {
+    result.memory = 'NA';
+  }
+  
+  res.json(result);
+  res.end();
+}
+app.get('/system/info', get_system_info);
+
+function get_system_modules(req,res) {
+  zconsole.logGet(req);  
+  let result = {};
+  try { result.zynProcess = execSync('pgrep zynaddsubfx').toString()}
+    catch (e) {result.zynProcess = "NA"}
+  try {result.jackProcess = execSync('pgrep jackd').toString()}
+    catch (e) {result.jackProcess = "NA"}
+  
+  res.json(result);
+  res.end();
+}
+app.get('/system/modules', get_system_modules);
+
+
+function get_system_network(req,res) {
+  zconsole.logGet(req);  
+  let result = {};
+  
+  //dhcpcd mode
+  try {
+    let value = execSync('systemctl is-active dhcpcd').toString();
+    result.isHotspot = (replace(/\n|\r/g,value)  == 'inactive');
+  } catch (e) {
+    result.isHotspot = undefined
+  };
+  
+  res.json(result);
+  res.end();
+}
+app.get('/system/network', get_system_network);
 
 function get_controllers (req, res, next) {
   zconsole.logGet(req);
@@ -575,7 +642,7 @@ app.post('/controller/plug', post_controller_plug);
 
 
 /**
- * POST /setbindings
+ * POST /setbinding
  * loads a chain configuration object
  */
 function post_set_binding(req, res) {
@@ -974,30 +1041,26 @@ function post_session_set (req, res) {
 app.post('/session/set', post_session_set);
 
 //Shutdown default behaviour
-app.shutdownZyn =  function(req,res) {
-  let reboot=(req.body.reboot !== undefined) ?
-		req.body.reboot : true;
-    
-//Save session to default.xmz
-app.zyntho.on('saved', function(filename) {
-    if (!filename.endsWith('default.xmz'))
-      return;
-    
+function get_shutdown(req,res) {
+  let reboot = (req.query.reboot !== undefined);
+  
+  new Promise ( (resolve, reject) => {
+    app.zyntho.on('saved', resolve);
+    app.zyntho.sessionSave();  
+  })
+  .then ( ()=> {
     if (reboot) {
-     zconsole.notice('Rebooting system');
-     exec ('reboot');
-    } else {
-     zconsole.notice('Shutdown system');
-     exec ('shutdown 0');
-    }  
-  });
-  
-  app.zyntho.sessionSave();
-  
-  res.end();
+       zconsole.notice('Rebooting system');
+       res.sendFile(__dirname + '/reboot.html');
+       exec ('reboot');
+      } else {
+       zconsole.notice('Shutting down system');
+       res.sendFile(__dirname + '/shutdown.html');
+       exec ('shutdown 0');
+      }  
+    });
 }
-
-app.post('/shutdown', app.shutdownZyn);
+app.get('/shutdown', get_shutdown);
 
 app.on('open', () => {
   zconsole.log ("Opened web application");

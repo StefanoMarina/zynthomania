@@ -1,0 +1,58 @@
+<!-- session manager -->
+<section id="section-system" data-title="System" class="container">
+  <h4>Session</h4>
+  <div class="row">
+    <div class="col panel"><button class="button" onclick="onSessionNew()">
+        <i class="d-inline d-md-none fa fa-file"></i>
+        <span class="d-none d-md-inline">New</span>
+    </button></div>
+    <div class="col panel"><button class="button" onclick="onSessionLoad()">
+        <i class="d-inline d-md-none fa fa-folder-open"></i>
+        <span class="d-none d-md-inline">Open</span>
+    </button></div>
+    <div class="col panel"><button class="button" onclick="onSessionSave()">
+        <i class="d-inline d-md-none fa fa-save"></i>
+        <span class="d-none d-md-inline">Save</span>
+    </button></div>
+    <div class="col panel"><button class="button" onclick="onSessionSaveAs()">
+      <i class="d-inline d-md-none fa fa-share-square"></i>
+      <span class="d-none d-md-inline">Save As...</span>
+    </button>
+    </div>
+  </div>
+  <h4>System</h4>
+  <div class="row">
+      <div class="col-4 panel">
+        <button class="button selected" onclick="onSystemShutdown(0)">
+          <i class="fa fa-power-off"></i><br/>
+          Power off
+        </button>
+      </div>
+      <div class="col-4 panel">
+        <button class="button selected" onclick="onSystemShutdown(1)">
+          <i class="fa fa-sync"></i><br/>
+          Reboot
+        </button>
+      </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-4 panel"><button class="button" onclick="onController()">Controller</button></div>
+    <div class="col-4 panel"><button class="button" onclick="onNetwork()">Network</button></div>
+    <div class="col-4 panel"><button class="button" onclick="">Banks</button></div>
+  </div>
+  <div class="row">
+    <div class="col-4 panel"><button class="button" onclick="">Modules</button></div>
+    <div class="col-4 panel"><button class="button" onclick="">Info</button></div>
+  </div>
+</section>
+
+<!-- Reboot / Power off -->
+<section id="section-system-network" data-title="Network"
+  data-back="section-system" class="container">
+  <div class="row">
+    <div class="col-12 panel"><button class="button selected"
+      onclick="onSystemHotspot()">
+      <i class="fa fa-wifi"></i> <span id="network-hotspot"></span></button></div>
+  </div>
+</section>
