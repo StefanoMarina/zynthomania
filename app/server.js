@@ -444,47 +444,6 @@ function get_status_session (rq, res) {
 }
 app.get('/status_session', get_status_session);
 
-function get_status_split (req, res) {
-  app.zyntho.getSplit( (result) => {
-    res.json(result);
-  });
-}
-app.get('/status/split', get_status_split);
-
-/**
- * /system
- * GET grabs system info
- */
-function get_system (rq, res) {
-  zconsole.logGet(rq);  
-  let result = {};
-  
-  result.cpuTemp = execSync('cat /sys/class/thermal/thermal_zone0/temp').toString();
-  if (result.cpuTemp != null && result.cpuTemp.match(/\d+/)) {
-    result.cpuTemp = parseInt(result.cpuTemp)/1000 + " °";
-  } else
-  result.cpuTemp = "N/A";
-  
-  try { result.zynProcess = execSync('pgrep zynaddsubfx').toString()}
-    catch (e) {result.zynProcess = "NA"}
-  try {result.jackProcess = execSync('pgrep jackd').toString()}
-    catch (e) {result.jackProcess = "NA"}
-  try { result.netAddress = execSync ('hostname -I').toString().trim().split(" ")}
-    catch (e) {result.netAddress = []};
-  
-  result.workingDir = app.zyntho.IO.workingDir;
-  try {
-    let value = execSync('systemctl is-active dhcpcd').toString();
-    result.isHotspot = (replace(/\n|\r/g,value)  == 'inactive');
-  } catch (e) {
-    result.isHotspot = undefined
-  };
-  
-  res.json(result);
-  res.end();
-}
-app.get('/system', get_system);
-
 function get_system_info(req, res) {
   zconsole.logGet(req);  
   let result = {};
@@ -930,7 +889,7 @@ app.post('/save', post_save);
     }
   }
   
-  return app.shutdownZyn( {body : { reboot : true } }, res);
+  return get_shutdown( {query : { reboot : true } }, res);
  }
  app.post('/network-change', post_network_change);
  

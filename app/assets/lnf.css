@@ -518,7 +518,7 @@ div.table div { text-align:center}
 /*
  * General sections
  */
-section {display : none !important;}
+section {display : none !important; overflow-y : scroll; overflow: hidden}
 section.opened {display: block !important}
 section.row.opened {display: flex !important}
 

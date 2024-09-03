@@ -1019,10 +1019,6 @@ function onSynthSubBandwidth() {
     });
 }
 
-function onSystem() {
-  loadSection('section-system');
-}
-
 function onNetwork() {
   new ZynthoREST().query('system/network')
     .then ( (data) =>{
@@ -1038,92 +1034,74 @@ function onNetwork() {
   });
 }
 
-function onSystemInfo() {
-    doQuery('system', null, (data) => {
-      console.log(data);
-      let space = $('#pnlSystemInfo > div:first-child');
-      space.empty();
-      space.append(`<p class='col-12'>Temp: ${data.cpuTemp}</p>`);
-      space.append(`<p class='col-12'>JACK<span class="d-none d-md-inline"> process status</span>: <i class="${(data.jackProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
-      space.append(`<p class='col-12'>ZynAddSubFX<span class="d-none d-md-inline"> status</span>: <i class="${(data.zynProcess != null) ? 'fa fa-check-circle' : 'fa fa-times-circle'}"></i></p>`);
-      space.append(`<p class='col-12'>Cartridge: ${data.workingDir}</p>`);
-    });
-}
 
-function onSystemMIDI() {
-  doQuery('system/midi', null, (data) => {
-    
-//          data = JSON.parse(data);
-    if (Object.prototype.toString.call(data) !== '[object Array]') {
-      console.log("Error: data is not array.");
-      console.log(data);
-      return;
-    }
-    
-    //data is array
-    let midiCont = $('#keybMidiContainer');
-    $(midiCont).empty();
-    
-    
-    data.forEach( (item) => {
-      
-      let plugged = (item.connections !== undefined && 
-                item.connections.indexOf(zynConnection.plug) > -1);
-      let selClass = (item.connected) ? "selected" : "";
-      
-      let content = `<button class="col-sm-12 col-md-8 col-lg-6 ${selClass}" value="${item.port}">${item.name}`+"</button>";
-      $(midiCont).append(content);
-    });
-    
-    //Add action to midi device buttons: plug in device
-    $(midiCont).children('button').on('click', (e) => {
-      let target = $(e.target);
-      let plugged = $(target).hasClass('selected');
-      
-      doAction('system/midi/plug', 
-        {'name': $(target).val(), 'status': !plugged}, (data) =>{
-          onSystemMIDI();
-        });
-    });
-  });
-}
-
-function onSystemNetwork() {
-  doQuery('system', null, (data) => {
-    console.log(data);
-    let space = $('#pnlSystemNetwork > div:first-child');
-    space.empty();
-    space.append("<p class='col-12'>Net address:"+data.netAddress.reduce( (acc, x)=> acc+", "+x)+"</p>");
-    
-    let btnDoHotspot = $('#pnlSystemNetwork > div:nth-child(2) > div:first-child button'),
-      btnDoWifi = $('#pnlSystemNetwork > div:nth-child(2) > div:last-child button');
-    
-    btnDoHotspot.prop('disabled', data.isHotspot);
-    btnDoWifi.prop('disabled', !data.isHotspot);
-    
-  });
-}
-
-function onSystemNetworkChange(toHotspotVal) {
+function onNetworkChange() {
   
   if (confirm ('Switch between Hotspot and local wifi?')){
+    let val = !zsession.hotspotMode;
     new ZynthoREST.post('network-change',
-        {toHotspot : toHotspotVal}, (data) => {
+        {toHotspot : val}, (data) => {
+          document.getElementByTagName('body')[0]
+            .innerHTML = '<small>Please change address bar to match the new connection</small>';
     });
   }
-  
-  doAction('network-change', {toHotspot : toHotspotVal}, (data) => {
-    $('main').addClass('hidden');
-    $('body').append('<small>Please change connection to reconnect to client</small>');
-  });
 }
 
-function onSystemInfoReconnect() {
+
+function onSystem() {
+  loadSection('section-system');
+  setSelectedToolbarButton('main-toolbar-system');
+}
+
+function onSystemInfo() {
+  new ZynthoREST().query('system/info')
+    .then ( (data) =>{
+      let section = document.getElementById('section-system-info');
+      section.innerHTML = 
+      `<p><b>RAM: </b> ${data.memory}</p>`
+    + `<p><b>CPU temp: </b> ${data.cpuTemp}</p>`
+      ;
+      loadSection('section-system-info');
+    });
+}
+
+
+function onSystemModulesReconnect() {
+  if (!confirm ('reconnect to zynddsubfx?'))
+    return;
+    
+  let zyn = document.getElementById('module-zyn-status');
+  zyn.classList.remove('fa-toggle-on', 'fa-toggle-off');
+      
+  new ZynthoREST().post('reconnect')
+    .then ( (data) => {
+    zyn.classList.add('fa-toggle-on');
+  }).catch ( (err)=>{
+    zyn.classList.add('fa-toggle-off');
+  });
+  
   doAction('reconnect', (data) => {
     displayMessage('Reconnected!');
     let icon = $('#pnlSystemInfo > div:first-child').find('p > i');
     icon.removeClass('fa-times-circle');
     icon.addClass('fa-check-circle');
+  });
+}
+
+function onSystemModules() {
+ 
+  new ZynthoREST().query('system/modules').then ( (data) =>{
+    
+    let zyn = document.getElementById('module-zyn-status');
+    zyn.classList.remove('fa-toggle-on', 'fa-toggle-off');
+    zyn.classList.add( ( data.zynProcess != 'NA') 
+         ? 'fa-toggle-on' : 'fa-toggle-off');
+    let jack = document.getElementById('module-jack-status');
+    jack.classList.remove('fa-toggle-on', 'fa-toggle-off');
+    jack.classList.add( ( data.jackProcess != 'NA') 
+         ? 'fa-toggle-on' : 'fa-toggle-off');
+         
+    loadSection('section-system-modules');
   });
 }
 

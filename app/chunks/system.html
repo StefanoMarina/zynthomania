@@ -42,8 +42,8 @@
     <div class="col-4 panel"><button class="button" onclick="">Banks</button></div>
   </div>
   <div class="row">
-    <div class="col-4 panel"><button class="button" onclick="">Modules</button></div>
-    <div class="col-4 panel"><button class="button" onclick="">Info</button></div>
+    <div class="col-4 panel"><button class="button" onclick="onSystemModules()">Modules</button></div>
+    <div class="col-4 panel"><button class="button" onclick="onSystemInfo()">Info</button></div>
   </div>
 </section>
 
@@ -54,5 +54,26 @@
     <div class="col-12 panel"><button class="button selected"
       onclick="onSystemHotspot()">
       <i class="fa fa-wifi"></i> <span id="network-hotspot"></span></button></div>
+  </div>
+</section>
+
+<section id="section-system-info" data-title="Info" data-back="section-system"
+  class="container panel">
+  
+</section>
+
+<section id="section-system-modules" data-title="Modules" 
+  data-back="section-system">
+  <h4>Main Processes</h4>
+  <div class="row">
+    <div class="col-6">ZynAddSubFX</div>
+    <div class="col-4"><i class="fa" id="module-zyn-status"></i></div>
+    <div class="col-2"><button onclick="onSystemModulesReconnect()" 
+      class="button selected"><i class="fa fa-plug"></i></button></div>
+  </div>
+  <div class="row">
+    <div class="col-6">Jack</div>
+    <div class="col-4"><i class="fa" id="module-jack-status"></i></div>
+    <div class="col-2"></div>
   </div>
 </section>
