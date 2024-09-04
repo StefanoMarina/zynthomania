@@ -656,7 +656,10 @@ class OSCMidiNote extends OSCNumber {
     clickableObject.addEventListener('click', (e)=>{
       let currentPanel = document.querySelector('section.opened');
       
-      window.zsession.noteEditor.showNoteEditor(this.lastNote.code, 
+      if ( zsession.noteEditor === undefined )
+        zsession.noteEditor = new NoteEditor();
+      
+      zsession.noteEditor.showNoteEditor(this.lastNote.code, 
         (res) =>{
           this.act(res).then( () => {
             this.setValue(res);

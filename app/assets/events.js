@@ -22,99 +22,84 @@ const ADSYNTH_GLOBAL = 127; //adsynth voice id pointing to global
  function onBanks() {
   //no more preloading banks
   
-  new ZynthoREST().query('files/banks', null)
+  new ZynthoREST().query('files/banks')
   .then((data) =>{
-    data.forEach( (item) => {
-      zsession.banks[item] = [];
-      displayOutcome("Banks loaded.");
-    });
-    let banks = zsession.banks;
-    let entry = '';
-    let selectObject = document.getElementById('selBanks');
     
-    if (selectObject.children.length == 0) {
-      Object.keys(banks).forEach( (key) => {
-        selectObject.innerHTML += `<li data-bank='${key}'>${key}</li>`;
-      });
+    let bankUI = document.getElementById('select-bank');
+    bankUI.size = data.length+1;
+    bankUI.options.length = 1;
+ 
+    bankUI.options[0]
+      .disabled = (window.zsession.favorites.length == 0)
       
-      selectObject.querySelectorAll('li').forEach ( (li) => {
-          li.addEventListener('click', onBanksBankSelect);
-      });
-    }
-    
-    selectObject = document.getElementById('selInstruments');
-    selectObject.innerHTML = '';
-    
+    data.forEach ( (item) => {
+      bankUI.options.add ( new Option ( item, item ) );
+    });
+  
     loadSection('section-select-bank');
-    
-    //TODO: this selector will be trouble
-    setSelectedToolbarButton(document.querySelector('#partToolbar > button:nth-child(2)'));
+    setSelectedToolbarButton(document.getElementById('part-toolbar-bank'));
   });
 }
       
-function onBanksBankSelect(event) {
-  //let ul = target.parentNode;
-  //ul.querySelectorAll('.selected').forEach ( (el) => el.classList.remove('selected'));
-  //target.classList.add('selected');
+function onBanksBankSelect() {
+  let selBank = document.getElementById('select-bank');
+  let selection = selBank.value;
+  selBank.selectedIndex = -1;
   let selectedBank = event.target.dataset.bank;
   
-  new ZynthoREST().query('files/banks/xiz', {bank: selectedBank})
-  .then( (data) => {
-    zsession.bank = selectedBank;
-    zsession.banks[selectedBank] = data;
-    
-    let instruments = zsession.banks[selectedBank];
-    let entry = '';
-    let selectObject = document.getElementById('selInstruments');
-    selectObject.innerHTML = '';
-    
-    instruments.forEach( (value, index, array) => {
-      let entry = `<li data-instrument="${value.path}">${value.name}`;
+  
+  var promise = null;
+  var instruments = null;
+  var favPaths = [];
+  if (selection == 'favorites') {
+     promise = Promise.resolve ( zsession.favorites );
+  } else {
+    favPaths = zsession.favorites.map ( (fav) => fav.path );
+    promise = new ZynthoREST().query('files/banks/xiz', {'bank': selection});
+  }
+  
+  promise.then ( (instruments) =>{
+      console.log(instruments);
+      let select = document.getElementById('select-instrument');
+      select.options.length = 0;
       
-      if (isFavorite(value))
-        entry += '<span style="float:right"><i class="fas fa-star"></i></span>';
-        
-       selectObject.innerHTML += entry+"</li>";
-    });
-    
-    selectObject.querySelectorAll('li').forEach( (li) => {
-        li.addEventListener('click',
-          (e)=>{
-            let previous = selectObject.querySelector('li.selected');
-            if (previous != null)
-              previous.classList.remove('selected');
-              
-            e.target.classList.add('selected');
-            onBanksInstrumentClick(e.target.dataset.instrument);
-          }
-        );
-    });
-        
-    document.getElementById('bankName').innerHTML= selectedBank;
-    loadSection('section-select-patch');
+      instruments.forEach ( (instr) => {
+        let option = new Option ( instr.name, instr.path);
+        if (selection == 'favorites' ||
+          favPaths.indexOf(instr.path) > -1 ){
+            option.classList.add('bookmark');
+        }
+        select.options.add(option);
+      });
+      
+      select.size = select.options.length+1;
+      
+      document.getElementById('bankName').innerHTML= "/"+selection;
+      loadSection('section-select-patch');
   });
 }
 
-function onBanksInstrumentClick(instrument) {
+function onBanksInstrumentSelect() {
+  let select = document.getElementById('select-instrument');
+  let instrument = select.value;
+  let option = select.options[select.selectedIndex];
+  select.selectedIndex = -1;
+  
+  select.querySelectorAll('option.selected').forEach ( e => e.classList.remove('selected'));
+  
+  option.classList.add('selected');
+  
   new ZynthoREST().post( "loadInstrument", {'instrument': instrument, 
     'id': zsession.partID} )
-   .then ( ()=>{    
-      //try to store program id
-      let rex = /\/(\d+)\-.*xiz$/.exec(instrument);
-      zsession.lastLoadedInstrument[zsession.partID] = 
-          (rex != null) ? parseInt(rex[1]) : null;
-      onToolbarChangePart()
+   .then ( (session)=>{
+      zsession.extdata = session;
+      onToolbarUpdate();
   });
 }
 
 function onBind() {
   if (zsession.lastosc['osc'] == null)
     return;
-    
-  
-  //  let knobObject = window.zsession.oscElements[
-  //    document.getElementById('knobEditor').dataset.knobID ];
-  
   let range = zsession.lastosc.range;
   let obj = {};
   
@@ -131,6 +116,36 @@ function onBind() {
   
   obj['osc'] = zsession.lastosc.osc;
   loadBindEditor(obj, true);
+}
+
+function onBookmarkManager() {
+    let sel = document.getElementById('system-bookmarks');
+    sel.options.length = 0;
+    zsession.favorites.forEach ( (book,index)=> {
+      sel.options.add(new Option(book.name, index));
+    });
+    sel.size = sel.options.length+1;
+    
+    loadSection('section-bookmark-manager');
+}
+
+function onBookmarkRemove() {
+  let sel = document.getElementById('system-bookmarks');
+  if ( sel.selectedIndex == -1)
+    return;
+  
+  zsession.favorites.splice(sel.selectedIndex,1);
+  sel.remove(sel.selectedIndex);
+  new ZynthoREST().post('favorites', {'favorites': zsession.favorites});
+}
+
+function onBookmarkTrash() {
+  if (confirm ( 'Remove all bookmarks? ') ) {
+    let sel = document.getElementById('system-bookmarks');
+    sel.options.length = 0;
+    zsession.favorites = [];
+    new ZynthoREST().post('favorites', {'favorites': []});
+  }
 }
 
 function onController() {
@@ -313,6 +328,38 @@ function onControllerBindingsExport() {
       'data': zsession.bindListEditor.currentSession.bindings})
   .then ( ()=> {displayOutcome('Bindings succesfully saved.')})
   .catch ( (err)=> {displayOutcome(err,true)});
+}
+
+function onFavoriteSet() {
+  let instrument = zsession.extdata.instruments[zsession.partID];
+  let paths = zsession.favorites.map ( (obj) => obj.path );  
+  var promise = null;
+  
+  if (instrument.path == null) {
+    displayOutcome("I don't remember which file, sorry.", true);
+    promise = Promise.resolve( 'unknown' );
+  } else  if (paths.indexOf(instrument.path) > -1) {
+    
+      zsession.favorites.splice(paths.indexOf(instrument.path),1);
+        
+      promise = new ZynthoREST().post('favorites',
+        {'favorites': zsession.favorites})
+        .then ( ()=> {return 'remove'});
+  } else {
+    zsession.favorites.push(instrument);
+    promise = new ZynthoREST().post('favorites',
+        {'favorites': zsession.favorites})
+        .then ( ()=> {return 'add'});
+  }
+  
+  promise.then( (outcome) =>{
+    updatePartMixerBookmark();
+    switch (outcome){
+      case 'unknown': break;
+      case 'add': displayOutcome('Added new bookmark'); break;
+      case 'remove': displayOutcome('Removed from bookmarks'); break;
+    }
+  });
 }
 
 function onFXGlobal() {
@@ -1192,7 +1239,6 @@ function onPartInstrumentSaveOk() {
   })
 }
 
-//controls are created at start as this is the default page see main.js
 function onPartMixer() {
   if (zsession.initPartMixer === undefined) {
     zsession.oscElements['part-enable'] =
@@ -1212,9 +1258,32 @@ function onPartMixer() {
   
   osc_synch_section(document.getElementById('section-part-main'))
   .then ( ()=> {
+    updatePartMixerBookmark();
     loadSection('section-part-main');
     setSelectedToolbarButton(document.querySelector('#partToolbar > button:nth-child(1)'));
   });
+}
+
+function updatePartMixerBookmark() {
+    //check bookmark status
+    let instrument = zsession.extdata.instruments[zsession.partID];
+    let icon = document.getElementById('part-favorite');
+
+    if (instrument.name != null && instrument.path == null){ //bad status
+      icon.classList.remove('far', 'fa', 'fa-bookmark');
+      icon.classList.add('fas', 'fa-question');
+    } else if (zsession.favorites.map ( (obj)=>obj.path )
+      .indexOf( instrument.path ) > -1) {
+      icon.classList.remove('far', 'fa-question');
+      icon.classList.add('fa', 'fa-bookmark');
+    } else {
+      icon.classList.remove('fa', 'fa-question');
+      icon.classList.add('far', 'fa-bookmark');
+    }
+}
+
+function onManagerNewBank() {
+  
 }
 
 function onMixer() {

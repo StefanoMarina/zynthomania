@@ -69,9 +69,7 @@ class ZynthoServer extends EventEmitter {
     
   static defaultExtendedSession() {
     return {
-      instruments : [],
-      tempo : 120,
-      splitChannel : 0
+      instruments : new Array(16).fill({'name':null,'path':null})
     };
   }
   /**
@@ -415,7 +413,7 @@ class ZynthoServer extends EventEmitter {
     */
   getBanks() {
     var _this = this;
-    var bankList = ['Favorites'];
+    var bankList = [];
     var files = Fs.readdirSync (this.config.bank_dir)
                 .filter(
                   (file) => Fs.statSync(this.config.bank_dir+'/'+file)
@@ -442,9 +440,6 @@ class ZynthoServer extends EventEmitter {
    * retrieve all instrument name by filename
    */
   getInstruments(bank) {
-    if ('Favorites' === bank)
-      return this.favorites;
-      
     let result = [];
     var fullpath = ("$" == bank[0])
             ? this.IO.workingDir + "/banks/"+bank.substr(1)
@@ -563,7 +558,11 @@ class ZynthoServer extends EventEmitter {
           path : instrumentPath
       }
       this.once(`/part${part}/Pname`, (msg) => {
-       this.session.instruments[part].name = msg.args[0].value;
+       let name = msg.args[0].value;
+       if (name == '')
+        name = /[\/\\][\d\-]*([^\.]+\.xiz)$/.exec(instrumentPath)[1];
+        
+       this.session.instruments[part].name = name;
        
       
        if (onDone !== undefined)
@@ -582,6 +581,21 @@ class ZynthoServer extends EventEmitter {
         this.session.instruments[index] = {};
       return this.session.instruments[index];
    }
+  
+  resyncData() {
+    this.oscPromise(['/part[0-15]/Pname'])
+      .then ( (data) => {
+      for (let i = 0; i < 16; i++) {
+        if (this.session.instruments[i].name !=
+          data[`/part${i}/Pname`][0]) {
+            zconsole.notice(`Part ${i} instrument is now invalid`);
+            this.session.instruments[i].name =
+              data[`/part${i}/Pname`][0];
+            this.session.instruments[i].path = null;
+        }
+      }
+    });
+  }
   
   /**
   * queryPartFX

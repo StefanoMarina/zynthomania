@@ -315,7 +315,7 @@ ul, .select {
  * Selection lists
  */
  
-ul li { padding: 2px 6px 0.2em; }
+ul li, .select > option { padding: 2px 6px 0.2em; }
 ul li:hover {  cursor: pointer; }
 
 
@@ -441,6 +441,24 @@ label, .label {
 
 .toggle {
   border-radius: 10px;
+}
+
+select.banks { 
+  font-family: LCD; 
+  border: none;
+  -webkit-appearance:none;
+  outline: none;
+}
+
+.banks option { 
+  font-size: 2em;
+}
+
+option.bookmark::before {
+  font-family: "Font Awesome 5 Free";
+  content: '\f02e ';
+  font-weight: bold;
+  padding-right: 5px;
 }
 
 /*
@@ -694,4 +712,14 @@ section.row.opened {display: flex !important}
 	font-family: VCRJP;
 	font-size: 0.5em;
   margin-bottom: 10px;
+}
+
+#section-content {
+  overflow:scroll;
+}
+
+@media screen and (orientation:portrait) {
+  #section-content {
+    max-height: 75vh;
+  }
 }

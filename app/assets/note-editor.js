@@ -122,6 +122,7 @@ function loadNoteEditor(min, max, value, mode="note") {
   nodeSection.dataset.back = currentSectionID.ID;
   
   if (undefined === window.zsession['note-editor-initialized']) {
+      zsession.noteEditor = new NoteEditor();
       octaveSlider.addEventListener('change', () => {
         nodeSection.dataset.value = '';
         document.getElementById('note-editor-slider-label')

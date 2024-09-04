@@ -39,7 +39,7 @@
   <div class="row">
     <div class="col-4 panel"><button class="button" onclick="onController()">Controller</button></div>
     <div class="col-4 panel"><button class="button" onclick="onNetwork()">Network</button></div>
-    <div class="col-4 panel"><button class="button" onclick="">Banks</button></div>
+    <div class="col-4 panel"><button class="button" onclick="loadSection('section-system-folders')">Manager</button></div>
   </div>
   <div class="row">
     <div class="col-4 panel"><button class="button" onclick="onSystemModules()">Modules</button></div>
@@ -75,5 +75,30 @@
     <div class="col-6">Jack</div>
     <div class="col-4"><i class="fa" id="module-jack-status"></i></div>
     <div class="col-2"></div>
+  </div>
+</section>
+
+<section id="section-system-folders" data-title="File Manager"
+  data-back="section-system" class="container">
+  <div class="row">
+    <div class="col-4 panel"><button onclick="onManagerNewBank()"
+      class="button selected"><i class="fa fa-plus"></i> New Bank</button></div>
+    <div class="col-4 panel"><button onclick="onBookmarkManager()"
+      class="button"><i class="fa bookmark"></i> Bookmarks</button></div>
+  </div>
+</section>
+
+<section id="section-bookmark-manager" 
+data-back ="section-system-folders"  class="container">
+  <div class="row">
+    <menu>
+      <button class="button col-4" onclick="onBookmarkRemove()"><i class="fa fa-minus"></i></button>
+      <button class="button col-4" onclick="onBookmarkTrash()"><i class="fa fa-trash"></i></button>
+    </menu>
+  </div>
+  <div class="col-12">
+    <select id="system-bookmarks" class="select">
+      
+    </select>
   </div>
 </section>

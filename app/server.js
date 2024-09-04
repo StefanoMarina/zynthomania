@@ -89,6 +89,12 @@ function get_files_banks (req, res, next) {
 }
 app.get('/files/banks', get_files_banks);
 
+function get_favorites(req, res) {
+  zconsole.logGet(req);
+  res.json (app.zyntho.favorites);
+}
+app.get('/files/favorites', get_favorites);
+
 /**
  * getInstruments
  * GET request to retrieve all .xiz file inside a folder
@@ -142,6 +148,7 @@ function post_loadInstrument (req, res) {
   }
   
   app.zyntho.loadInstrument(req.body.id, req.body.instrument, function() {
+    res.json(app.zyntho.session);
     res.status(200).end();
   })
 }
@@ -434,15 +441,9 @@ app.get('/status/binds', get_status_binds);
  */
 function get_status_session (rq, res) {
   zconsole.logGet(rq);
-  
-  let result = {};
-  result.sessionList = ZynthoIO.listAllFiles(app.zyntho.IO.workingDir+"/"+"sessions")
-    .filter ( (e) => e.match(/\.xmz$/i)) ;
-  result.currentSession = app.zyntho.lastSession;
-  result.sessionData = app.zyntho.session;
-  res.json(result);
+  res.json ( app.zyntho.session);
 }
-app.get('/status_session', get_status_session);
+app.get('/status/session', get_status_session);
 
 function get_system_info(req, res) {
   zconsole.logGet(req);  
@@ -689,6 +690,19 @@ function post_binds_add(req, res) {
 }
 app.post('/binds/add', post_binds_add);
 
+function post_favorites(req,res) {
+  zconsole.logPost(req);
+  
+  if (req.body.favorites === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  app.zyntho.favorites = req.body.favorites;
+  app.zyntho.save();
+  res.end();
+}
+app.post('/favorites', post_favorites);
 
 function post_loadbind(req,res) {
   zconsole.logPost(req);
@@ -929,6 +943,7 @@ function post_reconnect (req, res) {
     zconsole.log('Relaunching osc connection...');
     
     app.zyntho.once('ready', () =>{
+      app.zyntho.resyncData();
       res.status(200).end();
     });
     
@@ -989,12 +1004,12 @@ app.post('/session/save', post_session_save);
 */
 function post_session_set (req, res) {
   zconsole.logPost(req);
-  for (let key in app.zyntho.session) {
-    if (req.body[key] !== undefined) {
-      console.log(`changing ${key} to ${req.body[key]}`)
-      app.zyntho.session[key] = req.body[key];
-    }
+  if (req.body.session === undefined) {
+    res.status(400).end();
+    return;
   }
+  
+  app.zyntho.session = res.body.session;
   res.end();
 }
 app.post('/session/set', post_session_set);

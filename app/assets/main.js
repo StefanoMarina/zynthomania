@@ -85,14 +85,16 @@ function onLoad() {
     loadSection(backButton.dataset.backToPanel);
   });
  
- 
-  /*
-   * Init note dialog
-   */
-  zsession.noteEditor = new NoteEditor();
-   
-  //Init part
-  onToolbarChangePart(0);
+
+  new ZynthoREST().query('files/favorites').then ( (favs) => {
+    zsession.favorites = favs;
+    return new ZynthoREST().query('status/session');
+  }).then ( (sess)=> {
+    zsession.extdata = sess;
+    
+    //Init part
+    onToolbarChangePart(0);  
+  });  
 }
 
 function setSelectedToolbarButton(button) {
