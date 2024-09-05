@@ -1283,7 +1283,11 @@ function updatePartMixerBookmark() {
 }
 
 function onManagerNewBank() {
-  
+  let name = prompt('Enter new bank name', 'New bank');
+  if (name == '' || name == null)
+    return;
+  name = name.toLowerCase().replace(/:,;+\/\\/,'_');
+  new ZynthoREST().post('files/newbank',{ 'dir' : name });
 }
 
 function onMixer() {

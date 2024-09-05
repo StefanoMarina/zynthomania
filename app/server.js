@@ -135,6 +135,31 @@ function get_files(req, res, next) {
 }
 app.get('/files', get_files);
 
+function post_files_newbank(req,res) {
+  zconsole.logPost(req);
+  if (req.body.dir === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  let dir = `${app.zyntho.config.cartridge_dir}/banks/${req.body.dir}`;
+  
+  if (Fs.existsSync(dir)) {
+    res.statusMessage = 'Directory already exists!';
+    res.status(409).end();
+    return;
+  }
+  
+  try {
+    Fs.mkdirSync(dir);
+  } catch {
+    res.status(500);
+  } finally {
+    res.end();
+  }
+}
+app.post('/files/newbank', post_files_newbank);
+
 /**
  * loadInstrument
  * POST loads xiz
@@ -351,7 +376,8 @@ app.get('/status/options', get_status_options);
       res.statusMessage = err;
       res.status(500).end();
     });
- } 
+ }
+  
  app.get('/status', get_status);
  
 /**
