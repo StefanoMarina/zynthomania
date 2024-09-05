@@ -98,7 +98,7 @@ function onLoad() {
 }
 
 function setSelectedToolbarButton(button) {
-  document.querySelectorAll('#main-panel > header button.selected')
+  document.querySelectorAll('#main-header button.selected')
     .forEach ( (btn) => btn.classList.remove('selected') );
   button.classList.add('selected');
 }

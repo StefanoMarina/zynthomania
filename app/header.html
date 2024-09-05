@@ -173,32 +173,40 @@
     </footer>
   </dialog>
   
-    <div id="main-panel" class="row">
-      <!--toolbar fissa-->
-      <header class="col-12 col-sm-5 col-lg-3">
-        <!-- system toolbar -->
+  <header id="main-header">
+    <div class="row no-gutters">
+      
+      <!-- system toolbar -->
+      <div class="col-7 col-md-4">
         <nav>
-          <button id='main-toolbar-system' onclick="loadSection('section-system')"><i class="fas fa-sd-card"></i></button>  <!--system -->
-          <button onclick="onSessionSave()"><i class="fas fa-save"></i></button>  <!-- quick save -->
-          <button onclick="onMixer()"><i class="fa fa-sliders-h"></i></button> <!-- mixer -->
-          <button class="br" onclick="onFXGlobal()">FX</button>  <!-- Global/Insert FX -->
+          <button id='main-toolbar-system' onclick="onSystem()"><i class="fas fa-sd-card"></i></button>  <!--system -->
+          <button  onclick="onSessionSave()"><i class="fas fa-save"></i></button>  <!-- quick save -->
+          <button id="main-toolbar-mixer" onclick="onMixer()"><i class="fa fa-sliders-h"></i></button> <!-- mixer -->
+          <button id="main-toolbar-fx"  onclick="onFXGlobal()">FX</button>  <!-- Global/Insert FX -->
+        </nav>
+      </div>
+      <!-- main osc -->
+      <div class="col-5 col-md-3">
+        <nav>
           <button onclick="onTempo()" class="osc-element minimal" id="global-tempo"
             data-osc-path="/tempo"></button>
           <button id="global-volume" class="osc-element minimal osc-knob d-inline"
                 data-osc-path="/volume" data-osc-type="i"></button>
           <button id="global-panic" class="osc-element minimal d-inline"
               data-osc-path="/Panic" data-osc-type="">
-                <i class="fas fa-exclamation-triangle"></i> </button>
-        </nav>
-        
-        <!-- Info Display -->
-        <div class="col-12 partDisplay bt bb">
-          <p><small><span id="q-status" class="fa" style="padding-right: 2px"></span><span id="message" style="padding-left:0px">No session file</span></small></p>
-          <h3><span id="instrumentName">---- </span></h3>
-          <p onclick="onBind()"><small><i class='fa fa-terminal'></i>&nbsp;<span id="osc-message"><i>Click on OSC path to bind</i></span></small></p>
-        </div>
-        
-        <!-- Part controls -->
+                <i class="fas fa-xl fa-exclamation-triangle"></i> </button>
+        </nav>    
+      </div>
+    
+      <!-- Info Display -->
+      <div class="col-12 order-md-3 partDisplay bt bb">
+        <p><small><span id="q-status" class="fa" style="padding-right: 2px"></span><span id="message" style="padding-left:0px">No session file</span></small></p>
+        <h3><span id="instrumentName">---- </span></h3>
+        <p onclick="onBind()"><small><i class='fa fa-terminal'></i>&nbsp;<span id="osc-message"><i>Click on OSC path to bind</i></span></small></p>
+      </div>
+      
+      <!-- Part controls -->
+      <div class="col-12 col-md-4 order-md-2">
         <div class="row">
           <div class="col-4 col-md-3">
               <div class="swipeable" id="partID" style="padding-top: 10%"></div>
@@ -213,7 +221,13 @@
             </navbar>
           </div>
         </div>
-      </header>
+      </div>
+    </div>
+    
+  </header>
+    <div id="main-panel" class="row">
+      <!--toolbar fissa-->
+  
       
       <main class="col">
         

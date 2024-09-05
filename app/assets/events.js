@@ -392,6 +392,7 @@ function onFXGlobal() {
         }
         
         loadSection('section-global-fx');
+        setSelectedToolbarButton(document.getElementById('main-toolbar-fx'));
     });
 }
 
@@ -1097,7 +1098,7 @@ function onNetworkChange() {
 
 function onSystem() {
   loadSection('section-system');
-  setSelectedToolbarButton('main-toolbar-system');
+  setSelectedToolbarButton(document.getElementById('main-toolbar-system'));
 }
 
 function onSystemInfo() {
@@ -1314,6 +1315,7 @@ function onMixer() {
             (`${i}. `+data[`/part${i-1}/Pname`][0]);
         }
         loadSection('section-mixer');
+        setSelectedToolbarButton(document.getElementById('main-toolbar-mixer'));
     });
 }
 function onPartControl() {
