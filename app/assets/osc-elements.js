@@ -110,8 +110,14 @@ function osc_synch(...elements) {
         
         for (path in result) {
           let id = oscDictionary.get(path);
+          if ( id === undefined) {
+            console.log('warning! undefined id for path ' + path);
+            continue;
+          }
+          
           let oscObject = window.zsession.oscElements[id];
           oscObject.setValue(result[path][0],true);
+          
           /**
            * BUG
            * Events are triggered by 2D arrays:
@@ -629,6 +635,7 @@ class OSCSwipeable extends OSCElement {
           this.selectElement.selectedIndex = i;
           this.HTMLElement.querySelector('label').
             innerHTML = this.selectElement.options[i].innerHTML;
+          return;
         }
     }
   }

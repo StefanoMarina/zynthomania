@@ -44,8 +44,23 @@ function onLoad() {
     bindListEditor: {  //bindings
       currentSession : null
     },
-    lastosc: {}
+    lastosc: {},
+    reloadStack : []
   };
+  
+  Object.defineProperty(zsession, 'reloadSynthSubSection', {
+    get() {
+      return (this.reloadStack.length == 0)
+        ? function () {console.log('warning: called subsection with empty stack');}
+         : this.reloadStack[this.reloadStack.length-1];
+    },
+    
+    set(func) {
+      if (this.reloadStack.length == 0
+        || func != this.reloadStack[this.reloadStack.length-1]) //prevent doubles
+      this.reloadStack.push(func);
+    }
+  });
   
   initKnobEditorDialog(); //knob-panel.js
   
@@ -82,7 +97,12 @@ function onLoad() {
   //enable section back button
   document.getElementById('content-back').addEventListener('click', (e) =>{
     let backButton = document.getElementById('content-back');
-    loadSection(backButton.dataset.backToPanel);
+    
+    if (zsession.reloadStack.length > 0) {
+      zsession.reloadStack.pop(); //remove current section
+      zsession.reloadSynthSubSection();
+    } else
+      loadSection(backButton.dataset.backToPanel);
   });
  
 
@@ -136,24 +156,12 @@ function loadSection(sectionID, subsection=false) {
    backButton.classList.add('hidden');
    
    section.classList.add('opened');
-   
-  if (sectionID.indexOf('synth') > -1)
-    document.getElementById('synth-header').classList.remove('hidden');
-  else
-    document.getElementById('synth-header').classList.add('hidden');
+  
+  showIf ('synth-header', sectionID.indexOf('synth') > -1);
+  showIf( 'content-copy', section.dataset.copy);
 }
 
-/* Quickie to check if instrument if favorite */
-function isFavorite(instrument) {
-  if (instrument == null ||
-      zsession.banks['Favorites'] === undefined ||
-      zsession.banks['Favorites'].length == 0)
-  return false;
-  
-  return zsession.banks['Favorites'].filter
-          ((fav)=> {return fav.path == instrument.path})
-      .length > 0;
-}
+
 
 /* DEBUG SCRIPT OSC */
 

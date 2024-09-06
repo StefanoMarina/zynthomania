@@ -500,20 +500,22 @@ function onSynthToolbarUpdate() {
       showIf('synth-toolbar-sub-enabled', result['Psubenabled'], 'gray');
       showIf('synth-toolbar-pad-enabled', result['Ppadenabled'], 'gray'); 
       
-      zsession.elements['adsynth-voice'].setSelection(zsession.voiceID);
+      //console.log('updating voice to ' + zsession.voiceID);
+      
+      zsession.elements['adsynth-voice'].setValue(zsession.voiceID);
   });
 }
 
 function onSynthToolbarVoiceUpdate(event) {
-  zsession.voiceID = 
-    event.target.options[event.target.selectedIndex].value;
-    
+  zsession.voiceID =  parseInt(
+    event.target.options[event.target.selectedIndex].value
+  );
+  
   set_synth_cursor();
   
   //update synth page regardless of position
   showIf('voice-matrix', zsession.voiceID != ADSYNTH_GLOBAL);
  
-  
   //reload the section or return to main synth
   let currentActiveSection = document.querySelector('#section-content section.opened');
   
@@ -522,7 +524,12 @@ function onSynthToolbarVoiceUpdate(event) {
    && zsession.voiceID == ADSYNTH_GLOBAL){
      onSynth();
   } else {
+    
     zsession.reloadSynthSubSection();
+    console.log( ( zsession.voiceID == ADSYNTH_GLOBAL)
+      ? 'Switched to global controllers'
+      : `Switched to voice #${zsession.voiceID}`
+    );
   }
 }
 
@@ -544,8 +551,9 @@ function onSynth(synth) {
   set_synth_cursor(synth);
   if (synth == undefined)
     synth = zsession.synthID;
-  
-  zsession.reloadSynthSubSection = onSynth;
+    
+  zsession.reloadStack = []; //reset in case of toolbar click
+  //zsession.reloadSynthSubSection = onSynth;
   switch (synth) {
     case 'sub' : onSynthSubsynth(); break;
     case 'ad' : onSynthAdsynth(); break;
@@ -558,6 +566,7 @@ function onSynth(synth) {
 
 function onSynthAdsynth() {
   if (zsession.initAdSynth === undefined) {
+    
     let obj = new OSCBoolean(document.getElementById('adsynth-enabled'));
     
     obj.HTMLElement.addEventListener('sync', onSynthEnableSync);
@@ -788,12 +797,13 @@ function onSynthOSC() {
 }
 
 function onSynthAmplitude(event) {
+  console.log('called synthamplitude');
   zsession.reloadSynthSubSection = onSynthAmplitude;
   
   let forceGlobal = (typeof event == 'object') ? false : event;
   
   if (forceGlobal)
-    zsession.elements['adsynth-voice'].setSelection(0,true);
+    zsession.elements['adsynth-voice'].setSelection(0,false);
     
   loadAmplitudeEditor('VCA', 
   (window.zsession.synthID != 'sub') ? onSynthAmplitudeLFO : null,
@@ -801,6 +811,7 @@ function onSynthAmplitude(event) {
 }
 
 function onSynthAmplitudeLFO() {
+  console.log('called synthamplitude lfo');
   zsession.reloadSynthSubSection = onSynthAmplitudeLFO;
   
   let sc = osc_sanitize('/synthcursor/AmpLfo');

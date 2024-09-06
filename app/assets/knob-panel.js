@@ -106,15 +106,22 @@ function loadKnobEditor(knobObject) {
   input.max = knobObject.range.max;
   input.min = knobObject.range.min;
   
-  knobEditorDialog.dataset.title = knobObject.label;
+  document.getElementById('knob-editor-title')
+    .innerHTML = knobObject.label;
+  //knobEditorDialog.dataset.title = ;
+  /*
   let currentPanel = document.querySelector( 'section.opened');
   if (currentPanel == null)
     knobEditorDialog.dataset.back = 'section-intro';
   else
     knobEditorDialog.dataset.back = currentPanel.id;
-  
-  loadSection('knobEditor');
-  //knobEditorDialog.open = true;
+  */
+  //loadSection('knobEditor');
+  knobEditorDialog.open = true;
+}
+
+function onKnobClose() {
+  document.getElementById('knobEditor').open = false;
 }
 
 function onKnobBind() {
