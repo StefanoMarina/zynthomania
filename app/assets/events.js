@@ -18,6 +18,36 @@
 
 const ADSYNTH_GLOBAL = 127; //adsynth voice id pointing to global
 
+function onCopy() {
+  
+  if (zsession.clipboardServerType == null ||
+    zsession.clipboardServerType != zsession.clipboard.type) {
+      new ZynthoREST().post('script', {'script':
+          `/presets/copy "${zsession.clipboard.path}"`
+        }).then ( () =>{
+          displayOutcome(`Copied ${zsession.clipboard.type}`);
+          zsession.clipboardServerType = zsession.clipboard.type;
+      });    
+  } else {
+    
+  }
+}
+
+function onPaste() {
+  if (zsession.clipboardServerType != 
+    zsession.clipboard.type ) {
+      displayOutcome(`Mismatch: ${zsession.clipboard.serverType} / ${zsession.clipboard.type}`,true);
+    return;
+  }
+  
+  new ZynthoREST().post('script', {'script':
+      `/presets/paste "${zsession.clipboard.path}"`
+    }).then ( () => {
+      return zsession.clipboard.onPaste();
+    }).then ( () =>{
+      displayOutcome(`Pasted ${zsession.clipboard.type}`);
+  });
+}
 
  function onBanks() {
   //no more preloading banks
@@ -398,6 +428,10 @@ function onFXGlobal() {
 
 function onFXGlobalEdit(fxid) {
     zsession.fxcursor=`/sysefx${fxid}`;
+    zsession.setCopy('fx',`${zsession.fxcursor}/`, ()=> {
+      onFXGlobalEdit(fxid);
+    });
+    
     new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
       .then ( (data) => {
         loadFXEditor(data, `Edit Glob FX #${fxid}`, 'section-global-fx');
@@ -742,6 +776,10 @@ function onSynthOSC() {
      {'title': 'Frequency Mod Type', 'buttonClass': 'col-12'}
     );
     
+    new OSCKnob(document.getElementById('synth-fm-volume'),
+      undefined, PERCENTAGE_F);
+    new OSCKnob(document.getElementById('synth-fm-damp'));
+    new OSCKnob(document.getElementById('synth-fm-velo'));
     
     //Unison
     new OSCKnob(document.getElementById('synth-uni-size'), undefined,
@@ -797,7 +835,7 @@ function onSynthOSC() {
 }
 
 function onSynthAmplitude(event) {
-  console.log('called synthamplitude');
+  
   zsession.reloadSynthSubSection = onSynthAmplitude;
   
   let forceGlobal = (typeof event == 'object') ? false : event;
@@ -811,10 +849,11 @@ function onSynthAmplitude(event) {
 }
 
 function onSynthAmplitudeLFO() {
-  console.log('called synthamplitude lfo');
   zsession.reloadSynthSubSection = onSynthAmplitudeLFO;
   
   let sc = osc_sanitize('/synthcursor/AmpLfo');
+  
+  zsession.setCopy('lfo', sc+'/', onSynthAmplitudeLFO);
   
   let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
@@ -827,6 +866,7 @@ function onSynthAmplitudeEnvelope() {
   zsession.reloadSynthSubSection = onSynthAmplitudeEnvelope;
   
   let sc = osc_sanitize('/synthcursor/AmpEnvelope');
+  zsession.setCopy('env', sc+'/', onSynthAmplitudeEnvelope);
   
   let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
@@ -855,7 +895,9 @@ function onSynthFilter(event) {
     enable = osc_sanitize('/synthcursor/PFilterEnabled');
     sc = osc_sanitize('/synthcursor/VoiceFilter');
   }
-    
+  
+  zsession.setCopy('vcf', `${sc}/`, onSynthFilter);
+  
   loadFilterEditor('VCF', 
     enable, sc, 
     (window.zsession.synthID != 'sub') ? onSynthFilterLFO : null
@@ -866,6 +908,7 @@ function onSynthFilterLFO() {
   zsession.reloadSynthSubSection = onSynthFilterLFO;
   
   let sc = osc_sanitize('/synthcursor/FilterLfo');
+  zsession.setCopy('lfo', `${sc}/`, onSynthFilterLFO);
   
   let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
@@ -878,6 +921,7 @@ function onSynthFilterEnvelope() {
   zsession.reloadSynthSubSection = onSynthFilterEnvelope;
   
   let sc = osc_sanitize('/synthcursor/FilterEnvelope');
+  zsession.setCopy('env', `${sc}/`, onSynthFilterEnvelope);
   
   let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null : osc_sanitize('/synthcursor/PFilterEnvelopeEnabled');
@@ -898,6 +942,7 @@ function onSynthFrequency(event) {
     zsession.elements['adsynth-voice'].setSelection(0,true);
   
   let sc = osc_sanitize('/synthcursor');
+  zsession.setCopy('vco', `${sc}/`, onSynthFrequency);
   
   loadFrequencyEditor('VCO', '', sc,
     (window.zsession.synthID != 'sub') ? onSynthFrequencyLFO : null, 
@@ -912,7 +957,9 @@ function onSynthFrequencyLFO() {
   let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null 
     : osc_sanitize('/synthcursor/PFreqLfoEnabled');
-    
+  
+  zsession.setCopy('lfo', `${sc}/`, onSynthFrequencyLFO);
+  
   loadLFOEditor( enable, sc);
 }
 
@@ -923,7 +970,9 @@ function onSynthFrequencyEnvelope() {
   
   let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
     ? null : osc_sanitize('/synthcursor/PFreqEnvelopeEnabled');
-    
+  
+  zsession.setCopy('env', `${sc}/`, onSynthFrequencyEnvelope);
+  
   loadEnvelopeEditor(
   'Wave Frequency Env.', 
   enable, sc,
@@ -944,6 +993,8 @@ function onSynthFMFrequencyEnvelope() {
   zsession.reloadSynthSubSection = onSynthFMFrequencyEnvelope;
   
   let sc = osc_sanitize('/synthcursor')+'/FMAmpEnvelope';
+  zsession.setCopy('env', `${sc}/`, onSynthFMFrequencyEnvelope);
+    
   loadEnvelopeEditor('FM Frequency Env', 
     osc_sanitize('/synthcursor/PFMAmpEnvelopeEnabled'),
     sc,
@@ -1043,7 +1094,7 @@ function onSynthSubBandwidth() {
     swipe.setDialogData({'title': 'section', 'buttonClass': 'col-12'});
     
     swipe.selectElement.addEventListener('change', ()=>{
-        let pages = Array.from(document.getElementById('subsynth-bandwidth')
+        let pages = Array.from(document.getElementById('synth-subsynth-bandwidth')
           .querySelectorAll('.bw-sec-page'));
         let page = pages[swipe.selectElement.selectedIndex];
         pages.filter ( p => p != page).
@@ -1052,7 +1103,7 @@ function onSynthSubBandwidth() {
         page.classList.remove('d-none');
     });
     
-    let faders = document.getElementById('subsynth-bandwidth')
+    let faders = document.getElementById('synth-subsynth-bandwidth')
       .querySelectorAll('input[type=range]');
     
     for (let i = 0; i < 32; i++) {
@@ -1064,7 +1115,7 @@ function onSynthSubBandwidth() {
     //clear btn
     zsession.oscElements['sub-bw-clear'].HTMLElement
       .addEventListener('act', ()=> {
-        document.getElementById('subsynth-bandwidth')
+        document.getElementById('synth-subsynth-bandwidth')
           .querySelectorAll('input[type=range]')
           .forEach ( (el) => el.value = 64);
     });
@@ -1072,9 +1123,9 @@ function onSynthSubBandwidth() {
      zsession.initSubB = true;
    }
    
-   osc_synch_section(document.getElementById('subsynth-bandwidth'))
+   osc_synch_section(document.getElementById('synth-subsynth-bandwidth'))
     .then ( ()=> {
-      loadSection('subsynth-bandwidth');
+      loadSection('synth-subsynth-bandwidth');
     });
 }
 
@@ -1554,6 +1605,11 @@ function onPartFXMatrixAct(data){
 
 function onPartFXEdit(fxid) {
     zsession.fxcursor=`/part${zsession.partID}/partefx${fxid}`;
+    
+    zsession.setCopy('fx',`${zsession.fxcursor}/`, ()=> {
+      onPartFXEdit(fxid);
+    });
+    
     new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
       .then ( (data) => {
         loadFXEditor(data, `Edit Part FX #${fxid}`, 'section-part-fx');

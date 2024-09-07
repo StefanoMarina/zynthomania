@@ -94,6 +94,10 @@ function osc_synch(...elements) {
     return Promise.resolve(0);
   }
   
+  /**
+   * Bug
+   * using this way we cannot assign arrays
+   */
   let oscDictionary = new Map(
     objects.map ( obj => [obj.getAbsolutePath(), obj.HTMLElement.id] )
   );

@@ -45,7 +45,11 @@ function onLoad() {
       currentSession : null
     },
     lastosc: {},
-    reloadStack : []
+    reloadStack : [],
+    
+    setCopy : function ( type, path, pasteFunc ) {
+      this.clipboard = {'type' : type, 'path' : path, 'onPaste' : pasteFunc};
+    }
   };
   
   Object.defineProperty(zsession, 'reloadSynthSubSection', {
@@ -158,7 +162,16 @@ function loadSection(sectionID, subsection=false) {
    section.classList.add('opened');
   
   showIf ('synth-header', sectionID.indexOf('synth') > -1);
-  showIf( 'content-copy', section.dataset.copy);
+  if ( sectionID.indexOf('synth') > -1 ){
+    
+  } else {
+    zsession.reloadStack = [];
+  }
+  
+  showIf( 'clipboard', section.dataset.copy);
+  showIf( 'clipboard-paste', zsession.clipboardServerType !==
+    undefined && zsession.clipboardServerType ==
+      section.dataset.copy);
 }
 
 

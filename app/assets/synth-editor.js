@@ -297,7 +297,7 @@ function loadFilterEditor (title, enabled, path, lfo, envelope) {
   });
 }
 
-function loadAmplitudeEditor(title, lfo, envelope){
+function loadAmplitudeEditor(title, lfo, envelope) {
   if (zsession.initAmplitudeEditor === undefined){
     new OSCKnob(document.getElementById('amp-volume'),
       null, { 'min': -60, 'max' : 0, 'type': 'Volume (hz)', 'itype': 'f'});

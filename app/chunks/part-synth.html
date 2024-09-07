@@ -332,7 +332,26 @@
       <button class="button" onclick='onSynthFMFrequency()'>FM Frequency</button>
     </div>
   </div>
-  
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id='synth-fm-volume'
+        data-osc-path='/synthcursor/FMvolume'
+        data-label="Volume">
+      </div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id='synth-fm-damp'
+        data-osc-path='/synthcursor/PFMVolumeDamp'
+        data-label="HF Damp">
+      </div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id='synth-fm-velo'
+        data-osc-path='/synthcursor/PFMVelocityScaleFunction'
+        data-label="Velocity">
+      </div>
+    </div>
+  </div>
   <h4>Unison</h4>
    <div class="row">
      <div class="col-4 col-lg-2 panel">
@@ -364,7 +383,8 @@
 </section>
 
 <!-- frequency editor -->
-<section id="synth-frequency-editor" class="container">
+<section id="synth-frequency-editor" class="container"
+  data-copy="vco">
   <div class="row">
     <div class="col-6 panel">
       <div class="osc-element osc-swipeable" id='freq-detune-type'
@@ -404,7 +424,8 @@
 </section>
 
 <!-- general envelope editor -->
-<section id="synth-envelope-editor" class="container">
+<section id="synth-envelope-editor" class="container"
+  data-copy="env">
   <div class="row">
     <div class="offset-2 col-4 panel">
       <div class="osc-element osc-boolean" id="adsr-forced-release"
@@ -466,7 +487,8 @@
 </section>
 
 <!-- general LFO editor -->
-<section id="synth-lfo-editor" class="container" data-title="Edit LFO">
+<section id="synth-lfo-editor" class="container" data-title="Edit LFO"
+  data-copy="lfo">
   <div class="row">
     <div class="col-9 col-md-4 col-lg-4 panel">
       <div class="osc-element osc-swipeable" id="lfo-type"
@@ -545,7 +567,9 @@
 </section>
 
 <!-- filter editor -->
-<section id="synth-edit-filter" data-title="Filter" class="container"> 
+<section id="synth-edit-filter" data-title="Filter" class="container"
+  data-copy="vcf">
+   
   <div class="row">
     <div class="col-6 panel">
       <div class="osc-element osc-swipeable"
@@ -599,7 +623,7 @@
 </section>
 
 <!-- Amplitude editor -->
-<section id="synth-edit-amp" data-title="Amplitude" class="container"> 
+<section id="synth-edit-amp" data-title="Amplitude" class="container">
   <div class="row">
     <div class="col-4 col-md-4 col-lg-2 panel">
       <div id="amp-volume" class="osc-element osc-knob"
@@ -770,7 +794,7 @@
 </section>
 
 <!-- subsynth bandwidth -->
-<section id="subsynth-bandwidth" class="container"
+<section id="synth-subsynth-bandwidth" class="container"
   data-title="Subsynth Bandwidth" data-back="section-synth-subsynth">
   <div class="row">
     <div class="col-6 col-lg-3 panel">

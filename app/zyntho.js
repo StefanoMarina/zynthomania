@@ -39,6 +39,8 @@ class ZynthoServer extends EventEmitter {
     this.favorites = [];
     this.parser = new KNOT.OSCParser();
     
+    this.clipboard = {'type' : null, 'data' : null};
+    
     /*
      * OSC emitter is used to capture internal osc commands
      * events are defined as the osc path
@@ -72,6 +74,9 @@ class ZynthoServer extends EventEmitter {
       instruments : new Array(16).fill({'name':null,'path':null})
     };
   }
+  
+
+  
   /**
    * ZynthoServer::open
    * open preferences file and OSC connection

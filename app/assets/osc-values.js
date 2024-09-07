@@ -130,6 +130,13 @@ const LFO_FADER = {
   'itype': 'f'
 }
 
+const PERCENTAGE_F = {
+  'type': 'Percent',
+  'min': 0,
+  'max': 100.0,
+  'itype': 'f'
+}
+
 function convert_value(A,B,value) {
   if (A === B) return value;
   

@@ -57,7 +57,11 @@ small, .small {font-family: VCRJP}
   }
   
   .fx-btn label {font-size: 12px}
-   small, .small {font-size: 8px !important} 
+   small, .small {font-size: 8px !important}
+   
+   .section-title-button {
+      font-size: 20px;
+   }
 }
 
 @media only screen and (min-width: 768px) {
@@ -151,16 +155,18 @@ menu > div, nav > div {display: inline-block}
 
 .hide-content > * {display: none !important}
 
-.header {
-  display: block;
-  text-align: center;
+.header, .header button {
   margin-top: 5px;
   padding: 2px;
   color: var(--color-lcd);
   background-color: var(--color-background);
-  width: 100%
 }
 
+.header {
+  display: block;
+  text-align: center;
+  width: 100%
+}
 
 /* matrix tables */
 table.matrix {
@@ -732,4 +738,9 @@ section.row.opened {display: flex !important}
     background-color: var(--color-lcd);
     z-index: 9999;
   }
+}
+
+#clipboard {
+  text-align:left;
+  padding-left: 5px;
 }

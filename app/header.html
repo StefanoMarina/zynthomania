@@ -261,10 +261,20 @@
         
         <!-- Title -->
         <div class="row no-gutters">
-            <div class="col-1 header"><button id="content-copy" class="header hidden"><i class="fa fa-2x fa-clone"></i></button></div>
+            <div class="col-3 col-md-2 header hidden" id="clipboard">
+                <button onclick="onCopy()" class="selected d-inline m-top">
+                    <i class="fa section-title-button fa-clone"
+                      style="padding-left:5px"></i>
+                </button>
+                <button id='clipboard-paste' onclick="onPaste()" class="selected m-top">
+                    <i class="fa section-title-button fa-clipboard"
+                      ></i>
+                </button>
+            </div>
             <div class="col header" id="content-title"></div>
             <div class="col-1 header">
-              <button class="header hidden" id="content-back"><i class="fas fa-2x fa-caret-square-up"></i></p> <!-- go back button -->
+              <button class="header hidden" id="content-back"><i class="fas section-title-button fa-caret-square-up"
+                style="padding-right:5px"></i></button>
             </div>
         </div>
         <div id="section-content"> <!-- actual content -->

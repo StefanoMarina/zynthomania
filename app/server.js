@@ -1040,6 +1040,7 @@ function post_session_set (req, res) {
 }
 app.post('/session/set', post_session_set);
 
+
 //Shutdown default behaviour
 function get_shutdown(req,res) {
   let reboot = (req.query.reboot !== undefined);
