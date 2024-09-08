@@ -60,6 +60,7 @@ function startTimerDisplay() {
 function stopTimerDisplay() {
   clearInterval(window.timers['ajax']);
   window.timers['ajax'] = null;
+  //document.getElementById('message').innerHTML = '';
 }
 
 function displayOutcome(message, isError = false) {
@@ -71,6 +72,8 @@ function displayOutcome(message, isError = false) {
     statusIcon.classList.add('fas', 'fa-exclamation-triangle');
   else
     statusIcon.classList.add('fas', 'fa-comment-alt');
+  
+  if ( message == '') return;
     
   let msgObj = document.getElementById('message');
   msgObj.style.padding.left = '0px';

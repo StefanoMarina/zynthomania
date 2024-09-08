@@ -303,7 +303,7 @@ button:hover, button:hover *, .fx-btn:hover, .fx-btn:hover *, .send-btn,  .selec
   color: var(--color-lcd) !important;
 }
 
-button[disabled] {color : gray !important}
+button[disabled], input[disabled], select[disabled] {color : gray !important}
 
 select {border: var(--border); min-width: 45%; font-family: VCRJP;}
 

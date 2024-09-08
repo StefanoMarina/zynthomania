@@ -119,6 +119,7 @@ function get_files(req, res, next) {
   }
   
   if (req.query.dir.search(/[\/\.\:]+/) > -1) {
+    res.statusMessage = `${req.query.dir} - bad chars`;
     res.status(403).end();
     return;
   }
@@ -128,7 +129,8 @@ function get_files(req, res, next) {
   if (Fs.existsSync(dir)){
     files = Fs.readdirSync (dir);
   } else {
-    res.status(401).end();
+    res.statusMessage=`Cannot find ${dir}`;
+    res.status(404).end();
     return;
   }
   res.json(files);
@@ -539,10 +541,67 @@ function get_controllers (req, res, next) {
 }
 app.get('/controllers', get_controllers);
 
+
+function get_presets(req, res) {
+  zconsole.logGet(req);
+  if (req.query.bank === undefined) {
+    res.status(400).end();
+    return;
+  }
+  if (req.query.bank.search(/[\/\.\:]+/) > -1) {
+    res.statusMessage = `${req.query.bank} - bad chars`;
+    res.status(403).end();
+    return;
+  }
+  
+  let dir = `${app.zyntho.IO.workingDir}/presets/${req.query.bank}`;
+  
+  let files = ZynthoIO.listAllFiles(dir, true, 'name');
+  if ( files.length == 0 ){
+    res.statusMessage=`cannot find ${dir}`;
+    res.status(404).end();
+    return;
+  }
+  console.log(JSON.stringify(files));
+  
+  res.json ( files.map ( file => (file !== undefined) 
+      ? file.replace('_', ' ').replace('.osc','')
+      : 'error')
+  );
+  res.end();
+}
+app.get('/presets', get_presets);
+
 /**
  * POST
  */
- 
+
+function post_apply_preset(req,res) {
+  zconsole.logPost(req);
+  if (req.body.bank === undefined || req.body.name === undefined) {
+    res.status(400).end();
+    return;
+  }
+  if (req.body.bank.search(/[\/\.\:]+/) > -1) {
+    res.statusMessage = `${req.body.bank} - bad chars`;
+    res.status(403).end();
+    return;
+  }
+  let keychain = (req.body.keychain === undefined) ? null
+    : req.body.keychain;
+  
+  app.zyntho.loadPreset(req.body.bank, keychain, req.body.name)
+    .then ( ()=> {
+      res.status(200);
+    }).catch ( (err)=> {
+      zconsole.error(err);
+      res.status(500);
+    }).finally( ()=> {
+      res.end();
+    });
+}
+app.post('/apply-preset', post_apply_preset);
+
 /**
 * /fx/set
 * [POST] set an FX effect type. returns a call to get_fx
@@ -982,8 +1041,11 @@ app.post('/reconnect', post_reconnect);
 
 function post_session_reset(req,res) {
   zconsole.logPost(req);
+  app.zyntho.once ( 'saved' , () => {
+    res.end();
+  });
+    
   app.zyntho.sessionReset();
-  res.end(); 
 }
 
 app.post('/session/reset', post_session_reset);
@@ -997,6 +1059,7 @@ function post_session_load(req, res){
     
   try {
     app.zyntho.sessionLoad(ZynthoIO.sanitizeString(req.body.file));
+    res.json(app.zyntho.session);
   } catch ( err ) {
     res.statusMessage = err;
     res.status(500);
@@ -1043,6 +1106,7 @@ app.post('/session/set', post_session_set);
 
 //Shutdown default behaviour
 function get_shutdown(req,res) {
+  zconsole.logPost(req);
   let reboot = (req.query.reboot !== undefined);
   
   new Promise ( (resolve, reject) => {
@@ -1062,6 +1126,25 @@ function get_shutdown(req,res) {
     });
 }
 app.get('/shutdown', get_shutdown);
+
+function post_playstyle(req, res) {
+  zconsole.logPost(req);
+  if (req.body.partID === undefined ||
+    req.body.playstyle === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  try {
+    app.zyntho.setPlaystyle(req.body.partID, req.body.playstyle);
+    res.status(200).end();
+  } catch (err) {
+    res.statusMessage = err;
+    res.status(500).end();
+    return;
+  }
+}
+app.post('/playstyle', post_playstyle);
 
 app.on('open', () => {
   zconsole.log ("Opened web application");

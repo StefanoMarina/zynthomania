@@ -36,36 +36,36 @@ exports.fileExists = async function(path) {
  * @param mode "path" (default) returns full path, "name" returns name only, 
  *             "obj" returns an array of objects {name:, path:}
  */
-exports.listAllFiles = function (path, ignoreDir, mode) {
+exports.listAllFiles = function (path, ignoreDir=true, mode='path') {
   
- if (undefined === ignoreDir) ignoreDir = true;
- mode = (undefined === mode) ? "path" : mode.toLowerCase();
- 
- var files = (ignoreDir)
-              ? Fs.readdirSync (path)
-                .filter(function (file) {
-                    return !Fs.statSync(path+'/'+file).isDirectory();
-              })
-              : Fs.readdirSync(path);
+  mode = mode.toLowerCase();
+  
+  if ( !Fs.existsSync(path) )
+  throw `${path} does not exists.`
+
+  var files = Fs.readdirSync(path);
+  if (files.length == 0) return files;
+
+  if (ignoreDir) {
+    try {
+    files = files.filter ( file => !Fs.statSync(`${path}/${file}`)
+      .isDirectory());
+    } catch ( err ) {
+      throw `Error while filtering dirs : ${err}`;
+    }
+  }
   
   if (mode == "path") return files;
-  
-  let regex = /[^/]+$/;
-  let result = [];
-  
-  let name = "";
-  let match = null;
-  files.forEach(file => {
-    match = regex.exec(file);
-    name = (match != null) ? match[1] : file;
+
+  const regex = /[^/]+$/;
+  return files.map ( (file) => {
+    let rex = regex.exec(file);
+    let name = (rex != null) ? rex[0] : file;
+    return (mode == 'name') 
+      ? name 
+      : {'name' : name, 'path': `${path}/${file}`}
     
-    result.push ( (mode == "name") 
-            ? name
-            : {"name": name, "path": path+'/'+file}
-    );
   });
-    
-  return result;
 }
 
 module.exports.createIOConfig = function (config) {

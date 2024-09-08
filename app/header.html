@@ -22,7 +22,7 @@
     <title>ZynthoMania!</title>
   </head>
 
-  <body onload="onLoad()">
+  <body class="container" onload="onLoad()">
     
     <!-- Dialog box -->
     <dialog id="selectBox">
@@ -254,29 +254,42 @@
         </div>
       </div>
     </div>
+    <!-- Section Title -->
+    <div class="row no-gutters">
+        <div class="col-1 header" id="show-toolbar">
+            <button id="show-toolbar" onclick="onShowToolbar()" class="header"><i class="fa fa-2x section-title-button fa-bars"></i></button>
+        </div>
+        <div class="col header" id="content-title"></div>
+        <div class="col-1 header">
+          <button class="header hidden" id="content-back"><i class="fas section-title-button fa-caret-square-up"
+            style="padding-right:5px"></i></button>
+        </div>
+    </div>
+    <!-- Section toolbar -->
+    <div class="container bb" id="section-toolbar">
+      <div class="row">
+        <div class="col-8 no-gutters row">
+          <div class="col d-none d-lg-block"><small style="line-height:1">Presets</small></div>
+          <div class="col"><select onchange="onLoadPreset()" style="border:none" id="toolbar-presets">
+            <option default disabled value="null">Presets</option>
+          </select></div>
+        </div>
+        <div class="col-4">
+          <nav>
+            <button id="clipboard-copy" onclick="onCopy()" class="d-inline m-top">
+            <i class="fa  fa-clone"
+              style="padding-left:5px"></i></button>
+          <button id='clipboard-paste' onclick="onPaste()" class="d-inline m-top">
+            <i class="fa  fa-clipboard"></i></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+    
   </header>
     <div id="main-panel" class="row">
-      <!--toolbar fissa-->
+      
       <main class="col">
-        
-        <!-- Title -->
-        <div class="row no-gutters">
-            <div class="col-3 col-md-2 header hidden" id="clipboard">
-                <button onclick="onCopy()" class="selected d-inline m-top">
-                    <i class="fa section-title-button fa-clone"
-                      style="padding-left:5px"></i>
-                </button>
-                <button id='clipboard-paste' onclick="onPaste()" class="selected m-top">
-                    <i class="fa section-title-button fa-clipboard"
-                      ></i>
-                </button>
-            </div>
-            <div class="col header" id="content-title"></div>
-            <div class="col-1 header">
-              <button class="header hidden" id="content-back"><i class="fas section-title-button fa-caret-square-up"
-                style="padding-right:5px"></i></button>
-            </div>
-        </div>
         <div id="section-content"> <!-- actual content -->
         
         <!-- special synth navigation section -->

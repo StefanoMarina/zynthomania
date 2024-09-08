@@ -20,7 +20,15 @@ const FS = require ('fs');
 const KNOT = require ('./knot/knot.js');
 const Buffer = require ('buffer');
 
-function _onFileRead(data, loadCallback) {
+function _onFileRead(data, params, loadCallback) {
+  
+    if (params != null) {
+      let tmpData = "";
+      for (let i = 0; i < params.length; i++) {
+        data = data.replaceAll('${'+i+'}', params[i])
+      }
+    }
+    
     const lines = data.toString().replace(/\r\n/g,'\n').split('\n');
     const parser = new KNOT.OSCParser();
     
@@ -34,6 +42,7 @@ function _onFileRead(data, loadCallback) {
       if (line == "")
         continue;
       
+      //array
       if (line.match(/^ *\[/)) {
         packets = [];
         continue;
@@ -61,9 +70,14 @@ function _onFileRead(data, loadCallback) {
           error = `OSCFile: could not translate ${line} : ${err}`;
         }
       }
-      
-      loadCallback(error, osc);
     }
+          
+    if (loadCallback !== undefined)
+      loadCallback(error, osc);
+    else if (error != null)
+      throw error;
+    else
+      return osc;
   }
 
 module.exports = {};
@@ -75,19 +89,19 @@ module.exports = {};
  * @param loadCallback callback to call for each osc line. params
  * are (error, osc_data).
  */
-module.exports.load = function (file, loadCallback) {
+module.exports.load = function (file, params = null,  loadCallback) {
     FS.readFile(file, 'utf8', (err, data) =>{
       if (err)
         throw `Could not read ${file} : ${err}`;
       else
-        _onFileRead(data, loadCallback);
+        _onFileRead(data, params, loadCallback);
     });
   }
 /**
  * OSCFile.loadSync
  * blocking version of OSCFile.load
  */
-module.exports.loadSync = function (file, loadCallback) {
+module.exports.loadSync = function (file, params = null) {
     let data = null;
     try {
       data = FS.readFileSync(file, 'utf8');
@@ -95,7 +109,7 @@ module.exports.loadSync = function (file, loadCallback) {
       throw `Could not read ${file} : ${err}`;
     }
     
-    _onFileRead(data, loadCallback);
+    return _onFileRead(data, params);
 }
 
 

@@ -80,7 +80,8 @@ function onLoad() {
   new OSCButton(document.getElementById('global-panic'))
     .setLabel("Panic", "Panic");
   
-  new OSCNumber(document.getElementById('global-tempo'));  
+  new OSCNumber(document.getElementById('global-tempo'));
+  
 /*
  * Part main controls
  */
@@ -109,7 +110,6 @@ function onLoad() {
       loadSection(backButton.dataset.backToPanel);
   });
  
-
   new ZynthoREST().query('files/favorites').then ( (favs) => {
     zsession.favorites = favs;
     return new ZynthoREST().query('status/session');
@@ -168,12 +168,52 @@ function loadSection(sectionID, subsection=false) {
     zsession.reloadStack = [];
   }
   
-  showIf( 'clipboard', section.dataset.copy);
-  showIf( 'clipboard-paste', zsession.clipboardServerType !==
-    undefined && zsession.clipboardServerType ==
-      section.dataset.copy);
+  let showToolbar = false;
+  
+  //clipboard
+  if (section.dataset.copy == null){
+    document.getElementById('clipboard-paste').disabled = true;
+    document.getElementById('clipboard-copy').disabled = true;
+  } else {
+    showToolbar = true;
+    document.getElementById('clipboard-copy').disabled = false;
+    document.getElementById('clipboard-paste').disabled = 
+      ( zsession.clipboardServerType === undefined 
+          || zsession.clipboardServerType != section.dataset.copy
+      );
+  }
+    
+  //presets
+  let presetSel = document.getElementById('toolbar-presets');
+  presetSel.options.length = 1;
+  
+  if ( section.dataset.preset) {
+    presetSel.dataset.bank = section.dataset.preset;
+    presetSel.options[0].text= 'Select a preset';
+    presetSel.disabled = false;
+    showToolbar = true;
+    
+    new ZynthoREST().query('presets', {'bank': section.dataset.preset })
+      .then ( (presets) => {
+        presets.forEach ( (pr)=> presetSel.options.add(
+          new Option ( pr, pr ) ) );
+        presetSel.selectedIndex = 0;
+    });
+  } else {
+    presetSel.options[0].text = 'No presets';
+    presetSel.disabled = true;
+  }
+    
+  let sectionToolbar = document.getElementById('section-toolbar');
+  showIf(sectionToolbar, showToolbar && sectionToolbar.classList
+    .contains('hidden') == false);
+  showIf('show-toolbar', showToolbar);
 }
 
+function onShowToolbar() {
+  let sectionToolbar = document.getElementById('section-toolbar');
+  showIf(sectionToolbar, sectionToolbar.classList.contains('hidden'));
+}
 
 
 /* DEBUG SCRIPT OSC */

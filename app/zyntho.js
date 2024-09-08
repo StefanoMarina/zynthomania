@@ -71,11 +71,12 @@ class ZynthoServer extends EventEmitter {
     
   static defaultExtendedSession() {
     return {
-      instruments : new Array(16).fill({'name':null,'path':null})
+      instruments : new Array(16).fill({'name':null,'path':null}),
+      playstyles : new Array(16).fill(null)
     };
   }
   
-
+  
   
   /**
    * ZynthoServer::open
@@ -775,6 +776,32 @@ class ZynthoServer extends EventEmitter {
   }
   
   
+  loadPreset(bank, keychain, preset) {
+    let presetFile = preset.replaceAll(' ','_') + '.osc';
+    let presetPath = `${this.IO.workingDir}/presets/${bank}/${presetFile}`;
+    if (!Fs.existsSync(presetPath))
+      throw `Missing file ${presetPath}`;
+    
+    let packets = OSCFile.loadSync(presetPath,keychain);
+    
+    let worker = new OSCWorker(this);
+    worker.pushPacket(packets);
+    this.osc.send(packets);
+    return worker.listen();
+  }
+  
+  /*setPlaystyle(partID, stylename) {
+    
+    if (!Fs.existsSync(stylepath))
+      throw `Missing file ${stylepath}`;
+  
+    let packets = OSCFile.loadSync(stylepath,[partID]);
+    zconsole.debug(JSON.stringify(packets, 2));
+    
+    this.session.playstyles[partID] = stylename;
+    this.osc.send(packets);
+  }*/
+  
   /**
    * loads an xmz file from the sessions directory
    * @param file if undefined, default.xmz is loaded
@@ -813,7 +840,11 @@ class ZynthoServer extends EventEmitter {
     if (Fs.existsSync(sessionJson)) {
        zconsole.log('Loading extended data...');
        try {
-         this.session = JSON.parse(Fs.readFileSync(sessionJson));
+         let sesdata = JSON.parse(Fs.readFileSync(sessionJson));
+         this.session = Object.assign(
+            ZynthoServer.defaultExtendedSession(),
+            sesdata
+         );
        } catch (err) {
          zconsole.warning(`File ${sessionJson} was not readable: ${err}. Skipping.`);
          this.session = ZynthoServer.defaultExtendedSession();
@@ -828,7 +859,7 @@ class ZynthoServer extends EventEmitter {
     this.once ( '/damage' , ()=> {
       this.session = ZynthoServer.defaultExtendedSession();
       this.midiService.chainSession['session'] = [];
-      this.sessionSave('default.xmz');  
+      this.sessionSave('default.xmz');
     });
     this.osc.send(packet);
   }

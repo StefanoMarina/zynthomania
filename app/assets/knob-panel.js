@@ -95,8 +95,8 @@ function loadKnobEditor(knobObject) {
   knobEditorDialog.dataset.knobID = knobObject.HTMLElement.id;
   editorKnob.style.rotate = knobObject.knob.style.rotate;
   
-  //document.getElementById('knob-editor-range').innerHTML
- //   = `Value is ${knobObject.range.type}, Range ${knobObject.range.min} to ${knobObject.range.max}`;
+  document.getElementById('knob-editor-range').innerHTML
+    = `Value is ${knobObject.range.type}, Range ${knobObject.range.min} to ${knobObject.range.max}`;
     
   document.getElementById('knob-editor-osc-path').innerHTML = 
     knobObject.getAbsolutePath();

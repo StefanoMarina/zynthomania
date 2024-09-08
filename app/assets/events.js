@@ -18,19 +18,13 @@
 
 const ADSYNTH_GLOBAL = 127; //adsynth voice id pointing to global
 
-function onCopy() {
-  
-  if (zsession.clipboardServerType == null ||
-    zsession.clipboardServerType != zsession.clipboard.type) {
-      new ZynthoREST().post('script', {'script':
-          `/presets/copy "${zsession.clipboard.path}"`
-        }).then ( () =>{
-          displayOutcome(`Copied ${zsession.clipboard.type}`);
-          zsession.clipboardServerType = zsession.clipboard.type;
-      });    
-  } else {
-    
-  }
+function onCopy() {  
+ new ZynthoREST().post('script', {'script':
+      `/presets/copy "${zsession.clipboard.path}"`
+    }).then ( () =>{
+      displayOutcome(`Copied ${zsession.clipboard.type}`);
+      zsession.clipboardServerType = zsession.clipboard.type;
+  });    
 }
 
 function onPaste() {
@@ -47,6 +41,26 @@ function onPaste() {
     }).then ( () =>{
       displayOutcome(`Pasted ${zsession.clipboard.type}`);
   });
+}
+
+function onLoadPreset() {
+  let val = document.getElementById('toolbar-presets').value;
+  let section = document.querySelector('section.opened');
+  console.log(`presets for section ${section}`);
+  
+  if (val == null) return;
+  
+  new ZynthoREST().post('apply-preset', {
+    'bank':  section.dataset.preset,
+    'name' : val, 
+    'keychain' : [
+      window.zsession.partID,
+      window.zsession.layerID,
+      window.zsession.voiceID,
+      window.zsession.fxID
+    ]}). then ( () => {
+      return osc_synch_section(section);
+    });
 }
 
  function onBanks() {
@@ -460,7 +474,11 @@ function onSessionNew() {
       return;
   }
   
-  new ZynthoREST().post('session/reset').then ( ()=> {
+  new ZynthoREST().post('session/reset')
+  .then ( () => { return new ZynthoREST().query('status/session');} )
+  .then ( (sess)=> {
+    console.log(sess);
+    zsession.extdata = sess;
     return onToolbarUpdate();
   }).then( ()=> {
     onToolbarChangePart();
@@ -481,7 +499,8 @@ function onSessionLoad() {
 function onSessionFileLoad() {
   let file = document.getElementById('file-dialog-filename').value;
   new ZynthoREST().post('session/load', {'file': file})
-    .then ( ()=>{ 
+    .then ( (sess)=>{ 
+       zsession.extdata = sess;
       onToolbarUpdate();
     });
 }
@@ -1402,14 +1421,22 @@ function onPartControl() {
     zsession.initControl = true;
   }
   
-  //synch osc
-  osc_synch_section(document.getElementById('section-part-control'))
+   osc_synch_section(
+        document.getElementById('section-part-control'))
     .then ( () => {
-    //enable section
-    loadSection('section-part-control');
+      loadSection('section-part-control');
     setSelectedToolbarButton(
       document.querySelector('#partToolbar .i-piano')
       .parentElement);
+    });
+    
+}
+
+function onPartPlaystyle(event) {
+  new ZynthoREST().post('playstyle',{
+    'partID': zsession.partID, 'playstyle' : event.target.value
+  }).then ( ()=>{
+    zsession.extdata.playstyles[zsession.partID] = event.target.value;
   });
 }
 
@@ -1417,8 +1444,8 @@ function onPartControlPoly() {
   if (zsession.initControlPoly === undefined) {
     new OSCSwipeable(
       document.getElementById('part-ctl-polytype'),
-      [0,1,2], 
-      ['Poly', 'Mono', 'Legato'],
+      [0,1,2,3], 
+      ['Poly', 'Mono', 'Legato', 'Latch'],
       { 'title' : 'Poly mode', 'class' : 'col-12' }
     );
     zsession.oscElements['part-ctl-polytype']
@@ -1473,15 +1500,17 @@ function onPartControlDepth() {
 function onPartControlPitch() {
   if (zsession.initControlPitch === undefined) {  
     
-    new OSCKnob(document.getElementById('part-ctl-pitch-range'));
-    zsession.oscElements['part-ctl-pitch-range']
-      .range = BEND_RANGE;
+    new OSCKnob(document.getElementById('part-ctl-pitch-range'),
+      null, BEND_RANGE);
+    //zsession.oscElements['part-ctl-pitch-range']
+    //  .range = BEND_RANGE;
       
     new OSCBoolean(document.getElementById('part-ctl-pitch-split'));
     
-    new OSCKnob(document.getElementById('part-ctl-pitch-range-down'));
-      zsession.oscElements['part-ctl-pitch-range-down']
-        .range = BEND_RANGE;
+    new OSCKnob(document.getElementById('part-ctl-pitch-range-down'),
+      null, BEND_RANGE);
+      //zsession.oscElements['part-ctl-pitch-range-down']
+      //  .range = BEND_RANGE;
     
     zsession.oscElements['part-ctl-pitch-split']
       .bindEnable('part-ctl-pitch-range-down');
