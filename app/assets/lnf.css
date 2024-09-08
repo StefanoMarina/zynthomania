@@ -617,6 +617,8 @@ section.row.opened {display: flex !important}
 
 .osc-container > div {margin-top: 10px}
 
+.osc-eq label {font-size: 10pt !important}
+
 .disabled {
   border-color:gray;
   color: gray;

@@ -315,10 +315,11 @@ class ZynthoServer extends EventEmitter {
   * 
   */
   getFX(path) {
-    const result = {};
+    const result = {osc: {}};
     let typeWorker = new OSCWorker(this);
-    let efftypepacket = this.parser.translate(`${path}/efftype`);
     
+    //Effect ID
+    let efftypepacket = this.parser.translate(`${path}/efftype`);
     typeWorker.pushPacket (efftypepacket, (address, args) => {
        result.efftype = args[0].value;
     });
@@ -331,43 +332,91 @@ class ZynthoServer extends EventEmitter {
       }
       
       result.name = exports.typeToString(result.efftype);
-      if (this.fxConfig == null)
-        return Promise.resolve ( result );
       
-      result.config = this.fxConfig[result.name];
-      
-      let cfg = result.config;
-      if ('algorithm' in cfg)
-        result.algorithm =  cfg.algorithm;
-
-      
-      let fxQuery = this.parser.emptyBundle();
       let worker = new OSCWorker(this);
-   
-      fxQuery.packets = fxQuery.packets.concat(
-        this.parser.translate(`${path}/parameter[0-1]`).packets, 
-        [
-          this.parser.translate(`${path}/preset`),
-          this.parser.translate(`${path}/parameter${cfg.reagent}`),
-          this.parser.translate(`${path}/parameter${cfg.catalyst}`),
-          this.parser.translate(`${path}/parameter${cfg.acid}`),
-          this.parser.translate(`${path}/parameter${cfg.base}`),
-          this.parser.translate(`${path}/numerator`),
-          this.parser.translate(`${path}/denominator`),
-        ]
-      );
+      let fxQuery = null;
       
-      if (cfg.algorithm.length > 0) {
-        fxQuery.packets.push(
-          this.parser.translate(`${path}/parameter${cfg.formula}`));
+      if (result.efftype == 7) { // FX Eq
+        
+        result.eq = Array(8);
+        
+        fxQuery =  this.parser.translateLines([
+          `${path}/parameter[0-1]`, 
+          `${path}/EQ/filter[0-7]/Pfreq`,
+          `${path}/EQ/filter[0-7]/Ptype`,
+          `${path}/EQ/filter[0-7]/Pgain`,
+          `${path}/EQ/filter[0-7]/Pq`,
+          `${path}/EQ/filter[0-7]/Pstages`
+        ]);
+        
+        worker.pushPacket(fxQuery, ( addr, args ) =>{
+          if ( addr.includes('parameter') )
+            result.osc[addr] = args[0].value;
+          else {
+            try {
+              let presetID = parseInt(/filter(\d)/.exec(addr)[1]);
+              let param = /\/(\w+)$/.exec(addr)[1];
+              if (result.eq[presetID] == null)
+                result.eq[presetID] = {};
+              
+              result.eq[presetID][param] = args[0].value;
+            } catch (err) {
+              zconsole.error(`there was an issue with address ${addr}: ${err}`);
+            }
+          }
+        });
+        
+      } else { // FX Alchemy
+        
+        if (this.fxConfig == null)
+          return Promise.resolve ( result );
+        
+        result.config = this.fxConfig[result.name];
+        
+        let cfg = result.config;
+        if ('algorithm' in cfg)
+          result.algorithm =  cfg.algorithm;
+         
+        
+        fxQuery = this.parser.emptyBundle();
+        fxQuery = this.parser.translateLines([
+          `${path}/preset`,
+          `${path}/parameter[0-1]`,
+          `${path}/parameter${cfg.reagent}`,
+          `${path}/parameter${cfg.catalyst}`,
+          `${path}/parameter${cfg.acid}`,
+          `${path}/parameter${cfg.base}`,
+          `${path}/numerator`,
+          `${path}/denominator`
+          ]);
+          /*
+        fxQuery.packets = fxQuery.packets.concat(
+          this.parser.translate(`${path}/parameter[0-1]`).packets, 
+          [
+            this.parser.translate(`${path}/preset`),
+            this.parser.translate(`${path}/parameter${cfg.reagent}`),
+            this.parser.translate(`${path}/parameter${cfg.catalyst}`),
+            this.parser.translate(`${path}/parameter${cfg.acid}`),
+            this.parser.translate(`${path}/parameter${cfg.base}`),
+            this.parser.translate(`${path}/numerator`),
+            this.parser.translate(`${path}/denominator`),
+          ]
+        );*/
+        
+        //Fx alchemny > formula
+        if (cfg.algorithm.length > 0) {
+          fxQuery.packets.push(
+            this.parser.translate(`${path}/parameter${cfg.formula}`));
+        }
+        
+        result.osc = {};
+        worker.pushPacket(fxQuery, (address, args) =>{
+          //zconsole.debug(`${address}: ${args[0]}`);
+          result.osc[address] = args[0];
+        });
       }
       
-      result.osc = {};
-      worker.pushPacket(fxQuery, (address, args) =>{
-        zconsole.debug(`${address}: ${args[0]}`);
-        result.osc[address] = args[0];
-      });
-      
+      //Fx bypass
       if (path.startsWith('/part')) {
         let rex=/^\/part(\d+)\/partefx(\d)/.exec(path);
         let partID = rex[1];

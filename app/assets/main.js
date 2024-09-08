@@ -80,7 +80,7 @@ function onLoad() {
   new OSCButton(document.getElementById('global-panic'))
     .setLabel("Panic", "Panic");
   
-  new OSCNumber(document.getElementById('global-tempo'));
+  new OSCLabel(document.getElementById('global-tempo'));
   
 /*
  * Part main controls

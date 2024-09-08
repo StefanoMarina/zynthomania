@@ -645,10 +645,11 @@ class OSCSwipeable extends OSCElement {
   }
 }
 
-class OSCNumber extends OSCElement {
+class OSCLabel extends OSCElement {
   constructor(clickableObject, onClick = undefined){
     super(clickableObject);
     this.setContent(document.createElement('p'));
+    
     if (onClick !== undefined)
       clickableObject.addEventListener('click', onClick);
   }
@@ -660,7 +661,7 @@ class OSCNumber extends OSCElement {
   }
 }
 
-class OSCMidiNote extends OSCNumber {
+class OSCMidiNote extends OSCLabel {
   constructor(clickableObject) {
     super(clickableObject);
     
@@ -709,7 +710,7 @@ class OSCPathElement extends OSCBoolean {
   }
 }
 
-class OSCTempo extends OSCNumber {
+class OSCTempo extends OSCLabel {
   constructor(clickableObject) {
     super(clickableObject);
     this.bypassable = null;
@@ -765,7 +766,7 @@ class OSCFader extends OSCElement {
     super(fader, null, range);
     fader.min = range.min;
     fader.max = range.max;
-    fader.orient = 'vertical';
+    fader.style['writing-mode'] = 'vertical-lr';
     
     fader.addEventListener('change', ()=>{
       let value = fader.value;
@@ -785,4 +786,99 @@ class OSCFader extends OSCElement {
   
   setContent(){}
   setLabel(){}
+}
+
+const EQ_FILTER_TYPES = ['Off', 'Lp', 'Hp', 'Lp2', 'Hp2', 'Band', 'Notch', 'Peak', 'HiSh', 'LoSh'];
+
+class OSCEQFilter extends OSCElement{
+  constructor(container) {
+    super(container, null, null);
+    //this.container = container;
+    
+    //label
+    this.label = document.createElement('header');
+    this.label.classList.add('header');
+    container.appendChild(this.label);
+    
+    //swipeable frequency
+    let div = document.createElement('div');
+    div.classList.add('osc-swipeable', 'minimal');
+    div.id = `${container.id}-freq`;
+    this.frequency = new OSCSwipeable(div,
+      Object.values(EQ_RANGES),Object.keys(EQ_RANGES),
+      {'title': 'Eq Frequency', 'buttonClass': 'col-3'}
+    );
+    this.label.appendChild(div);
+    
+    //gain
+    let gain = document.createElement('input');
+    gain.classList.add('osc-fader');
+    gain.type = 'range';
+    gain.id = `${container.id}-gain`;
+    container.appendChild(gain);
+    this.gain = new OSCFader(gain,CC_RANGE);
+    
+    //type
+    div = document.createElement('div')
+    div.classList.add('osc-swipeable', 'minimal');
+    div.id = `${container.id}-type`;
+    this.type = new OSCSwipeable(div,
+      [...Array(EQ_FILTER_TYPES.length).keys()],
+      EQ_FILTER_TYPES,
+      {'title': 'Type', 'buttonClass': 'col-3'}
+    );
+    container.appendChild(div);
+    
+    //Q
+    div = document.createElement('div');
+    div.classList.add('osc-knob');
+    div.id = `${container.id}-q`;
+    this.q = new OSCKnob(div);
+    this.q.setLabel('Q');
+    container.appendChild(div);
+    
+    //Stages
+    let stages = document.createElement('div');
+    stages.classList.add('minimal', 'osc-swipeable');
+    stages.id = `${container.id}-stages`;
+    this.stages = new OSCSwipeable(stages,
+      [...Array(5).keys()],[0,1,2,3,4],
+      {'title': 'Stages (0 disable)', 'buttonClass': 'col-2'}
+    );
+    div.appendChild(stages);
+  }
+  
+  setPath ( fxpath, filterID ) {
+    this.oscpath = [
+      `${fxpath}/EQ/filter${filterID}/Pfreq`,
+      `${fxpath}/EQ/filter${filterID}/Pgain`,
+      `${fxpath}/EQ/filter${filterID}/Ptype`,
+      `${fxpath}/EQ/filter${filterID}/Pq`,
+      `${fxpath}/EQ/filter${filterID}/Pstages`
+    ];
+    
+    this.frequency.oscpath = this.oscpath[0];
+    this.gain.oscpath = this.oscpath[1];
+    this.type.oscpath = this.oscpath[2];
+    this.q.oscpath = this.oscpath[3];
+    this.stages.oscpath = this.oscpath[4];
+  }
+  
+  sync() {
+    return super.sync().then ( (data) => {
+      this.frequency.setValue(data[this.oscpath[0]][0],true);
+      this.gain.setValue(data[this.oscpath[1]][0],true);
+      this.type.setValue(data[this.oscpath[2]][0],true);
+      this.q.setValue(data[this.oscpath[3]][0],true);
+      this.stages.setValue(data[this.oscpath[4]][0],true);
+    });
+  }
+  
+  setValue( obj, fromServer = true) {
+    this.frequency.setValue(obj.Pfreq,fromServer);
+    this.gain.setValue(obj.Pgain,fromServer);
+    this.type.setValue(obj.Ptype,fromServer);
+    this.q.setValue(obj.Pq,fromServer);
+    this.stages.setValue(obj.Pstages,fromServer);
+  }
 }

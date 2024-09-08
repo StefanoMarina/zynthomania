@@ -326,7 +326,6 @@ function get_status_fx(req, res, next) {
   }
   
   app.zyntho.getFX(req.query.path).then ( (result) => {
- 
     res.json(result);
   });
 }

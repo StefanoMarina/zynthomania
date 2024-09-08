@@ -54,7 +54,9 @@ function loadFXEditor(data, title, backTo) {
   zsession.oscElements['fx-type'].setValue(data.efftype);
   if ( data.efftype == 0) {
     loadNoneFx(data);
-  } else {
+  } else if (data.efftype == 7) {
+    loadEQ(data);
+  }  else {
     loadFx(data);
   }
   
@@ -73,6 +75,9 @@ function loadNoneFx(data) {
 }
 
 function loadFx(data) {
+  document.getElementById('fx-alchemy').classList.remove('hidden');
+  document.getElementById('fx-eq').classList.add('hidden');
+  
    let __OSCPATH =  `${zsession.fxcursor}/parameter`    
    zsession.oscElements['fx-drywet'].setValue(
       data.osc[`${__OSCPATH}0`].value);
@@ -159,5 +164,30 @@ function loadFx(data) {
     zsession.oscElements['fx-reagent-sync'].HTMLElement.classList.add('hidden');
     zsession.oscElements['fx-reagent'].setEnabled(true);
     zsession.oscElements['fx-reagent'].HTMLElement.classList.remove('hidden');
+  }
+}
+
+function loadEQ(data) {
+  document.getElementById('fx-alchemy').classList.add('hidden');
+  document.getElementById('fx-eq').classList.remove('hidden');
+  
+  if (zsession.initFxEditorEQ === undefined) {
+    
+    for (let i = 0; i < 8; i++) {
+      let filter = new OSCEQFilter(document.getElementById(`fx-eq-${i}`));
+    }
+    zsession.initFxEditorEQ = true;
+  }
+  
+  let __OSCPATH =  osc_sanitize(`${zsession.fxcursor}/parameter`)
+   zsession.oscElements['fx-drywet'].setValue(
+      data.osc[`${__OSCPATH}0`]);
+   zsession.oscElements['fx-pan'].setValue(
+      data.osc[`${__OSCPATH}1`]);
+      
+  for (let i = 0; i < 8 ; i++) {
+    let filter = zsession.oscElements[`fx-eq-${i}`];
+    filter.setPath(zsession.fxcursor,i);
+    filter.setValue(data.eq[i], false);
   }
 }
