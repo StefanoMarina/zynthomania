@@ -695,10 +695,14 @@ class OSCMidiNote extends OSCLabel {
 class OSCPathElement extends OSCBoolean {
   constructor (clickableObject, bind=undefined, onswipe ) {
     super(clickableObject,bind);
+    
    enableSwiping(clickableObject, 2);
    enableMultiTouch(clickableObject);
+   
    clickableObject.addEventListener('pressed', onswipe);
    clickableObject.addEventListener('swipe', onswipe);
+   clickableObject.addEventListener('contextmenu', onswipe);
+   clickableObject.addEventListener('contextmenu', (ev)=> { ev.stopPropagation(); ev.preventDefault()});
   }
   
   setLabel(label) {
@@ -828,7 +832,10 @@ class OSCEQFilter extends OSCElement{
       {'title': 'Type', 'buttonClass': 'col-3'}
     );
     container.appendChild(div);
-    
+  
+    this.type.swipeable.selectElement.addEventListener('change',
+      (ev)=>{this.setEnabled(this.type.swipeable.selectElement.value)});
+        
     //Q
     div = document.createElement('div');
     div.classList.add('osc-knob');
@@ -866,11 +873,14 @@ class OSCEQFilter extends OSCElement{
   
   sync() {
     return super.sync().then ( (data) => {
-      this.frequency.setValue(data[this.oscpath[0]][0],true);
-      this.gain.setValue(data[this.oscpath[1]][0],true);
-      this.type.setValue(data[this.oscpath[2]][0],true);
-      this.q.setValue(data[this.oscpath[3]][0],true);
-      this.stages.setValue(data[this.oscpath[4]][0],true);
+      this.setValue ({
+        'Pfreq' : data[this.oscpath[0]][0],
+        'Pgain' : data[this.oscpath[1]][0],
+        'Ptype' : data[this.oscpath[2]][0],
+        'Pq' : data[this.oscpath[3]][0],
+        'Pstages' : data[this.oscpath[4]][0],
+      }, true);
+      
     });
   }
   
@@ -880,5 +890,13 @@ class OSCEQFilter extends OSCElement{
     this.type.setValue(obj.Ptype,fromServer);
     this.q.setValue(obj.Pq,fromServer);
     this.stages.setValue(obj.Pstages,fromServer);
+    this.setEnabled(obj.Ptype != 0);
+  }
+  
+  setEnabled(enabled) {
+    this.frequency.setEnabled(enabled);
+    this.gain.HTMLElement.disabled = !enabled;
+    this.q.setEnabled(enabled);
+    this.stages.setEnabled(enabled);
   }
 }

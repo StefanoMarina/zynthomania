@@ -72,6 +72,7 @@ function loadNoneFx(data) {
    zsession.oscElements['fx-pan'].setEnabled(false);
       
   document.getElementById('fx-alchemy').classList.add('hidden');
+  document.getElementById('fx-eq').classList.add('hidden');
 }
 
 function loadFx(data) {
@@ -85,6 +86,7 @@ function loadFx(data) {
       data.osc[`${__OSCPATH}1`].value);
       
   zsession.oscElements['fx-drywet'].setEnabled(true);
+  zsession.oscElements['fx-drywet'].setLabel('Dry/Wet');
   zsession.oscElements['fx-pan'].setEnabled(true);
    
   document.getElementById('fx-alchemy').classList.remove('hidden');
@@ -178,6 +180,10 @@ function loadEQ(data) {
     }
     zsession.initFxEditorEQ = true;
   }
+  
+  zsession.oscElements['fx-drywet'].setEnabled(true);
+  zsession.oscElements['fx-drywet'].setLabel('Gain');
+  zsession.oscElements['fx-pan'].setEnabled(true);
   
   let __OSCPATH =  osc_sanitize(`${zsession.fxcursor}/parameter`)
    zsession.oscElements['fx-drywet'].setValue(

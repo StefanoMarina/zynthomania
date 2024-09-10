@@ -56,8 +56,8 @@ function onLoadPreset() {
     'keychain' : [
       window.zsession.partID,
       window.zsession.layerID,
-      window.zsession.voiceID,
-      window.zsession.fxID
+      window.zsession.fxID,
+      window.zsession.voiceID
     ]}). then ( () => {
       return osc_synch_section(section);
     });
@@ -1634,6 +1634,7 @@ function onPartFXMatrixAct(data){
 
 function onPartFXEdit(fxid) {
     zsession.fxcursor=`/part${zsession.partID}/partefx${fxid}`;
+    zsession.fxID = fxid;
     
     zsession.setCopy('fx',`${zsession.fxcursor}/`, ()=> {
       onPartFXEdit(fxid);

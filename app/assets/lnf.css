@@ -425,13 +425,22 @@ input[type=range]::-moz-range-thumb {
   margin:auto;
 }
 
+input[type=range][disabled]::-webkit-slider-thumb,
+input[type=range][disabled]::-moz-range-thumb {
+  background: transparent;
+  border: none;
+}
+
 input[type=range] {
   width: 8px;
   height: initial;
   -webkit-appearance: none;
   border: none;
-
   background-color: gray;
+}
+
+input[type=range][disabled] {
+  width: 2px;
 }
 
 .faderContainer {
@@ -625,8 +634,10 @@ section.row.opened {display: flex !important}
   text-decoration:line-through;
 }
 
-.osc-element.disabled header {background-color: gray; color: black}
-.osc-element.disabled .swipeable label {color: gray}
+.osc-element.disabled header,
+.osc-knob.disabled header  {background-color: gray; color: black}
+
+.disabled .swipeable label {color: gray}
 
 /*.osc-element.disabled .content {display: none}*/
 

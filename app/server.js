@@ -564,7 +564,7 @@ function get_presets(req, res) {
   console.log(JSON.stringify(files));
   
   res.json ( files.map ( file => (file !== undefined) 
-      ? file.replace('_', ' ').replace('.osc','')
+      ? file.replaceAll('_', ' ').replace('.osc','')
       : 'error')
   );
   res.end();
