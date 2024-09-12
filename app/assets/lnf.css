@@ -476,6 +476,14 @@ option.bookmark::before {
   padding-right: 5px;
 }
 
+option.cartridge::before {
+font-family: "Font Awesome 5 Free";
+  content: '\f02e ';
+  font-weight: bold;
+  padding-right: 5px;
+ content: "\f7c2"; 
+}
+
 /*
  * Dialog Box section
  */

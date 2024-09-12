@@ -475,36 +475,36 @@ class ZynthoServer extends EventEmitter {
                     .isDirectory()
                 );
     
-    files.forEach(file => { bankList.push(file); });
+    let result = { 'zyn' : files.map ( file => `${this.config.bank_dir}/${file}`) };
     
     const customSearchPath = this.IO.workingDir + "/banks";
-    
     if (Fs.existsSync(customSearchPath)){
       files = Fs.readdirSync (customSearchPath)
                 .filter( (file) => {
-                    return Fs.statSync(customSearchPath+'/'+file).isDirectory();
+                    return Fs.statSync(`${customSearchPath}/${file}`)
+                      .isDirectory();
                 });
-      files.forEach(file => { bankList.push("$"+file); });
+      result['cartridge'] = files.map (file => `${this.IO.workingDir}/banks/${file}`);
     }
     
-    return bankList;
+    return result;
   }
   
   /**
    * Zynthoserver::getInstruments
    * retrieve all instrument name by filename
    */
-  getInstruments(bank) {
+  getInstruments(path) {
     let result = [];
-    var fullpath = ("$" == bank[0])
-            ? this.IO.workingDir + "/banks/"+bank.substr(1)
-            : this.config.bank_dir + "/" + bank;
+    //var fullpath = ("$" == bank[0])
+    //        ? this.IO.workingDir + "/banks/"+bank.substr(1)
+    //        : this.config.bank_dir + "/" + bank;
     
 //    zconsole.debug(fullpath);
     
-    var files = Fs.readdirSync (fullpath)
+    var files = Fs.readdirSync (path)
                   .filter(
-                    file => !Fs.statSync(fullpath+'/'+file).isDirectory()
+                    file => !Fs.statSync(`${path}/${file}`).isDirectory()
                   );
           
     var regex = /(\d*)\-?([^\.]+)\.xiz/;
@@ -514,7 +514,7 @@ class ZynthoServer extends EventEmitter {
       let name = "";
        
       name = (match != null) ? `${match[1].slice(1)}: ${match[2]}` : file;   
-      result.push ({"name": name, path: fullpath+'/'+file});
+      result.push ({"name": name, 'path': `${path}/${file}`});
     });
       
     return result;

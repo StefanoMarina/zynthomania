@@ -67,30 +67,53 @@ function onLoadPreset() {
   //no more preloading banks
   
   new ZynthoREST().query('files/banks')
-  .then((data) =>{
+    .then((data) =>{
     
     let bankUI = document.getElementById('select-bank');
-    bankUI.size = data.length+1;
+    bankUI.size = data.zyn.length+data.cartridge.length+1;
     bankUI.options.length = 1;
  
     bankUI.options[0]
       .disabled = (window.zsession.favorites.length == 0)
-      
-    data.forEach ( (item) => {
-      bankUI.options.add ( new Option ( item, item ) );
+    
+    if ( data['cartridge'] ) {
+      data.cartridge.forEach ( (item) => {
+        let option = new Option ( /\/([^\/]+)$/.exec(item)[1], item );
+        option.classList.add('cartridge');
+        bankUI.options.add (option );
+      });
+    }
+    
+    data.zyn.forEach ( (item) => {
+      bankUI.options.add ( new Option ( /\/([^\/]+)$/.exec(item)[1], item ) );
     });
   
     loadSection('section-select-bank');
     setSelectedToolbarButton(document.getElementById('part-toolbar-bank'));
   });
 }
+
+function loadInstrumentSection(instruments, isFavorite) {
+  let favPaths = zsession.favorites.map ( (fav) => fav.path );
+  let select = document.getElementById('select-instrument');
+  select.options.length = 0;
+  
+  instruments.forEach ( (instr) => {
+    let option = new Option ( instr.name, instr.path);
+    if (isFavorite || favPaths.indexOf(instr.path) > -1 )
+      option.classList.add('bookmark');
+    select.options.add(option);
+  });
+  select.size = select.options.length+1;
       
+  loadSection('section-select-patch');
+}
+
 function onBanksBankSelect() {
   let selBank = document.getElementById('select-bank');
   let selection = selBank.value;
   selBank.selectedIndex = -1;
-  let selectedBank = event.target.dataset.bank;
-  
+ // let selectedBank = event.target.dataset.bank;
   
   var promise = null;
   var instruments = null;
@@ -103,6 +126,9 @@ function onBanksBankSelect() {
   }
   
   promise.then ( (instruments) =>{
+    document.getElementById('bankName').innerHTML= "/"+selection;
+    loadInstrumentSection(instruments, selection == 'favorites');
+    /*
       console.log(instruments);
       let select = document.getElementById('select-instrument');
       select.options.length = 0;
@@ -120,6 +146,7 @@ function onBanksBankSelect() {
       
       document.getElementById('bankName').innerHTML= "/"+selection;
       loadSection('section-select-patch');
+      */
   });
 }
 
@@ -462,6 +489,18 @@ function onFXGlobalEditFxChanged(event) {
   let changed = event.target.options[event.target.selectedIndex].text;
   let fxid = /\d+$/.exec(zsession.fxcursor)[0];
   document.getElementById(`glob-fx-${fxid}`).innerHTML = changed;
+}
+
+function onSearchPatch() {
+  let val = document.getElementById('patch-search-bar').value;
+  if (val.length < 2)
+    return;
+  new ZynthoREST().query('search', {'pattern': val })
+    .then ( (data) => {
+      console.log(data);
+      document.getElementById('bankName').innerHTML= "Search results";
+      loadInstrumentSection(data, false);
+  });
 }
 
 /**
@@ -1255,7 +1294,8 @@ function onPartInstrumentSave(backTo) {
   new ZynthoREST().query('files/banks', null).then((data) =>{
     let select = document.getElementById('save-instrument-bank-folder');
     select.innerHTML = '';
-    data.forEach ( (dir) => select.options.add(new Option(dir, dir)));
+    data.cartridge.forEach ( (dir) => select.options.add(
+      new Option(/\/([^\/]+)$/.exec(dir)[1], dir)));
     
     return new ZynthoREST().post('script', 
       { 'requestResult': 1,
@@ -1584,24 +1624,19 @@ function onPartFX() {
   
   new ZynthoREST().query('/status/partfx', 
     {id: zsession.partID} ).then ( (data) => {
+      
     //fx buttons
     for (let i = 0; i < 3; i++) {
       let element = document.getElementById(`part-fx-${i}`);
       element.innerHTML = data.efx[i].name;
-      if (data.efx[i].bypass)
-        element.classList.add('disabled');
-      else
-        element.classList.remove('disabled');
-     
-     onPartFxSetMatrixValue(i, data.efx[i].route);
-      
-      //zsession.oscElements[`part-fx-route-${i}`].setValue(data.efx[i].route);
-      //onPartFXMatrixUpdate(data);
+      showIf (element, !data.efx[i].bypass, 'disabled');
+      onPartFxSetMatrixValue(i, data.efx[i].route);
     }
-    
     
     for (let i = 0; i < 4; i++) {
       let id = `part-fx-send-${i}`;
+      zsession.oscElements[id].oscpath
+        =`/Psysefxvol${i}/part${zsession.partID}`;
       //let element = document.getElementById(id);
       zsession.oscElements[id].setLabel(data.sysefxnames[i]);
       zsession.oscElements[id].setEnabled((data.sysefxnames[i] != 'None'));

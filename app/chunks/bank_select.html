@@ -1,3 +1,13 @@
+ <!-- bank search bar -->
+<header class="row no-gutters" id="banks-search-bar">
+  <div class="col-10 panel">
+    <input id="patch-search-bar" type="text">
+  </div>
+  <div class="col-2 panel">
+    <button class="button selected" onclick="onSearchPatch()"><i class="fa fa-search"></i></button>
+  </div>
+</header>
+    
 <section id="section-select-bank" data-title="Select patch"
   class="container">
   <div class="row">
@@ -18,7 +28,7 @@
   data-back="section-select-bank" class="container">
   <div class="row">
     <div class="col-12">
-    <center id="bankName"></center>
+    <strong><center id="bankName"></center></strong>
     <select id="select-instrument" class="banks" onchange="onBanksInstrumentSelect()">
     </select>
     <!--<ul id="selInstruments" class="select"></ul>-->

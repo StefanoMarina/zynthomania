@@ -144,7 +144,7 @@ function post_files_newbank(req,res) {
     return;
   }
   
-  let dir = `${app.zyntho.config.cartridge_dir}/banks/${req.body.dir}`;
+  let dir = `${app.zyntho.IO.workingDir}/banks/${req.body.dir}`;
   
   if (Fs.existsSync(dir)) {
     res.statusMessage = 'Directory already exists!';
@@ -571,6 +571,35 @@ function get_presets(req, res) {
 }
 app.get('/presets', get_presets);
 
+function get_search(req, res) {
+  zconsole.logGet(req);
+  if (req.query.pattern === undefined) {
+    res.status(400).end();
+    return;
+  }
+  
+  //get all files 
+  let banks = app.zyntho.getBanks();
+  
+  let files = [];
+  banks.zyn.forEach ( bank => {
+    files = files.concat(app.zyntho.getInstruments(bank,'path'));
+  });
+  banks.cartridge.forEach ( bank => {
+    files = files.concat(app.zyntho.getInstruments(bank,'path'));
+  });
+  
+  let request = req.query.pattern.toLowerCase();
+ // zconsole.debug(JSON.stringify(files.map ( file => file.path) ));
+  
+  let list = files.filter ( file => file.name.toLowerCase().includes(request));
+  
+  res.json(list);
+  res.end();
+}
+
+app.get('/search', get_search);
+
 /**
  * POST
  */
@@ -850,8 +879,8 @@ function post_save_xiz(req,res) {
     return;
   }
   
-  let bank = `${app.zyntho.config.bank_dir}${req.body.bank}`;
-  zconsole.debug ( bank ) ;
+  let bank = req.body.bank; //`${app.zyntho.IO.workingDir}/banks/${req.body.bank}`;
+  //zconsole.debug ( bank ) ;
   try { Fs.accessSync(bank, Fs.constants.W_OK) }
   catch ( err ) {
       res.statusMessage='Cannot write on bank.';
