@@ -110,6 +110,7 @@ function onLoad() {
       loadSection(backButton.dataset.backToPanel);
   });
  
+ loadSection('section-welcome');
   new ZynthoREST().query('files/favorites').then ( (favs) => {
     zsession.favorites = favs;
     return new ZynthoREST().query('status/session');
@@ -117,8 +118,8 @@ function onLoad() {
     zsession.extdata = sess;
     
     //Init part
-    onToolbarChangePart(0);  
-  });  
+    onToolbarChangePart(0);
+  });
 }
 
 function setSelectedToolbarButton(button) {
