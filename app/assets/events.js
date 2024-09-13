@@ -90,6 +90,7 @@ function onLoadPreset() {
   
     loadSection('section-select-bank');
     setSelectedToolbarButton(document.getElementById('part-toolbar-bank'));
+    document.getElementById('banks-search-bar').classList.add('opened');
   });
 }
 
@@ -107,6 +108,7 @@ function loadInstrumentSection(instruments, isFavorite) {
   select.size = select.options.length+1;
       
   loadSection('section-select-patch');
+  document.getElementById('banks-search-bar').classList.add('opened');
 }
 
 function onBanksBankSelect() {
