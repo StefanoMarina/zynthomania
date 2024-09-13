@@ -770,7 +770,8 @@ class OSCFader extends OSCElement {
     super(fader, null, range);
     fader.min = range.min;
     fader.max = range.max;
-    fader.style['writing-mode'] = 'vertical-lr';
+    fader.classList.add('osc-fader');
+    //fader.style['writing-mode'] = 'vertical-rl';
     
     fader.addEventListener('change', ()=>{
       let value = fader.value;
@@ -792,7 +793,7 @@ class OSCFader extends OSCElement {
   setLabel(){}
 }
 
-const EQ_FILTER_TYPES = ['Off', 'Lp', 'Hp', 'Lp2', 'Hp2', 'Band', 'Notch', 'Peak', 'HiSh', 'LoSh'];
+const EQ_FILTER_TYPES = ['Off', 'Lp', 'Hp', 'Lp2', 'Hp2', 'Band', 'Notch', 'Peak', 'LoSh', 'HiSh'];
 
 class OSCEQFilter extends OSCElement{
   constructor(container) {
@@ -819,6 +820,7 @@ class OSCEQFilter extends OSCElement{
     gain.classList.add('osc-fader');
     gain.type = 'range';
     gain.id = `${container.id}-gain`;
+    gain.classList.add('osc-fader');
     container.appendChild(gain);
     this.gain = new OSCFader(gain,CC_RANGE);
     

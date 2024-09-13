@@ -667,6 +667,14 @@ section.row.opened {display: flex !important}
   .osc-element .fa, .osc-element .fas { font-size: 80% }
 }
 
+.osc-fader {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: slider-vertical;
+  width: 16px;
+  vertical-align: bottom;
+}
+
 /*
  * Specific elements
  */

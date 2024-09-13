@@ -1,23 +1,30 @@
  <!-- part main controls -->
  <section class="container" id="section-part-main" data-title="Part mixer">
    <div class="row">
-     <div class="col-4 panel">
+     <div class="col-3 panel">
         <div  id="part-enable" class="osc-element osc-boolean" 
           data-osc-path="/part/Penabled">
-            <div class="content"><i class="fa fa-power-off"></i></div>
         </div>
       </div>
       
-     <div class="col-4 panel">
+     <div class="col-3 panel">
         <div id="part-volume" class="osc-element osc-knob"
           data-osc-path="/part/Pvolume" data-osc-type="i"></div>
      </div>
      
-     <div class="col-4 panel">
-      <div id="part-panning" class="osc-element osc-knob"
+      <div class="col-3 panel">
+        <div id="part-panning" class="osc-element osc-knob"
           data-osc-path="/part/Ppanning" data-osc-type="i"></div>
       </div>
+      <div class="col-3 panel">
+        <div id="part-clear" class="osc-element osc-button"
+          data-label="Reset"
+          data-osc-path="/part/clear">
+          <div class="content"><i class="fa fa-trash"></i></div>
+        </div>
+      </div>
     </div>
+    
     <div class="row">
       <div class="col-4 panel">
         <button class="button" onclick="onFavoriteSet()"><i id='part-favorite' class="far fa-bookmark"></i></button>

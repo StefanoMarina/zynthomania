@@ -60,6 +60,9 @@ function onLoadPreset() {
       window.zsession.voiceID
     ]}). then ( () => {
       return osc_synch_section(section);
+    })
+    .then (() => {
+      section.dispatchEvent(new CustomEvent('preset'));
     });
 }
 
@@ -444,6 +447,9 @@ function onFXGlobal() {
     new OSCKnob(document.getElementById('glob-fx-1to3'));
     new OSCKnob(document.getElementById('glob-fx-2to3'));
     
+    document.getElementById('section-global-fx').
+      addEventListener('preset', onFXGlobal);
+      
     zsession.initFxGlobal = true;
   }
     new ZynthoREST().post('script', {
@@ -464,6 +470,8 @@ function onFXGlobal() {
           });
         }
         
+        return osc_synch_section(document.getElementById('section-global-fx'));
+    }).then (() =>{
         loadSection('section-global-fx');
         setSelectedToolbarButton(document.getElementById('main-toolbar-fx'));
     });
@@ -1377,6 +1385,12 @@ function onPartMixer() {
       new OSCKnob(document.getElementById('part-panning'));
     zsession.oscElements['part-balance'].setLabel("Balance");
     
+    let btn = new OSCButton(document.getElementById('part-clear'));
+    btn.HTMLElement.addEventListener('act',  ()=>{
+      zsession.extdata.instruments[0] = {'name': 'Basic Sine Wave', 'path' : null};
+      onToolbarUpdate();
+    });
+    
     zsession.initPartMixer = true;
   }
   
@@ -1620,7 +1634,9 @@ function onPartFX() {
          obj.HTMLElement.addEventListener('act',onPartFXMatrixAct);
          //obj.HTMLElement.addEventListener('sync',onPartFXMatrixUpdate);
       }
-      
+    
+    document.getElementById('section-part-fx').addEventListener(
+      'preset', onPartFX);
     zsession.initPartFX = true;
   }
   
@@ -1642,6 +1658,7 @@ function onPartFX() {
       //let element = document.getElementById(id);
       zsession.oscElements[id].setLabel(data.sysefxnames[i]);
       zsession.oscElements[id].setEnabled((data.sysefxnames[i] != 'None'));
+      zsession.oscElements[id].setValue(data.send[i],true);
     }
     
     loadSection('section-part-fx');
