@@ -52,6 +52,15 @@ module.exports.registerOSC = function (zynServer) {
     }
   });
   
+  /**
+   * Presets
+   */
+  emitter.on('/zmania/preset', (zyn, args) => {
+    zyn.loadPreset(args[0].value,
+     JSON.parse(args[1].value),
+     args[2].value);
+  });
+  
   /*
    * IO calls
    */

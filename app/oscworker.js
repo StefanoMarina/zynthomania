@@ -80,7 +80,10 @@ class OSCWorker extends EventEmitter {
   push(address, callback) {
     if (address === undefined)
       throw "OscWorker push request with undefined address";
-    
+    else if ( address.startsWith('/zmania') ) {
+      return;
+    }
+      
     this.stack.push(address);
     this.emitter.once(address, (packet) => {
       

@@ -207,10 +207,10 @@ class ZynthoServer extends EventEmitter {
 
     //Capture damage events
     this.on('/damage', (msg)=> {
-      let match = msg.args[0].value.match(/^\/part(\d+)\/$/);
+      let match = msg.args[0].value.match(/part(\d+)$/);
       if (match != null) {
-        console.log('Request for part clearance')
-        this.resetPartData(match[1]);
+        console.log('Request for part clearance');
+        this.resetPartData(parseInt(match[1]));
       }
     })
     
@@ -283,18 +283,14 @@ class ZynthoServer extends EventEmitter {
      * if the event is a zynthomania event, the oscEmitter is
      * triggered before to handle the message.
      */
-    this.osc.on("osc", (oscMsg) => {
-      /*
-        if (oscMsg.address.match(/^\/zmania/i)){
-          zconsole.debug(`zyntho message on osc: ${oscMsg.address}`);
-          //let parsed = this.parser.translate(oscMsg.address);
-          
-          //this.oscEmitter.on(parsed.address, this, parsed.args);
-        } else {
-          
-          
-        }
-        */
+    this.osc.on('osc', (oscMsg) => {
+      if (oscMsg.address.startsWith('/zmania')) {
+        zconsole.notice(`zyntho message on osc: ${oscMsg.address}`);
+        let parsed = this.parser.translate(oscMsg.address);
+        this.oscEmitter.on(parsed.address, this, parsed.args);
+        return;
+      }
+      
       //DEBUG ONLY: Skip zyn-fusion /active_keys
       //REMOVEME!!
       if (oscMsg.address != '/active_keys')
@@ -767,7 +763,7 @@ class ZynthoServer extends EventEmitter {
     
     if (packet.address === undefined) {
         packet.packets.forEach( (p) => {
-          if (packet.packets[0].address.match(/^\/zmania/i)) {
+          if (p.address.startsWith('/zmania')) {
             zconsole.debug(`zyntho message on send-osc: ${p.address}`);
             this.oscEmitter.emit(p.address, this, p.args)
           } else {
@@ -779,13 +775,12 @@ class ZynthoServer extends EventEmitter {
         this.osc.send.call(this.osc, filteredBundle);
       
       return;
-    } else if (packet.address.match(/^\/zmania/i)) {
+    } else if (packet.address.startsWith('/zmania')) {
       zconsole.debug(`single zyntho message on send-osc: ${packet.address}`);
       this.oscEmitter.emit(packet.address, this, packet.args);
       return;
-    }
-    
-    this.osc.send.call(this.osc, packet);
+    } else 
+      this.osc.send.call(this.osc, packet);
   }
   
   set lastSession(file) {
@@ -835,7 +830,7 @@ class ZynthoServer extends EventEmitter {
     
     let worker = new OSCWorker(this);
     worker.pushPacket(packets);
-    this.osc.send(packets);
+    this.sendOSC(packets);
     return worker.listen();
   }
   
