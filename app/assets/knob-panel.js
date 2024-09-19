@@ -25,7 +25,7 @@ function initKnobEditorDialog(){
   let knobEditorArea = document.getElementById('knob-editor-area');
   
   knobEditorArea.addEventListener('touchstart', (e) => {
-    console.log("start");
+    //console.log("start");
     knobEditorArea.touchStartX = e.changedTouches[0].screenX;
     //knobEditorArea.touchStartY = e.changedTouches[0].screenY;
   });

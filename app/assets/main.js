@@ -23,6 +23,11 @@
 //from 0 to 15
 const OneToSixteen = [...Array(16).keys()].map(i => i + 1);
 
+
+//small writing utility
+window.__ID = document.getElementById.bind(document);
+
+
 function onLoad() {
   //timers
   window.timers = {};
@@ -266,7 +271,9 @@ function set_synth_cursor(cursor) {
       .forEach ( (btn)=>btn.classList.remove('selected'));
   document.getElementById(`synth-toolbar-${zsession.synthID}-enabled`)
           .classList.add('selected');
+          
   showIf('adsynth-voice', cursor == 'ad');
+  showIf('padpars-prepare', cursor == 'pad');
 }
 
 /**
@@ -438,8 +445,9 @@ function initSynthToolbar() {
         '/part/kit/Penabled']);
     zsession.oscElements['bundle-synth-toolbar'] = toolbarUpdateObject;
     
-    new OSCBoolean(document.getElementById('synth-toolbar-layer-enabled'))
-      .label = ('Layer enabled');
+    let layerStatus = new OSCBoolean(
+      document.getElementById('synth-toolbar-layer-enabled'));
+    layerStatus.label = 'Layer enabled';
     
     swipe = new Swipeable(document.getElementById('adsynth-voice'));
     let zeroToEight = [...Array(8).keys()];
@@ -455,6 +463,7 @@ function initSynthToolbar() {
     
     zsession.elements['adsynth-voice'] = swipe;
     
+    new OSCButton(document.getElementById('padpars-prepare'));
     zsession.initSynthMain = true;
   }
 }

@@ -192,6 +192,7 @@ table.table > thead th { background-color: black; color: var(--color-lcd);}
   max-width: 200px;
 }
 
+.harmonics-table { border-collapse: collapse; }
 
 td, th {text-align: center}
 
@@ -215,6 +216,8 @@ td, th {text-align: center}
 .icon.xxl { height: 24pt }
 
 button > .icon {display:inline-block; }
+
+
 
 .icon-inline {
   min-height: var(--small-size);
@@ -569,6 +572,9 @@ section.row.opened {display: flex !important}
 .p-top { padding-top: 5%; }
 .p-top-0 {padding-top: 0}
 
+.m-top { margin-top: 5% }
+.m-top-0 { margin-top: 0 }
+
 @media only screen and (max-width: 768px) {
   .p-sm-top { padding-top: 5%; }
   .p-sm-top-0 {padding-top: 0}
@@ -587,11 +593,27 @@ section.row.opened {display: flex !important}
 /*
  * Adjacent cell osc elements border management
  */
+/*.no-gutters .osc-element {
+  border-left: none;
+  border-right: none;
+}*/
+
 .no-gutters > div > .osc-element {
+  border-left: none;
   border-right: none;
 }
+
 .no-gutters > div:last-child  > .osc-element{
-  border-right: var(--border-type);
+  border-right: var(--border);
+}
+
+.no-gutters > div:first-child  > .osc-element{
+  border-left: var(--border);
+}
+
+.border-collapse { padding-top: 0 !important}
+.border-collapse > div > * { 
+  border: none !important;
 }
 
 .osc-element.osc-boolean[data-osc-value="F"],
@@ -674,6 +696,7 @@ section.row.opened {display: flex !important}
   width: 16px;
   vertical-align: bottom;
 }
+
 
 /*
  * Specific elements
@@ -772,4 +795,17 @@ section.row.opened {display: flex !important}
 #clipboard {
   text-align:left;
   padding-left: 5px;
+}
+
+#padpars-prepare {
+  margin-top: 5px;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+
+.canvas {
+  margin: 5px;
+  border: var(--border);
+  min-height: 50px;
 }

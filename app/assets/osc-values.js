@@ -146,6 +146,13 @@ const PERCENTAGE_F = {
   'itype': 'f'
 }
 
+const BYTE_RANGE = {
+  'type' : 'Value',
+  'min': 0,
+  'max' : 255,
+  'itype' : 'i'
+}
+
 function convert_value(A,B,value) {
   if (A === B) return value;
   

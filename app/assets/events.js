@@ -44,13 +44,15 @@ function onPaste() {
 }
 
 function onLoadPreset() {
-  let val = document.getElementById('toolbar-presets').value;
+  let val = __ID('toolbar-presets').value;
   let section = document.querySelector('section.opened');
   console.log(`presets for section ${section}`);
   
   if (val == null) return;
   
-  new ZynthoREST().post('apply-preset', {
+  let zrest = new ZynthoREST();
+  zrest.timeout = 10000;
+  zrest.post('apply-preset', {
     'bank':  section.dataset.preset,
     'name' : val, 
     'keychain' : [
@@ -58,7 +60,11 @@ function onLoadPreset() {
       window.zsession.layerID,
       window.zsession.fxID,
       window.zsession.voiceID
-    ]}). then ( () => {
+    ]})
+    .catch ( (err) => {
+      displayOutcome('Failed!');
+    })
+    .then ( () => {
       return osc_synch_section(section);
     })
     .then (() => {
@@ -72,7 +78,7 @@ function onLoadPreset() {
   new ZynthoREST().query('files/banks')
     .then((data) =>{
     
-    let bankUI = document.getElementById('select-bank');
+    let bankUI = __ID('select-bank');
     bankUI.size = data.zyn.length+data.cartridge.length+1;
     bankUI.options.length = 1;
  
@@ -92,14 +98,14 @@ function onLoadPreset() {
     });
   
     loadSection('section-select-bank');
-    setSelectedToolbarButton(document.getElementById('part-toolbar-bank'));
-    document.getElementById('banks-search-bar').classList.add('opened');
+    setSelectedToolbarButton(__ID('part-toolbar-bank'));
+    __ID('banks-search-bar').classList.add('opened');
   });
 }
 
 function loadInstrumentSection(instruments, isFavorite) {
   let favPaths = zsession.favorites.map ( (fav) => fav.path );
-  let select = document.getElementById('select-instrument');
+  let select = __ID('select-instrument');
   select.options.length = 0;
   
   instruments.forEach ( (instr) => {
@@ -111,11 +117,11 @@ function loadInstrumentSection(instruments, isFavorite) {
   select.size = select.options.length+1;
       
   loadSection('section-select-patch');
-  document.getElementById('banks-search-bar').classList.add('opened');
+  __ID('banks-search-bar').classList.add('opened');
 }
 
 function onBanksBankSelect() {
-  let selBank = document.getElementById('select-bank');
+  let selBank = __ID('select-bank');
   let selection = selBank.value;
   selBank.selectedIndex = -1;
  // let selectedBank = event.target.dataset.bank;
@@ -131,11 +137,11 @@ function onBanksBankSelect() {
   }
   
   promise.then ( (instruments) =>{
-    document.getElementById('bankName').innerHTML= "/"+selection;
+    __ID('bankName').innerHTML= "/"+selection;
     loadInstrumentSection(instruments, selection == 'favorites');
     /*
       console.log(instruments);
-      let select = document.getElementById('select-instrument');
+      let select = __ID('select-instrument');
       select.options.length = 0;
       
       instruments.forEach ( (instr) => {
@@ -149,14 +155,14 @@ function onBanksBankSelect() {
       
       select.size = select.options.length+1;
       
-      document.getElementById('bankName').innerHTML= "/"+selection;
+      __ID('bankName').innerHTML= "/"+selection;
       loadSection('section-select-patch');
       */
   });
 }
 
 function onBanksInstrumentSelect() {
-  let select = document.getElementById('select-instrument');
+  let select = __ID('select-instrument');
   let instrument = select.value;
   let option = select.options[select.selectedIndex];
   select.selectedIndex = -1;
@@ -195,7 +201,7 @@ function onBind() {
 }
 
 function onBookmarkManager() {
-    let sel = document.getElementById('system-bookmarks');
+    let sel = __ID('system-bookmarks');
     sel.options.length = 0;
     zsession.favorites.forEach ( (book,index)=> {
       sel.options.add(new Option(book.name, index));
@@ -206,7 +212,7 @@ function onBookmarkManager() {
 }
 
 function onBookmarkRemove() {
-  let sel = document.getElementById('system-bookmarks');
+  let sel = __ID('system-bookmarks');
   if ( sel.selectedIndex == -1)
     return;
   
@@ -217,7 +223,7 @@ function onBookmarkRemove() {
 
 function onBookmarkTrash() {
   if (confirm ( 'Remove all bookmarks? ') ) {
-    let sel = document.getElementById('system-bookmarks');
+    let sel = __ID('system-bookmarks');
     sel.options.length = 0;
     zsession.favorites = [];
     new ZynthoREST().post('favorites', {'favorites': []});
@@ -234,7 +240,7 @@ function onControllerDevices() {
     showIf('controller-empty', devices.length == 0);
     
     if (devices.length>0) {
-      var div = document.getElementById('controller-device-list');
+      var div = __ID('controller-device-list');
       div.innerHTML = '';
       
       for (index in devices) {
@@ -275,7 +281,7 @@ function onControllerDeviceChangeStatus(event) {
 function onControllerBindings() {
   if (zsession.initBindListEditor === undefined) {
     let swipe = zsession.elements['bind-list-pointer'] =
-      new Swipeable ( document.getElementById('bind-list-pointer'));
+      new Swipeable ( __ID('bind-list-pointer'));
     
     swipe.setDialogData({'title':'Select Bindings', 
         'buttonClass': 'col-12 col-md-12 col-lg-6'});
@@ -345,7 +351,7 @@ function onControllerRemoveBinding() {
       .bindings[path[0]].splice(path[1], 1);
     zsession.bindListEditor.currentPath = null;
     ['bf-edit-del', 'bf-edit-edit'].forEach ( 
-      id =>  document.getElementById(id).disabled = true);
+      id =>  __ID(id).disabled = true);
     
     new ZynthoREST().post('setbinding', 
       { 'id' : zsession.bindListEditor.currentSession.id,
@@ -362,7 +368,7 @@ function onControllerResetList() {
       .bindings = {};
     zsession.bindListEditor.currentPath = null;
     ['bf-edit-del', 'bf-edit-edit'].forEach ( 
-      id =>  document.getElementById(id).disabled = true);
+      id =>  __ID(id).disabled = true);
     
     new ZynthoREST().post('setbinding', 
       { 'id' : zsession.bindListEditor.currentSession.id,
@@ -382,7 +388,7 @@ function onControllerBindingsLoadDialog() {
 }
 
 function onControllerBindingsLoad() {
-  let filename = document.getElementById('file-dialog-filename').value;
+  let filename = __ID('file-dialog-filename').value;
   new ZynthoREST().post('loadbind', {'file' : filename})
     .then ( ()=> {displayOutcome('Bindings succesfully loaded.')})
     .catch ( ()=> {displayOutcome('Error while loading bindings.', 
@@ -398,7 +404,7 @@ function onControllerBindingsExportDialog() {
 }
 
 function onControllerBindingsExport() {
-  let filename = document.getElementById('file-dialog-filename').value;
+  let filename = __ID('file-dialog-filename').value;
           
   new ZynthoREST().post('save', { 'file' : filename, 'dir': 'binds',
       'data': zsession.bindListEditor.currentSession.bindings})
@@ -440,14 +446,14 @@ function onFavoriteSet() {
 
 function onFXGlobal() {
   if (zsession.initFxGlobal == undefined) {
-    new OSCKnob(document.getElementById('glob-fx-0to1'));
-    new OSCKnob(document.getElementById('glob-fx-0to2'));
-    new OSCKnob(document.getElementById('glob-fx-0to3'));
-    new OSCKnob(document.getElementById('glob-fx-1to2'));
-    new OSCKnob(document.getElementById('glob-fx-1to3'));
-    new OSCKnob(document.getElementById('glob-fx-2to3'));
+    new OSCKnob(__ID('glob-fx-0to1'));
+    new OSCKnob(__ID('glob-fx-0to2'));
+    new OSCKnob(__ID('glob-fx-0to3'));
+    new OSCKnob(__ID('glob-fx-1to2'));
+    new OSCKnob(__ID('glob-fx-1to3'));
+    new OSCKnob(__ID('glob-fx-2to3'));
     
-    document.getElementById('section-global-fx').
+    __ID('section-global-fx').
       addEventListener('preset', onFXGlobal);
       
     zsession.initFxGlobal = true;
@@ -457,10 +463,10 @@ function onFXGlobal() {
       .then ( (data) => {
         console.log(data);
         
-        let section = document.getElementById('section-global-fx');
+        let section = __ID('section-global-fx');
         
         for (let i = 0; i < 4; i++) {
-          let btn = document.getElementById(`glob-fx-${i}`);
+          let btn = __ID(`glob-fx-${i}`);
           let val = data[`/sysefx${i}/efftype`][0];
           
           btn.innerHTML = effectTypeToString(val);
@@ -470,10 +476,10 @@ function onFXGlobal() {
           });
         }
         
-        return osc_synch_section(document.getElementById('section-global-fx'));
+        return osc_synch_section(__ID('section-global-fx'));
     }).then (() =>{
         loadSection('section-global-fx');
-        setSelectedToolbarButton(document.getElementById('main-toolbar-fx'));
+        setSelectedToolbarButton(__ID('main-toolbar-fx'));
     });
 }
 
@@ -498,17 +504,17 @@ function onFXGlobalEdit(fxid) {
 function onFXGlobalEditFxChanged(event) {
   let changed = event.target.options[event.target.selectedIndex].text;
   let fxid = /\d+$/.exec(zsession.fxcursor)[0];
-  document.getElementById(`glob-fx-${fxid}`).innerHTML = changed;
+  __ID(`glob-fx-${fxid}`).innerHTML = changed;
 }
 
 function onSearchPatch() {
-  let val = document.getElementById('patch-search-bar').value;
+  let val = __ID('patch-search-bar').value;
   if (val.length < 2)
     return;
   new ZynthoREST().query('search', {'pattern': val })
     .then ( (data) => {
       console.log(data);
-      document.getElementById('bankName').innerHTML= "Search results";
+      __ID('bankName').innerHTML= "Search results";
       loadInstrumentSection(data, false);
   });
 }
@@ -546,7 +552,7 @@ function onSessionLoad() {
 }
 
 function onSessionFileLoad() {
-  let file = document.getElementById('file-dialog-filename').value;
+  let file = __ID('file-dialog-filename').value;
   new ZynthoREST().post('session/load', {'file': file})
     .then ( (sess)=>{ 
        zsession.extdata = sess;
@@ -573,7 +579,7 @@ function onSessionSaveAs() {
 }
 
 function onSessionFileSaveAs() {
-  let file = document.getElementById('file-dialog-filename').value;
+  let file = __ID('file-dialog-filename').value;
   
   new ZynthoREST().post('session/save', {'file': file})
     .then ( ()=>{ 
@@ -591,10 +597,13 @@ function onSynthToolbarUpdate() {
   
   //console.log("Updating synth toolbar");
   
-  zsession.oscElements['bundle-synth-toolbar'].sync()
-    .then ( (data) => {
-      //console.log(data);
-      result = osc_map_to_control(data);
+  return zsession.oscElements['synth-toolbar-layer-enabled']
+    .sync(). then( ()=>{
+      return zsession.oscElements['bundle-synth-toolbar'].sync()
+  }).then ( (data) => {
+      let result = osc_map_to_control(data);
+      //let damageSection = false;
+      
       zsession.oscElements['synth-toolbar-layer-enabled']
         .setValue(result['Penabled']);
       
@@ -602,9 +611,16 @@ function onSynthToolbarUpdate() {
       showIf('synth-toolbar-sub-enabled', result['Psubenabled'], 'gray');
       showIf('synth-toolbar-pad-enabled', result['Ppadenabled'], 'gray'); 
       
-      //console.log('updating voice to ' + zsession.voiceID);
+      
+      if (!result['Padenabled'] && !result['Psubenabled']
+        && !result['Ppadenabled']) {
+          loadSection('section-synth-layer');
+      } else  {
+        onSynth();
+      }
       
       zsession.elements['adsynth-voice'].setValue(zsession.voiceID);
+      return result;
   });
 }
 
@@ -645,108 +661,133 @@ function onSynthEnableSync(event) {
   showIf(id, value, 'gray');
 }
 
+function onLayerChange(event) {
+  let data = event.detail;
+  zsession.layerID = document.querySelector('#synth-layer select')
+    .selectedIndex;
+    
+  zsession.oscElements['synth-toolbar-layer-enabled'].sync().then ( (data)=>{
+    if (zsession.oscElements['synth-toolbar-layer-enabled']
+      .HTMLElement.dataset.oscValue == 'F') {
+        console.log('layer is disabled');
+        onSynth('default');
+    } else
+    onSynthToolbarUpdate();
+  });
+}
+
 function onSynth(synth) {
   initSynthToolbar();
-  setSelectedToolbarButton(document.getElementById('part-toolbar-synth'));
-   
-  //refresh synth cursor
-  set_synth_cursor(synth);
-  if (synth == undefined)
-    synth = zsession.synthID;
-    
+  setSelectedToolbarButton(__ID('part-toolbar-synth'));
+  
+  if ('default' != synth) {
+    //refresh synth cursor
+    set_synth_cursor(synth);
+    if (synth == undefined)
+      synth = zsession.synthID;
+  }
+  
   zsession.reloadStack = []; //reset in case of toolbar click
   //zsession.reloadSynthSubSection = onSynth;
   switch (synth) {
     case 'sub' : onSynthSubsynth(); break;
     case 'ad' : onSynthAdsynth(); break;
     case 'pad': onSynthPadsynth(); break;
+    case 'default': 
+      loadSection('section-synth-layer');
+    break;
     default: break;
-  }
-  
-  onSynthToolbarUpdate();
+  } 
 }
 
 function onSynthAdsynth() {
   if (zsession.initAdSynth === undefined) {
     
-    let obj = new OSCBoolean(document.getElementById('adsynth-enabled'));
+    let obj = new OSCBoolean(__ID('adsynth-enabled'));
     
     obj.HTMLElement.addEventListener('sync', onSynthEnableSync);
     obj.HTMLElement.addEventListener('act', onSynthEnableSync);
+    obj.HTMLElement.addEventListener('act', (event)=>{
+      let value = event.detail.script.endsWith('T');
+      showIf('synth-adsynth-enable-before', !value );
+      showIf('synth-adsynth-matrix', value );
+      if (value)
+        onSynthAdsynth();
+    });
     
-    new OSCPathElement(document.getElementById('adsynth-vco-env-enable'),
+    new OSCPathElement(__ID('adsynth-vco-env-enable'),
       null,onSynthFrequencyEnvelope);
-    new OSCPathElement(document.getElementById('adsynth-vco-lfo-enable'),
+    new OSCPathElement(__ID('adsynth-vco-lfo-enable'),
       null,onSynthFrequencyLFO);
       
-    obj = new OSCPathElement(document.getElementById('adsynth-vcf-enable'),
+    obj = new OSCPathElement(__ID('adsynth-vcf-enable'),
       null,onSynthFilter);
     
-    new OSCPathElement(document.getElementById('adsynth-vcf-env-enable'),
+    new OSCPathElement(__ID('adsynth-vcf-env-enable'),
       null,onSynthFilterEnvelope);
-    new OSCPathElement(document.getElementById('adsynth-vcf-lfo-enable'),
+    new OSCPathElement(__ID('adsynth-vcf-lfo-enable'),
       null,onSynthFilterLFO);
     
     obj.bindEnable('adsynth-vcf-env-enable',
     'adsynth-vcf-lfo-enable');
     
-    new OSCPathElement(document.getElementById('adsynth-vca-env-enable'),
+    new OSCPathElement(__ID('adsynth-vca-env-enable'),
       null,onSynthAmplitudeEnvelope);
-    new OSCPathElement(document.getElementById('adsynth-vca-lfo-enable'),
+    new OSCPathElement(__ID('adsynth-vca-lfo-enable'),
       null,onSynthAmplitudeLFO);
     
-    new OSCPathElement(document.getElementById('adsynth-voice-enable'),
-      null,onSynthOSC);
+    new OSCPathElement(__ID('adsynth-voice-enable'),
+      null,onSynthAdsynthOscillator);
     
     
     zsession.initAdSynth = true;
  }
  
  set_synth_cursor('ad');
- 
- if ( zsession.voiceID != ADSYNTH_GLOBAL)
-  document.getElementById('adsynth-voice-enable')
-    .innerHTML = 'Voice ' + String((zsession.voiceID+1)).padStart(2,0);
-  
- let voiceControls = Array.from(document.getElementById('voice-matrix')
+ let voiceControls = Array.from(__ID('voice-matrix')
     .querySelectorAll('.osc-element')).map ( (el)=> el.id );
- 
  showIf('voice-matrix', zsession.voiceID != ADSYNTH_GLOBAL);
- 
+
  let params = (zsession.voiceID != ADSYNTH_GLOBAL) 
   ? voiceControls : '';
   
- 
- osc_synch(...params).then ( ()=> {
-   loadSection('section-synth-adsynth');
-   zsession.reloadSynthSubSection = onSynthAdsynth;
+
+  zsession.oscElements['adsynth-enabled'].sync().then( (data)=> {
+    let value = Object.values(data)[0][0];
+    showIf('synth-adsynth-enable-before', !value);
+    showIf('synth-adsynth-matrix', value);
+    
+    return (value)
+      ? osc_synch(...params)
+      : Promise.resolve(false);
+  }).then ( ()=> {
+      loadSection('section-synth-adsynth');
+      zsession.reloadSynthSubSection = onSynthAdsynth;
   });
+   
 }
 
 function onSynthSubsynth() {
   if (window.initSubSynth === undefined) {
     new OSCPathElement(
-      document.getElementById('subsynth-vco-env-enable'),null,
+      __ID('subsynth-vco-env-enable'),null,
       onSynthFrequencyEnvelope);
     
     new OSCPathElement(
-      document.getElementById('subsynth-vcf-enable'),null,
+      __ID('subsynth-vcf-enable'),null,
       onSynthFilter);
     
-    let obj = new OSCBoolean(document.getElementById('subsynth-enabled'));
+    let obj = new OSCBoolean(__ID('subsynth-enabled'));
     
     obj.HTMLElement.addEventListener('act', (event)=>{
       
       let value = event.detail.script.endsWith('T');
-      
-      //console.log(`Call: ${event.type}, ${value}`);
-      
       showIf('synth-subsynth-enable-before', !value );
       showIf('synth-subsynth-matrix', value );
       
       if (value){
         Promise.resolve( osc_synch_section(
-          document.getElementById('section-synth-subsynth')
+          __ID('section-synth-subsynth')
         ))
       }
     });
@@ -765,7 +806,7 @@ function onSynthSubsynth() {
     showIf('synth-subsynth-matrix', value);
     
     return (value)
-      ? osc_synch_section(document.getElementById('section-synth-subsynth'))
+      ? osc_synch_section(__ID('section-synth-subsynth'))
       : Promise.resolve(false);
   }).then ( ()=> {
       loadSection('section-synth-subsynth');
@@ -775,131 +816,177 @@ function onSynthSubsynth() {
 
 function onSynthPadsynth() {
    if (zsession.initPadsynth === undefined) {
-     let obj = new OSCBoolean(document.getElementById('padsynth-enabled'));
+     let obj = new OSCBoolean(__ID('padsynth-enabled'));
+    
+    obj.HTMLElement.addEventListener('act', (event)=>{
+      
+      let value = event.detail.script.endsWith('T');
+      
+      //console.log(`Call: ${event.type}, ${value}`);
+      
+      showIf('synth-padsynth-enable-before', !value );
+      showIf('synth-padsynth-matrix', value );
+      __ID('padpars-prepare').disabled = !value;
+      
+      if (value){
+        Promise.resolve( osc_synch_section(
+          __ID('section-synth-subsynth')
+        ))
+      }
+    });
     
     obj.HTMLElement.addEventListener('sync', onSynthEnableSync);
     obj.HTMLElement.addEventListener('act', onSynthEnableSync);
-     zsession.initPadsynth = true;
+    zsession.initPadsynth = true;
    }
    
    set_synth_cursor('pad');
-   zsession.oscElements['padsynth-enabled'].sync().then ( ()=> {
-     loadSection('section-synth-padsynth');
+   zsession.oscElements['padsynth-enabled'].sync().then ( (data)=> {
+     let value = Object.values(data)[0][0];
+     showIf('synth-padsynth-enable-before', !value );
+     showIf('synth-padsynth-matrix', value );
+     __ID('padpars-prepare').disabled = !value;
+     
      zsession.reloadSynthSubSection = onSynthPadsynth;
+     loadSection('section-synth-padsynth');
    });
 }
 
-function onSynthOSC() {
-  if (zsession.initSynthOSC === undefined) {
-    
-    /* synth-osc-wave is a representation of an OSC bundle actually */
-    let swipe = new Swipeable(document.getElementById('synth-osc-wave'));
-    swipe.setOptions( [...Array(16).keys(),17,18],
-      ['Sine','Triangle','Pulse','Saw','Power','Gauss','Diode','AbsSine',
-        'PulseSine','StretchSine', 'Chirp', 'AbsStrSine', 'Chebyshev',
-        'Square','Spike','Circle','White noise','Pink noise']
+function onSynthPADOscillator() {
+  zsession.onChangeSynth=onSynth;
+  zsession.reloadSynthSubSection = onSynthPADOscillator;
+  loadOscillatorEditor('Oscillator','oscilgen', false);
+}
+
+function onSynthPADHarmonics() {
+  if (zsession.initPADHarmonics === undefined) {
+    let obj = new OSCSwipeable(__ID('pad-spectrum'),
+    [0,1,2],
+    ['Bandwidth', 'Discrete', 'Continuous'],
+    {'title': 'Spectrum mode', 'buttonClass' : 'col-12'}
     );
-    swipe.setDialogData({ 'title' : 'Select base wave', 'buttonClass': 'col-6 col-lg-4'});
-    
-    swipe.selectElement.addEventListener('change', (ev) => {
-      let value = ev.target.options[ev.target.selectedIndex].value;
-      let typeValue = Math.max(0, value - 16);
-      zsession.oscElements['synth-generator-type'].act (typeValue);
-      
-      if (typeValue == 0)
-        zsession.oscElements['synth-generator-wave'].act(value);
+    obj.selectElement.addEventListener('change', (ev)=> {
+      showIf('padsynth-bandwidth-section',
+       ev.target.value == 0);
     });
+    obj = new OSCSwipeable(__ID('padsynth-ot-position'),
+      [...Array(8).keys()],
+      ['Harmonic', 'Shift Up', 'Shift Low', 'Power U', 'Power L',
+        'Sine', 'Power', 'Shift'],
+      {'title': 'Overtones position', 'buttonClass': 'col-6 col-md-4'}
+    );
+    
+    [1,2,3].forEach ( (i) => {
+      new OSCKnob(__ID(`padsynth-ot-p${i}`), null,
+        BYTE_RANGE);
+    });
+    
+    //Non-harmonics may use parameters
+    obj.swipeable.selectElement.addEventListener('change', (ev)=> {
+      [1,2,3].forEach ( (i) => {
+        window.zsession.oscElements[`padsynth-ot-p${i}`]
+          .setEnabled(ev.target.value > 0);
+      });
+    });
+    
+    new OSCSwipeable(__ID('padsynth-bw-scale'),
+      [...Array(8).keys()],
+      ['Normal','Equal Hz', 'Quarter', 'Half', '75%', '150%', 'Double',
+        'Inv. Half'],
+      {'title': 'Bandwidth Scale', 'buttonClass' : 'col-12 col-md-6'}
+    );
+    
+    obj = new OSCKnob(__ID('padsynth-bw'), null,
+      {'min': 0.2, 'max' : 2500.0, 'itype' : 'f', 'type' : 'cents'}
+    );
+    obj.serverRange = {'min': 0, 'max' :1000, 'itype': 'i' };
+    
+    new OSCSwipeable(__ID('padsynth-bw-basetype'),
+      [0,1,2],
+      ['Gauss', 'Square', 'Double Exp'],
+      {'title': 'Harmonic shape', 'buttonClass' : 'col-12'}
+    );
+    new OSCSwipeable(__ID('padsynth-bw-onehalf'),
+      [0,1,2],
+      ['Full', 'Upper half', 'Lower half'],
+      {'title': 'Curve phase', 'buttonClass' : 'col-12'}
+    );
+    
+    new OSCSwipeable(__ID('padsynth-bw-amptype'),
+      [0,1,2,3],
+      ['None', 'Gauss', 'Sine', 'Flat'],
+      {'title': '2nd mod curve', 'buttonClass' : 'col-4'}
+    );
+    
+    new OSCSwipeable(__ID('padsynth-bw-ampmode'),
+      [0,1,2,3],
+      ['Sum', 'Multiply', 'Division1', 'Division2'],
+      {'title': '2nd mod formula', 'buttonClass' : 'col-12 col-md-6'}
+    );
   
-    zsession.elements['synth-osc-wave'] = swipe;
+    new OSCBoolean(__ID('padsynth-bw-autoscale'));
+    new OSCKnob(__ID('padsynth-bw-amp-par1'));
+    new OSCKnob(__ID('padsynth-bw-amp-par2'));
     
-    new OSCElement(document.getElementById('synth-generator-type'));
-    new OSCElement(document.getElementById('synth-generator-wave'));
-    new OSCKnob(document.getElementById('synth-osc-wave-p'),
-      undefined, BALANCE);
+    for (let i = 1; i < 5; i++)
+      new OSCKnob(__ID(`padsynth-bw-spread${i}`));
     
-    new OSCSwipeable(document.getElementById('synth-osc-shaper'),
-      [...Array(18).keys()],
-      ['None', 'Arc Tang.', 'Asymmetric', 'Pow', 'Sine', 'Quantis.', 'Zigzag',
-        'Limiter', 'Up Limit', 'Low limit', 'Inverse Lim.', 'Clip', 'Asym2', 'Pow2', 'Sigmoid',
-        'TanH','Cubic','Square' ],
-      { 'title': 'Select shaper', 'buttonClass': 'col-6 col-lg-4'}
-      );
-    new OSCKnob(document.getElementById('synth-osc-shaper-p'));
-      
-    new OSCSwipeable(document.getElementById('synth-osc-h'),
-      [...Array(9).keys()],
-      ['Off', 'On', 'Square', '2xSub','2xAdd', '3xSub', '3xAdd',
-        '4xSub', '4xAdd'],
-      { 'title': 'Select harmonics', 'buttonClass': 'col-4 col-lg-3'}
-      );
-    new OSCKnob(document.getElementById('synth-osc-h-f'),undefined,
-      {'type': 'Harmonic frequency', 'min' : 0, 'max' : 255, 'itype': 'i'} );
-    new OSCKnob(document.getElementById('synth-osc-h-p'),undefined,
-      {'type': 'Harmonic power', 'min' :0, 'max' : 200, 'itype': 'i'} );
-    
-    
-    new OSCSwipeable(document.getElementById('synth-osc-fm'),
+    zsession.initPADHarmonics = true;
+  }
+  
+  osc_synch_section('synth-padsynth-harmonics').then ( ()=> {
+    loadSection('synth-padsynth-harmonics');
+  });
+}
+function onSynthAdsynthFM() {
+  if (zsession.initSynthFM === undefined) {
+    new OSCSwipeable(__ID('synth-osc-fm'),
      [...Array(6).keys()],
      ['Off','Morph','Ring', 'PM', 'FM', 'PWM'],
      {'title': 'Frequency Mod Type', 'buttonClass': 'col-12'}
     );
     
-    new OSCKnob(document.getElementById('synth-fm-volume'),
+    new OSCKnob(__ID('synth-fm-volume'),
       undefined, PERCENTAGE_F);
-    new OSCKnob(document.getElementById('synth-fm-damp'));
-    new OSCKnob(document.getElementById('synth-fm-velo'));
+    new OSCKnob(__ID('synth-fm-damp'));
+    new OSCKnob(__ID('synth-fm-velo'));
     
     //Unison
-    new OSCKnob(document.getElementById('synth-uni-size'), undefined,
-      {'min':1,'max':50, 'type': '# of voices'});
+    new OSCKnob(__ID('synth-uni-size'), undefined,
+      {'min':1,'max':50, 'itype': 'i', 'type': '# of voices'});
       
-    let osc = new OSCKnob(document.getElementById('synth-uni-spread'), undefined,
-      {'min':0,'max':200, 'type': '%', 'itype': 'f'});
+    let osc = new OSCKnob(__ID('synth-uni-spread'), undefined,
+      {'min':0,'max':200, 'type': '%', 'itype': 'i'});
     osc.serverRange = CC_RANGE;
     
-    new OSCKnob(document.getElementById('synth-uni-phase'));
-    new OSCKnob(document.getElementById('synth-uni-vib'));
-    new OSCKnob(document.getElementById('synth-uni-speed'));
+    new OSCKnob(__ID('synth-uni-phase'));
+    new OSCKnob(__ID('synth-uni-vib'));
+    new OSCKnob(__ID('synth-uni-speed'));
     
-    zsession.initSynthOSC = true;
-  }
-  
-  var bChangedPart = false;
-  if (zsession.voiceID == ADSYNTH_GLOBAL) {
-    zsession.voiceID = 0;
-    zsession.elements['adsynth-voice'].setSelection(1);
-    
-    bChangedPart = true; //setting for later as sync clears msg
-  }
-  
-  osc_synch_section(document.getElementById('section-synth-osc')). then ( () => {
-    
-    //Synch complex swiper
-    let val = parseInt(zsession.oscElements['synth-generator-type']
-      .HTMLElement.dataset.value);
-    if (val > 0) {
-      zsession.elements['synth-osc-wave'].setSelection(val+16);
-   
-      Array.from( document.querySelectorAll('#section-synth-osc .osc-element'))
-        .map ( (el) => el.id)
-        .forEach ( (id) => {zsession.oscElements[id].setEnabled(false)});
-    } else {
-      zsession.elements['synth-osc-wave'].setSelection(
-        zsession.oscElements['synth-generator-wave']
-          .HTMLElement.dataset.oscValue );
-      Array.from( document.querySelectorAll('#section-synth-osc .osc-element'))
-        .map ( (el) => el.id)
-        .forEach ( (id) => {zsession.oscElements[id].setEnabled(true)});
-    }
-    
-    zsession.onChangeSynth=onSynth;
-    zsession.reloadSynthSubSection = onSynthOSC;
-    
-    if (bChangedPart)
-      displayOutcome('Switching to adsynth voice #1');
+    new OSCPathElement(__ID('adsynth-fm-vco-env-enable'),
+      null,onSynthFMFrequencyEnvelope);
+    new OSCPathElement(__ID('adsynth-fm-vca-env-enable'),
+      null,onSynthFMAmplitudeEnvelope);
       
-    loadSection('section-synth-osc');
+   zsession.initSynthFM = true;
+  }
+  
+  osc_synch_section(__ID('section-adsynth-fm')).then ( ()=> {
+    zsession.onChangeSynth=onSynth;
+    zsession.reloadSynthSubSection = onSynthAdsynthFM;
+    loadSection('section-adsynth-fm');
   });
+}
+
+function onSynthAdsynthOscillator() {
+  zsession.onChangeSynth=onSynth;
+  zsession.reloadSynthSubSection = onSynthAdsynthOscillator;
+  loadOscillatorEditor('Oscillator','OscilSmp', true);
+}
+function onSynthAdsynthFMOscillator() {
+  zsession.onChangeSynth=onSynth;
+  zsession.reloadSynthSubSection = onSynthAdsynthFMOscillator;
+  loadOscillatorEditor('FM Oscillator','FMSmp', false);
 }
 
 function onSynthAmplitude(event) {
@@ -1048,6 +1135,35 @@ function onSynthFrequencyEnvelope() {
   );
 }
 
+
+function onSynthFMAmplitude(event) {
+  zsession.reloadSynthSubSection = onSynthFMAmplitude;
+  
+  let forceGlobal = (typeof event == 'object') ? false : event;
+  
+  if (forceGlobal)
+    zsession.elements['adsynth-voice'].setSelection(0,false);
+    
+  loadAmplitudeEditor('FM-VCA', null, onSynthFMAmplitudeEnvelope);
+}
+
+function onSynthFMAmplitudeEnvelope() {
+  zsession.reloadSynthSubSection = onSynthFMAmplitudeEnvelope;
+  
+  let sc = osc_sanitize('/synthcursor/FMAmpEnvelope');
+  zsession.setCopy('env', sc+'/', onSynthFMAmplitudeEnvelope);
+  
+  let enable = (zsession.voiceID == ADSYNTH_GLOBAL)
+    ? null 
+    : osc_sanitize('/synthcursor/PFMAmpEnvelopeEnabled');
+    
+  loadEnvelopeEditor('FM Amp Envelope', 
+   enable, sc,
+   [1,1,1,0,0,1,0]
+   );
+}
+
+
 function onSynthFMFrequency() {
   zsession.reloadSynthSubSection = onSynthFMFrequency;
   
@@ -1072,71 +1188,33 @@ function onSynthFMFrequencyEnvelope() {
 
 function onSynthSubMagnitude() {
   if (zsession.initSubH === undefined){
-    new OSCButton(document.getElementById('sub-h-clear'));
-    
-    new OSCSwipeable(document.getElementById('sub-h-mag-type'),
+  
+    new OSCSwipeable(__ID('sub-h-mag-type'),
     [0,1,2,3,4],
     ['Linear', '-40 Db', '-60 Db', '-80 Db', '-100 Dd'],
     {'title' :'Magnitude type', 'buttonClass': 'col-4 col-lg-2'}
     );
     
-    new OSCSwipeable(document.getElementById('sub-h-spread-type'),
+    new OSCSwipeable(__ID('sub-h-spread-type'),
     [...Array(8).keys()],
     ['Harmonic', 'Shift U', 'Shift L', 'Power U', 'Power L', 'Sine', 'Power', 'Shift'],
     {'title' :'Spread type', 'buttonClass': 'col-6 col-lg-4'}
     );
     
-    new OSCKnob(document.getElementById('sub-h-stages'),
+    new OSCKnob(__ID('sub-h-stages'),
       null, {'min': 1, 'max': 5, 'type': 'Stages', 'itype': 'i'});
         
     for (let i = 1; i < 4; i++) {
-      let obj = new OSCKnob(document.getElementById(`sub-h-spread-${i}`));
+      let obj = new OSCKnob(__ID(`sub-h-spread-${i}`));
       obj.label="Parameter " + i;
     }
     
-    
-    //Magnitude faders
-    let swipe = zsession.elements['magnitude-selector'] =
-      new Swipeable ( document.getElementById('magnitude-selector') );
-    
-    swipe.setOptions (
-      [...Array(4).keys()],
-      ['Harms 1-8', 'Harms 9-16', 'Harms 17-24', 'Harms 25-32']
-    );
-    swipe.setDialogData({'title': 'section', 'buttonClass': 'col-12'});
-    
-    swipe.selectElement.addEventListener('change', ()=>{
-        let pages = Array.from(document.getElementById('section-synth-harmonics')
-          .querySelectorAll('.mag-sec-page'));
-        let page = pages[swipe.selectElement.selectedIndex];
-        pages.filter ( p => p != page).
-          forEach ( (pg) => pg.classList.add('d-none'));
-          
-        page.classList.remove('d-none');
-    });
-    
-    let faders = document.getElementById('section-synth-harmonics')
-      .querySelectorAll('input[type=range]');
-    
-    for (let i = 0; i < 32; i++) {
-      let id = `magnitude-ph-${i}`;
-      faders[i].id = id;
-      faders[i].dataset.oscPath = `/synthcursor/Phmag${i}`;
-      new OSCFader(faders[i], CC_RANGE);//.oscpath=`/synthcursor/Phmag${i}`;
-    }
-    
-    //clear btn
-    zsession.oscElements['sub-h-clear'].HTMLElement
-      .addEventListener('act', ()=> {
-        document.getElementById('section-synth-harmonics')
-          .querySelectorAll('input[type=range]')
-          .forEach ( (el) => el.value = 0);
-    });
+    new OSCGraph(__ID('sub-magnitude'),32,0);
     
     zsession.initSubH = true;
   }
   
-  osc_synch_section(document.getElementById('section-synth-harmonics'))
+  osc_synch_section(__ID('section-synth-harmonics'))
     .then ( () => {
       loadSection ('section-synth-harmonics');
     });
@@ -1144,54 +1222,20 @@ function onSynthSubMagnitude() {
 
 function onSynthSubBandwidth() {
    if (zsession.initSubB === undefined){
-     new OSCSwipeable(document.getElementById('sub-band-init'),
+     new OSCSwipeable(__ID('sub-band-init'),
      [0,1,2],
      ['Zero', 'Rand', 'Ones']);
      
-     new OSCKnob(document.getElementById('sub-band-band'));
-     new OSCKnob(document.getElementById('sub-band-stretch'));
-     new OSCButton(document.getElementById('sub-bw-clear'));
-     
-      let swipe = zsession.elements['bw-selector'] =
-      new Swipeable ( document.getElementById('bw-selector') );
-    
-    swipe.setOptions (
-      [...Array(4).keys()],
-      ['RelBW 1-8', 'RelBW 9-16', 'RelBW 17-24', 'RelBW 25-32']
-    );
-    swipe.setDialogData({'title': 'section', 'buttonClass': 'col-12'});
-    
-    swipe.selectElement.addEventListener('change', ()=>{
-        let pages = Array.from(document.getElementById('synth-subsynth-bandwidth')
-          .querySelectorAll('.bw-sec-page'));
-        let page = pages[swipe.selectElement.selectedIndex];
-        pages.filter ( p => p != page).
-          forEach ( (pg) => pg.classList.add('d-none'));
-          
-        page.classList.remove('d-none');
-    });
-    
-    let faders = document.getElementById('synth-subsynth-bandwidth')
-      .querySelectorAll('input[type=range]');
-    
-    for (let i = 0; i < 32; i++) {
-      let id = `bw-ph-${i}`;
-      faders[i].id = id;
-      faders[i].dataset.oscPath = `/synthcursor/Phrelbw${i}`;
-      new OSCFader(faders[i], CC_RANGE);//.oscpath=`/synthcursor/Phmag${i}`;
-    }
-    //clear btn
-    zsession.oscElements['sub-bw-clear'].HTMLElement
-      .addEventListener('act', ()=> {
-        document.getElementById('synth-subsynth-bandwidth')
-          .querySelectorAll('input[type=range]')
-          .forEach ( (el) => el.value = 64);
-    });
+     new OSCKnob(__ID('sub-band-band'));
+     new OSCKnob(__ID('sub-band-stretch'));
+
+         
+   new OSCGraph(__ID('sub-relbw'),32,64);
     
      zsession.initSubB = true;
    }
    
-   osc_synch_section(document.getElementById('synth-subsynth-bandwidth'))
+   osc_synch_section(__ID('synth-subsynth-bandwidth'))
     .then ( ()=> {
       loadSection('synth-subsynth-bandwidth');
     });
@@ -1202,10 +1246,10 @@ function onNetwork() {
     .then ( (data) =>{
     zsession.hotspotMode = data.isHotSpot !== undefined;
     if (zsession.hotspotMode)
-      document.getElementById('network-hotspot')
+      __ID('network-hotspot')
         .innerHTML = "Restore local wifi";
     else
-      document.getElementById('network-hotspot')
+      __ID('network-hotspot')
         .innerHTML = "Enable hotspot";
     
     loadSection('section-system-network');
@@ -1228,13 +1272,13 @@ function onNetworkChange() {
 
 function onSystem() {
   loadSection('section-system');
-  setSelectedToolbarButton(document.getElementById('main-toolbar-system'));
+  setSelectedToolbarButton(__ID('main-toolbar-system'));
 }
 
 function onSystemInfo() {
   new ZynthoREST().query('system/info')
     .then ( (data) =>{
-      let section = document.getElementById('section-system-info');
+      let section = __ID('section-system-info');
       section.innerHTML = 
       `<p><b>RAM: </b> ${data.memory}</p>`
     + `<p><b>CPU temp: </b> ${data.cpuTemp}</p>`
@@ -1248,7 +1292,7 @@ function onSystemModulesReconnect() {
   if (!confirm ('reconnect to zynddsubfx?'))
     return;
     
-  let zyn = document.getElementById('module-zyn-status');
+  let zyn = __ID('module-zyn-status');
   zyn.classList.remove('fa-toggle-on', 'fa-toggle-off');
       
   new ZynthoREST().post('reconnect')
@@ -1270,11 +1314,11 @@ function onSystemModules() {
  
   new ZynthoREST().query('system/modules').then ( (data) =>{
     
-    let zyn = document.getElementById('module-zyn-status');
+    let zyn = __ID('module-zyn-status');
     zyn.classList.remove('fa-toggle-on', 'fa-toggle-off');
     zyn.classList.add( ( data.zynProcess != 'NA') 
          ? 'fa-toggle-on' : 'fa-toggle-off');
-    let jack = document.getElementById('module-jack-status');
+    let jack = __ID('module-jack-status');
     jack.classList.remove('fa-toggle-on', 'fa-toggle-off');
     jack.classList.add( ( data.jackProcess != 'NA') 
          ? 'fa-toggle-on' : 'fa-toggle-off');
@@ -1298,11 +1342,11 @@ function onSystemShutdown(reboot) {
 }
 
 function onPartInstrumentSave(backTo) {
-  let section = document.getElementById('section-save-instrument');
+  let section = __ID('section-save-instrument');
   section.dataset.back = backTo;
   
   new ZynthoREST().query('files/banks', null).then((data) =>{
-    let select = document.getElementById('save-instrument-bank-folder');
+    let select = __ID('save-instrument-bank-folder');
     select.innerHTML = '';
     data.cartridge.forEach ( (dir) => select.options.add(
       new Option(/\/([^\/]+)$/.exec(dir)[1], dir)));
@@ -1316,16 +1360,16 @@ function onPartInstrumentSave(backTo) {
       }
     );
   }).then ( (data)=> {
-    document.getElementById('save-instrument-name')
+    __ID('save-instrument-name')
       .value = data[osc_sanitize('/part/Pname')][0];
-    document.getElementById('save-instrument-author')
+    __ID('save-instrument-author')
       .value = data[osc_sanitize('/part/info.Pauthor')][0];
       
     if (!isNaN(zsession.lastLoadedInstrument[zsession.partID]))
-      document.getElementById('save-instrument-program')
+      __ID('save-instrument-program')
         .value = zsession.lastLoadedInstrument[zsession.partID];
     else
-      document.getElementById('save-instrument-program').value = -1;
+      __ID('save-instrument-program').value = -1;
       
     loadSection('section-save-instrument');
   });
@@ -1333,7 +1377,7 @@ function onPartInstrumentSave(backTo) {
 
 function onPartInstrumentSaveClick() {
   let folder = 
-    document.getElementById('save-instrument-bank-folder').value;
+    __ID('save-instrument-bank-folder').value;
   
    new ZynthoREST().query('files/banks/xiz', {'bank': folder} )
     .then( (data)=> {
@@ -1343,15 +1387,15 @@ function onPartInstrumentSaveClick() {
       fileDialog('save', files, {'folder':`/${folder}`}, 
         onPartInstrumentSaveOk);
       
-      document.getElementById('file-dialog-filename').value =
-        document.getElementById('save-instrument-name').value
+      __ID('file-dialog-filename').value =
+        __ID('save-instrument-name').value
         .replace(/[ :,\/]+/, '_')
         .concat('.xiz');
     });   
 }
 
 function onPartInstrumentSaveOk() {
-  let file = document.getElementById('file-dialog-filename').value;
+  let file = __ID('file-dialog-filename').value;
   if ( file == '' ) throw 'Empty file';
   
   if (!file.endsWith('xiz'))
@@ -1359,12 +1403,12 @@ function onPartInstrumentSaveOk() {
     
   new ZynthoREST().post('save_xiz',
     {
-      'program' : document.getElementById('save-instrument-program').value,
-      'bank' : document.getElementById('save-instrument-bank-folder').value,
+      'program' : __ID('save-instrument-program').value,
+      'bank' : __ID('save-instrument-bank-folder').value,
       'partID' : zsession.partID,
       'file' : file,
-      'name' : document.getElementById('save-instrument-name').value,
-      'author': document.getElementById('save-instrument-author').value
+      'name' : __ID('save-instrument-name').value,
+      'author': __ID('save-instrument-author').value
     }
   ).then ( (msg)=>{
       displayOutcome(msg);
@@ -1374,18 +1418,18 @@ function onPartInstrumentSaveOk() {
 function onPartMixer() {
   if (zsession.initPartMixer === undefined) {
     zsession.oscElements['part-enable'] =
-      new OSCBoolean(document.getElementById('part-enable'));
+      new OSCBoolean(__ID('part-enable'));
     zsession.oscElements['part-enable'].setLabel('Enable');
     
-    let volumeKnob = new OSCKnob(document.getElementById('part-volume'));
+    let volumeKnob = new OSCKnob(__ID('part-volume'));
     volumeKnob.setLabel('Volume');
     zsession.oscElements['part-volume'] = volumeKnob;
     
     zsession.oscElements['part-balance'] = 
-      new OSCKnob(document.getElementById('part-panning'));
+      new OSCKnob(__ID('part-panning'));
     zsession.oscElements['part-balance'].setLabel("Balance");
     
-    let btn = new OSCButton(document.getElementById('part-clear'));
+    let btn = new OSCButton(__ID('part-clear'));
     btn.HTMLElement.addEventListener('act',  ()=>{
       zsession.extdata.instruments[0] = {'name': 'Basic Sine Wave', 'path' : null};
       onToolbarUpdate();
@@ -1394,7 +1438,7 @@ function onPartMixer() {
     zsession.initPartMixer = true;
   }
   
-  osc_synch_section(document.getElementById('section-part-main'))
+  osc_synch_section(__ID('section-part-main'))
   .then ( ()=> {
     updatePartMixerBookmark();
     loadSection('section-part-main');
@@ -1405,7 +1449,7 @@ function onPartMixer() {
 function updatePartMixerBookmark() {
     //check bookmark status
     let instrument = zsession.extdata.instruments[zsession.partID];
-    let icon = document.getElementById('part-favorite');
+    let icon = __ID('part-favorite');
 
     if (instrument.name != null && instrument.path == null){ //bad status
       icon.classList.remove('far', 'fa', 'fa-bookmark');
@@ -1433,26 +1477,26 @@ function onMixer() {
     let bundleArray = [];
     
     for (let i = 0; i < 16; i++) {
-      new OSCBoolean(document.getElementById(`mixer-part-${i+1}-enabled`));
-      new OSCKnob(document.getElementById(`mixer-part-${i+1}-volume`))
-      new OSCKnob(document.getElementById(`mixer-part-${i+1}-pan`))
+      new OSCBoolean(__ID(`mixer-part-${i+1}-enabled`));
+      new OSCKnob(__ID(`mixer-part-${i+1}-volume`))
+      new OSCKnob(__ID(`mixer-part-${i+1}-pan`))
       bundleArray.push(`/part${i}/Pname`);
     }
     zsession.oscElements['bundle-mixer-names'] = new OSCBundle(bundleArray);
     
     zsession.initMixer = true;
   }
-  osc_synch_section(document.getElementById('section-mixer'))
+  osc_synch_section(__ID('section-mixer'))
     .then ( ()=>{
         return zsession.oscElements['bundle-mixer-names'].sync();
    }).then ( (data)=>{
         
         for (let i = 1; i < 17; i++){
-          document.getElementById(`mixer-part-${i}-name`).innerHTML =
+          __ID(`mixer-part-${i}-name`).innerHTML =
             (`${i}. `+data[`/part${i-1}/Pname`][0]);
         }
         loadSection('section-mixer');
-        setSelectedToolbarButton(document.getElementById('main-toolbar-mixer'));
+        setSelectedToolbarButton(__ID('main-toolbar-mixer'));
     });
 }
 function onPartControl() {
@@ -1460,7 +1504,7 @@ function onPartControl() {
   // Init controls
   if (zsession.initControl === undefined) {
      new OSCSwipeable(
-      document.getElementById('part-ctl-channel'),
+      __ID('part-ctl-channel'),
       OneToSixteen.map ( (e)=> e-1), 
       OneToSixteen.map( (val, index, arr) => 
         {return "#"+String(index+1).padStart(2,'0');} ),
@@ -1469,16 +1513,16 @@ function onPartControl() {
     
     //zsession.oscElements['part-ctl-channel'].setLabel('Midi channel', 'Midi');
     
-      new OSCMidiNote( document.getElementById('part-ctl-minkey') );
-      new OSCMidiNote( document.getElementById('part-ctl-maxkey') );
-      new OSCKnob( document.getElementById('part-ctl-transpose') )
+      new OSCMidiNote( __ID('part-ctl-minkey') );
+      new OSCMidiNote( __ID('part-ctl-maxkey') );
+      new OSCKnob( __ID('part-ctl-transpose') )
         .range = SEMITONE;
       
     zsession.initControl = true;
   }
   
    osc_synch_section(
-        document.getElementById('section-part-control'))
+        __ID('section-part-control'))
     .then ( () => {
       loadSection('section-part-control');
     setSelectedToolbarButton(
@@ -1499,7 +1543,7 @@ function onPartPlaystyle(event) {
 function onPartControlPoly() {
   if (zsession.initControlPoly === undefined) {
     new OSCSwipeable(
-      document.getElementById('part-ctl-polytype'),
+      __ID('part-ctl-polytype'),
       [0,1,2,3], 
       ['Poly', 'Mono', 'Legato', 'Latch'],
       { 'title' : 'Poly mode', 'class' : 'col-12' }
@@ -1508,11 +1552,11 @@ function onPartControlPoly() {
       .setLabel('Polyphony mode', 'Polyphony');
       
     
-      new OSCKnob(document.getElementById('part-ctl-keylimit'));
+      new OSCKnob(__ID('part-ctl-keylimit'));
     zsession.initControlPoly = true;
   }
   
-  osc_synch_section(document.getElementById('section-ctl-poly'))
+  osc_synch_section(__ID('section-ctl-poly'))
     .then ( () => {
     //enable section
     loadSection('section-ctl-poly');
@@ -1521,12 +1565,12 @@ function onPartControlPoly() {
 
 function onPartControlVelo() {
   if (zsession.initControlVelo === undefined) {
-      new OSCKnob(document.getElementById('part-ctl-velsns'));
-      new OSCKnob(document.getElementById('part-ctl-veloffs'));
+      new OSCKnob(__ID('part-ctl-velsns'));
+      new OSCKnob(__ID('part-ctl-veloffs'));
     zsession.initControlVelo = true;
   }
   
-  osc_synch_section(document.getElementById('section-ctl-velocity'))
+  osc_synch_section(__ID('section-ctl-velocity'))
     .then ( () => {
     //enable section
     loadSection('section-ctl-velocity');
@@ -1535,20 +1579,20 @@ function onPartControlVelo() {
 
 function onPartControlDepth() {
   if (zsession.initControlDepth === undefined) {  
-    new OSCKnob(document.getElementById('part-ctl-depth-pan'));
-    new OSCKnob(document.getElementById('part-ctl-depth-cutoff'));
-    new OSCKnob(document.getElementById('part-ctl-depth-q'));
-    new OSCKnob(document.getElementById('part-ctl-depth-modwheel'));
-    new OSCBoolean(document.getElementById('part-ctl-modwheel-exponential'));
-    new OSCBoolean(document.getElementById('part-ctl-bandwidth-exponential'));
-    new OSCKnob(document.getElementById('part-ctl-depth-bandwidth'));
-    new OSCBoolean(document.getElementById('part-ctl-expression-receive'));
-    new OSCBoolean(document.getElementById('part-ctl-volume-receive'));
-    new OSCBoolean(document.getElementById('part-ctl-fmamp-receive'));
-    new OSCBoolean(document.getElementById('part-ctl-sustain-receive'));
+    new OSCKnob(__ID('part-ctl-depth-pan'));
+    new OSCKnob(__ID('part-ctl-depth-cutoff'));
+    new OSCKnob(__ID('part-ctl-depth-q'));
+    new OSCKnob(__ID('part-ctl-depth-modwheel'));
+    new OSCBoolean(__ID('part-ctl-modwheel-exponential'));
+    new OSCBoolean(__ID('part-ctl-bandwidth-exponential'));
+    new OSCKnob(__ID('part-ctl-depth-bandwidth'));
+    new OSCBoolean(__ID('part-ctl-expression-receive'));
+    new OSCBoolean(__ID('part-ctl-volume-receive'));
+    new OSCBoolean(__ID('part-ctl-fmamp-receive'));
+    new OSCBoolean(__ID('part-ctl-sustain-receive'));
     zsession.initControlDepth = true;
   }
-  osc_synch_section(document.getElementById('section-part-control-response'))
+  osc_synch_section(__ID('section-part-control-response'))
     .then ( () => { loadSection('section-part-control-response');
   });
 }
@@ -1556,14 +1600,14 @@ function onPartControlDepth() {
 function onPartControlPitch() {
   if (zsession.initControlPitch === undefined) {  
     
-    new OSCKnob(document.getElementById('part-ctl-pitch-range'),
+    new OSCKnob(__ID('part-ctl-pitch-range'),
       null, BEND_RANGE);
     //zsession.oscElements['part-ctl-pitch-range']
     //  .range = BEND_RANGE;
       
-    new OSCBoolean(document.getElementById('part-ctl-pitch-split'));
+    new OSCBoolean(__ID('part-ctl-pitch-split'));
     
-    new OSCKnob(document.getElementById('part-ctl-pitch-range-down'),
+    new OSCKnob(__ID('part-ctl-pitch-range-down'),
       null, BEND_RANGE);
       //zsession.oscElements['part-ctl-pitch-range-down']
       //  .range = BEND_RANGE;
@@ -1573,7 +1617,7 @@ function onPartControlPitch() {
     zsession.initControlPitch = true;
   }
   
-  osc_synch_section(document.getElementById('section-part-control-pitch'))
+  osc_synch_section(__ID('section-part-control-pitch'))
     .then ( () => {
       loadSection('section-part-control-pitch');
   });
@@ -1581,25 +1625,25 @@ function onPartControlPitch() {
 
 function onPartControlPortamento() {
   if (zsession.initPartControlPortamento === undefined) {
-    new OSCBoolean(document.getElementById('part-ctl-port-enable'));
-    new OSCBoolean(document.getElementById('part-ctl-port-receive'));
-    new OSCKnob(document.getElementById('part-ctl-port-length'));
-    new OSCKnob(document.getElementById('part-ctl-port-updown'));
+    new OSCBoolean(__ID('part-ctl-port-enable'));
+    new OSCBoolean(__ID('part-ctl-port-receive'));
+    new OSCKnob(__ID('part-ctl-port-length'));
+    new OSCKnob(__ID('part-ctl-port-updown'));
     
-    new OSCBoolean(document.getElementById('part-ctl-port-proportional'));
-    new OSCKnob(document.getElementById('part-ctl-port-proprate'));
-    new OSCKnob(document.getElementById('part-ctl-port-propdepth'));
+    new OSCBoolean(__ID('part-ctl-port-proportional'));
+    new OSCKnob(__ID('part-ctl-port-proprate'));
+    new OSCKnob(__ID('part-ctl-port-propdepth'));
     
     zsession.oscElements['part-ctl-port-proportional']
       .bindEnable( 'part-ctl-port-proprate', 'part-ctl-port-propdepth' );
     
-    new OSCSwipeable(document.getElementById('part-ctl-port-pitchtype'),
+    new OSCSwipeable(__ID('part-ctl-port-pitchtype'),
       ['F', 'T'],
       ['Include','Exclude'],
       {'title': 'Threshold behaviour'}
       );
-    //new OSCBoolean(document.getElementById('part-ctl-port-pitchtype'));
-    new OSCKnob(document.getElementById('part-ctl-port-pitchthresh'));
+    //new OSCBoolean(__ID('part-ctl-port-pitchtype'));
+    new OSCKnob(__ID('part-ctl-port-pitchthresh'));
     zsession.initPartControlPortamento = true;
     
     zsession.oscElements['part-ctl-port-enable'].bindEnable(
@@ -1608,7 +1652,7 @@ function onPartControlPortamento() {
       'part-ctl-port-pitchthresh');
   }
   
-  osc_synch_section(document.getElementById('section-part-control-portamento'))
+  osc_synch_section(__ID('section-part-control-portamento'))
     .then ( () => {
       loadSection('section-part-control-portamento');
   });
@@ -1619,15 +1663,15 @@ function onPartFX() {
     
       //initialize send to global
       for (let i = 0; i < 4; i++)
-        new OSCKnob(document.getElementById(`part-fx-send-${i}`));
+        new OSCKnob(__ID(`part-fx-send-${i}`));
     
       //Initialize route matrix
       let entries = [0,1,2];
       let labels = ['Next', 'Part out', 'Dry out']
       for (let i = 0; i < 3; i++){
-        let obj = new OSCSwipeable(document.getElementById(`part-fx-route-${i}`),
+        let obj = new OSCSwipeable(__ID(`part-fx-route-${i}`),
           entries, labels, {'title' : 'Route part to...'});
-        document.getElementById(`p-r-trigger-${i}`)
+        __ID(`p-r-trigger-${i}`)
           .addEventListener('click', (ev)=>{
             obj.HTMLElement.querySelector("label").click()
          });
@@ -1635,7 +1679,7 @@ function onPartFX() {
          //obj.HTMLElement.addEventListener('sync',onPartFXMatrixUpdate);
       }
     
-    document.getElementById('section-part-fx').addEventListener(
+    __ID('section-part-fx').addEventListener(
       'preset', onPartFX);
     zsession.initPartFX = true;
   }
@@ -1645,7 +1689,7 @@ function onPartFX() {
       
     //fx buttons
     for (let i = 0; i < 3; i++) {
-      let element = document.getElementById(`part-fx-${i}`);
+      let element = __ID(`part-fx-${i}`);
       element.innerHTML = data.efx[i].name;
       showIf (element, !data.efx[i].bypass, 'disabled');
       onPartFxSetMatrixValue(i, data.efx[i].route);
@@ -1655,14 +1699,14 @@ function onPartFX() {
       let id = `part-fx-send-${i}`;
       zsession.oscElements[id].oscpath
         =`/Psysefxvol${i}/part${zsession.partID}`;
-      //let element = document.getElementById(id);
+      //let element = __ID(id);
       zsession.oscElements[id].setLabel(data.sysefxnames[i]);
       zsession.oscElements[id].setEnabled((data.sysefxnames[i] != 'None'));
       zsession.oscElements[id].setValue(data.send[i],true);
     }
     
     loadSection('section-part-fx');
-    setSelectedToolbarButton(document.getElementById('part-toolbar-fx'));
+    setSelectedToolbarButton(__ID('part-toolbar-fx'));
   });
 }
 
@@ -1670,10 +1714,10 @@ function onPartFX() {
 function onPartFxSetMatrixValue(id, val) {
   for (let i = 0; i < 3; i++) {
       if (i != val) {
-        document.getElementById(`p-r-${id}-${i}`)
+        __ID(`p-r-${id}-${i}`)
           .classList.add('hide-content');
       } else {
-        document.getElementById(`p-r-${id}-${i}`)
+        __ID(`p-r-${id}-${i}`)
           .classList.remove('hide-content');
       }
   }
@@ -1712,15 +1756,15 @@ function onPartFXEdit(fxid) {
 function onPartFXEditFxChanged(event) {
   let changed = event.target.options[event.target.selectedIndex].text;
   let fxid = /\d+$/.exec(zsession.fxcursor)[0];
-  document.getElementById(`part-fx-${fxid}`).innerHTML = changed;
+  __ID(`part-fx-${fxid}`).innerHTML = changed;
 }
 
 function onPartFXEditFxBypass(event) {
   let fxid = /\d+$/.exec(zsession.fxcursor)[0];
   if (OSC_BOOL(event.detail[0]) == 'T')
-    document.getElementById(`part-fx-${fxid}`).classList.add('disabled');
+    __ID(`part-fx-${fxid}`).classList.add('disabled');
   else
-    document.getElementById(`part-fx-${fxid}`).classList.remove('disabled');
+    __ID(`part-fx-${fxid}`).classList.remove('disabled');
 }
 
 function onTempo() {
@@ -1738,43 +1782,6 @@ function onTempo() {
   }
 }
 
-function onToobarFavoriteClick() {
-  let status = $('#btnDoFavorite').hasClass('fas');
-  let request = !status;
-  
-  
-  let action = (value) ? 'set' : 'unset';
-        
-        //First, we update server
-        doAjax({method:'post', url: window.location.href+"setFavorite",
-                data: JSON.stringify({"instrument": instrument, "action": action}), 
-                contentType: 'application/json; charset=utf-8'},
-        function() {
-          
-          //Then we update client, without ajax
-          if (!value) {
-            zsession.banks['Favorites']= 
-            zsession.banks.Favorites.filter( (entry) => {
-              return (entry.path != instrument.path);});
-          } else {
-            zsession.banks.Favorites.push(instrument);
-          }
-          
-          //last we update display
-          if (instrument.name == zsession.getInstrument().name) {
-            $('#btnDoFavorite i').removeClass('far fas');
-            $('#btnDoFavorite i').addClass((value == true) ? 'fas' : 'far'); 
-          }
-          
-          let li = $('#selInstruments li.selected');
-          if (li !== undefined && li.attr('data-instrument') == instrument.path) {
-            $(li).empty();
-            $(li).text(instrument.name);
-            if (value)
-              $(li).append('<span style="float:right"><i class="fas fa-star"></i></span>');
-          }
-        });
-}
 
 function onToolbarChangePart(index) { 
   if (index !== undefined && index !== '')
@@ -1800,7 +1807,7 @@ function onToolbarUpdate() {
     else
       name = 'Base sine wave';
   
-    document.getElementById('instrumentName').innerHTML = 
+    __ID('instrumentName').innerHTML = 
           (enabled)
             ? `#${zsession.partID+1}: ${name}`
             : `#${zsession.partID+1}: Disabled`;

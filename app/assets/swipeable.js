@@ -82,6 +82,7 @@ class Swipeable {
       }
       
       var elements = Array.from(selid.options)
+        .filter ( opt => opt.disabled == false )
         .map ( opt => opt.text );
 
       document.getElementById('selectBox')
@@ -216,25 +217,47 @@ function dialogBox(elements, data) {
     
   let isSelected = false,  html = "", value="", element = null;
   
+  const classList= buttonClass.split(' ');
+  
   for (let i = 0; i < elements.length; i++) {
+    let col = document.createElement('div');
+    col.classList.add(...classList);
+    
+    let button = document.createElement('button');
+    button.classList.add('button');
+    if (i == defValue)
+      button.classList.add('selected');
+    
+    button.value = value;
+    button.innerHTML=elements[i];
+    button.value = (data.scores != null) ? data.scores[i] : i;
+    button.addEventListener('click', onSelectBoxItemSelection);
+    button.addEventListener('dblclick', onSelectBoxItemSelection);
+    
+    col.appendChild(button);
+    dialogContent.appendChild(col);
+    
+    /*
     element = elements[i];
-    isSelected = (i == defValue) ? 'btn-selected' : '';
-    value = (data.scores != null) ? data.scores[i] : i;
+    isSelected = 
+    value = 
     html = `<div class="${buttonClass}"><button style="width:100%" value="${value}" class="${isSelected} button">${element}</button></div>`;
     dialogContent.innerHTML += html;
+    * */
   }
   
   //selection
-  let list = dialogContent.getElementsByTagName('button');
+  /*let list = dialogContent.getElementsByTagName('button');
   for (let btn of list) {
       btn.addEventListener('click', onSelectBoxItemSelection);
-  }
+  }*/
   
   dialogBox.open = true;
 }
 
 function onSelectBoxItemSelection(e) {
-  if (e.target.classList.contains('selected')){
+  if (e.type == 'dblclick'  || 
+    e.target.classList.contains('selected')){
     onSelectBoxOk(e);
     return;
   } else {
@@ -249,6 +272,8 @@ function onSelectBoxItemSelection(e) {
 
 function onSelectBoxOk(event) {
   event.stopPropagation();
+  event.preventDefault();
+  
   let selection = document.querySelector('#selectBox .container .selected');
   if (selection == null)
     return;

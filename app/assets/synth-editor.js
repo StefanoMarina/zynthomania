@@ -10,7 +10,7 @@ const FILTER_TYPE_PARTIAL = [ 'Ptype' , '', 'type-svf', 'type-moog', 'type-comb'
 
 function loadFrequencyEditor(title, target, path, lfo, envelope) {
   if (zsession.initFrequencyEditor === undefined) {
-   let osc = new OSCSwipeable(document.getElementById('freq-detune-type'),
+   let osc = new OSCSwipeable(__ID('freq-detune-type'),
       [...Array(4).keys()],
       ['L. 35c', 'L. 10c', 'Ex. 100c', 'E. 1200c'],
       {'title': 'Select detune range'});
@@ -18,21 +18,21 @@ function loadFrequencyEditor(title, target, path, lfo, envelope) {
    osc.HTMLElement.querySelector('select')
     .addEventListener('change', onFreqEditChangeTune);
     
-    osc = new OSCKnob(document.getElementById('freq-detune'));
+    osc = new OSCKnob(__ID('freq-detune'));
     osc.serverRange = PITCH_CONTROL;
     
-    new OSCKnob(document.getElementById('freq-coarse'),undefined,
+    new OSCKnob(__ID('freq-coarse'),undefined,
       SEMITONE);
     
-    new OSCKnob(document.getElementById('freq-octave'),undefined,
+    new OSCKnob(__ID('freq-octave'),undefined,
       OCTAVE);
     
-    new OSCBoolean(document.getElementById('freq-para'));
+    new OSCBoolean(__ID('freq-para'));
     
     zsession.initFrequencyEditor = true;
   }
   
-  let section = document.getElementById('synth-frequency-editor');
+  let section = __ID('synth-frequency-editor');
   section.querySelectorAll('div[data-partial]')
     .forEach ( (el) => {
       let id = el.id;
@@ -60,7 +60,7 @@ function loadFrequencyEditor(title, target, path, lfo, envelope) {
   }
   
   
-  let el = document.getElementById('freq-open-lfo');
+  let el = __ID('freq-open-lfo');
   if (lfo != null) {
     el.classList.remove('hidden');
     el.addEventListener('click', lfo);
@@ -68,7 +68,7 @@ function loadFrequencyEditor(title, target, path, lfo, envelope) {
     el.classList.add('hidden');
   }
   
-  el = document.getElementById('freq-open-envelope');
+  el = __ID('freq-open-envelope');
   if (envelope != null) {
     el.classList.remove('hidden');
     el.addEventListener('click', envelope);
@@ -102,14 +102,14 @@ function loadEnvelopeEditor(title, unused, path, envelopes) {
   ];
       
   if (zsession.initADSREditor === undefined) {
-    new OSCBoolean(document.getElementById('adsr-forced-release'));
+    new OSCBoolean(__ID('adsr-forced-release'));
     
-    new OSCKnob(document.getElementById('adsr-stretch'));
-    envKnobs.forEach ( (id) => new OSCKnob(document.getElementById(id)));
+    new OSCKnob(__ID('adsr-stretch'));
+    envKnobs.forEach ( (id) => new OSCKnob(__ID(id)));
     zsession.initADSREditor = true;
   }
   
-  let section = document.getElementById('synth-envelope-editor');
+  let section = __ID('synth-envelope-editor');
   section.dataset.title=title;
    
   let showAnyTime = envelopes.slice(0,3).reduce ( (sum, b) => sum+b);
@@ -165,16 +165,16 @@ function loadLFOEditor(enabled, path) {
       'lfo-rand-freq'];
       
   if (zsession.initLFOEditor === undefined) {
-    new OSCBoolean(document.getElementById('lfo-cont'));
+    new OSCBoolean(__ID('lfo-cont'));
     
-    new OSCSwipeable(document.getElementById('lfo-type'),
+    new OSCSwipeable(__ID('lfo-type'),
     [...Array(8).keys()],
     ['Sine','Triangle','Square','RampUp','RampDo','E1dn','E2dn','Random'],
     {'title':'Lfo Type'}
     );
     
       knobs. forEach( (id)=> {
-          let obj = new OSCKnob(document.getElementById(id));
+          let obj = new OSCKnob(__ID(id));
       });
     
     zsession.oscElements['lfo-frequency'].setRange(HERTZ);
@@ -188,7 +188,7 @@ function loadLFOEditor(enabled, path) {
     zsession.oscElements['lfo-fadein'].setRange(LFO_FADER);
     zsession.oscElements['lfo-fadeout'].setRange(LFO_FADER);
     
-    new OSCTempo(document.getElementById('lfo-sync'))
+    new OSCTempo(__ID('lfo-sync'))
       .bypassable = zsession.oscElements['lfo-frequency'];
     
    
@@ -203,7 +203,7 @@ function loadLFOEditor(enabled, path) {
   
   zsession.oscElements['lfo-sync'].setOscPath(path);
   
-  let section = document.getElementById('synth-lfo-editor');
+  let section = __ID('synth-lfo-editor');
   
  
    //section.dataset.back = backTo;
@@ -232,7 +232,7 @@ function onFilterEditorCategoryChange(ev) {
 function loadFilterEditor (title, enabled, path, lfo, envelope) {
   if (zsession.initFilterEditor === undefined){
      
-    let swipe = new OSCSwipeable (document.getElementById('filter-category'),
+    let swipe = new OSCSwipeable (__ID('filter-category'),
       [0,2,3,4],
       ['Analog', 'St. Var.', 'Moog', 'Comb'],
       {'title': 'Filter category'}
@@ -241,21 +241,21 @@ function loadFilterEditor (title, enabled, path, lfo, envelope) {
     swipe.selectElement.addEventListener('change',onFilterEditorCategoryChange);
     swipe.HTMLElement.addEventListener('sync',onFilterEditorCategoryChange);
     
-    new OSCSwipeable (document.getElementById('filter-type'),
+    new OSCSwipeable (__ID('filter-type'),
       [], [], {'title': 'Filter type', 'buttonClass': 'col-6'})
         .path = path;
         
-    new OSCKnob(document.getElementById('filter-stages'), null,
+    new OSCKnob(__ID('filter-stages'), null,
       { 'min': 1, 'max': 5, 'type': 'Filter stages', 'itype': 'i' }
     );
     
-    new OSCKnob(document.getElementById('filter-gain'), null,
+    new OSCKnob(__ID('filter-gain'), null,
       { 'min': -30.0, 'max': 30.0, 'type': 'Gain', 'itype': 'f' }
     );
-    new OSCKnob(document.getElementById('filter-basefreq'), null,
+    new OSCKnob(__ID('filter-basefreq'), null,
       { 'min': 31.25, 'max': 32000.0, 'type': 'Frequency', 'itype': 'f' }
     );
-    new OSCKnob(document.getElementById('filter-q'), null,
+    new OSCKnob(__ID('filter-q'), null,
       { 'min': 0.01, 'max': 1000.0, 'type': 'Peak', 'itype': 'f' }
     );
     
@@ -274,14 +274,14 @@ function loadFilterEditor (title, enabled, path, lfo, envelope) {
   
   zsession.oscElements['filter-type'].oscpath = null;
   
-  let elementLFO = document.getElementById('filter-edit-lfo');
+  let elementLFO = __ID('filter-edit-lfo');
   if (lfo) {
     elementLFO.classList.remove('hidden');
     elementLFO.addEventListener('click', lfo);
   } else{
     elementLFO.classList.add('hidden');
   }
-  let elementEnvelope = document.getElementById('filter-edit-envelope');
+  let elementEnvelope = __ID('filter-edit-envelope');
   if (envelope) {
     elementEnvelope.classList.remove('hidden');
     elementEnvelope.addEventListener('click', envelope);
@@ -289,7 +289,7 @@ function loadFilterEditor (title, enabled, path, lfo, envelope) {
     elementEnvelope.classList.add('hidden');
   }
 
-  let section = document.getElementById('synth-edit-filter');
+  let section = __ID('synth-edit-filter');
   section.dataset.title = title;
   //section.dataset.back = backto;
   osc_synch_section(section,true).then ( () => {
@@ -299,18 +299,17 @@ function loadFilterEditor (title, enabled, path, lfo, envelope) {
 
 function loadAmplitudeEditor(title, lfo, envelope) {
   if (zsession.initAmplitudeEditor === undefined){
-    new OSCKnob(document.getElementById('amp-volume'),
+    new OSCKnob(__ID('amp-volume'),
       null, { 'min': -60, 'max' : 0, 'type': 'Volume (hz)', 'itype': 'f'});
     
     ['amp-panning', 'amp-delay', 'amp-punch', 'amp-punch-time']
-      .forEach ( (id) => new OSCKnob(document.getElementById(id)));
+      .forEach ( (id) => new OSCKnob(__ID(id)));
     
-    new OSCBoolean (document.getElementById('amp-bypass-global'));
+    new OSCBoolean (__ID('amp-bypass-global'));
     
     zsession.initAmplitudeEditor = true;
   }
   
-
   //bp and delay only on ad single voice
   let useBypassAndDelay = 
     zsession.synthID == 'ad' &&
@@ -345,14 +344,14 @@ function loadAmplitudeEditor(title, lfo, envelope) {
     case 'pad': volumeObj.oscpath = '/synthcursor/PVolume'; break;
   }
   
-  let elementLFO = document.getElementById('amp-edit-lfo');
+  let elementLFO = __ID('amp-edit-lfo');
   if (lfo) {
     elementLFO.classList.remove('hidden');
     elementLFO.addEventListener('click', lfo);
   } else{
     elementLFO.classList.add('hidden');
   }
-  let elementEnvelope = document.getElementById('amp-edit-envelope');
+  let elementEnvelope = __ID('amp-edit-envelope');
   if (envelope) {
     elementEnvelope.classList.remove('hidden');
     elementEnvelope.addEventListener('click', envelope);
@@ -360,10 +359,163 @@ function loadAmplitudeEditor(title, lfo, envelope) {
     elementEnvelope.classList.add('hidden');
   }
   
-  let section = document.getElementById('synth-edit-amp');
+  let section = __ID('synth-edit-amp');
   section.dataset.title = title;
   
   osc_synch_section(section).then ( ()=>{
     loadSection('synth-edit-amp',true);
+  });
+}
+
+function loadOscillatorEditor(title, oscillator, useNoise) {
+   if (zsession.initSynthOSC === undefined) {
+    
+    /* synth-osc-wave is a representation of an OSC bundle actually */
+    let swipe = new Swipeable(__ID('synth-osc-wave'));
+    swipe.setOptions( [...Array(18).keys(),19,20],
+      ['Sine','Triangle','Pulse','Saw','Power','Gauss','Diode','Abs.Sine',
+        'Pulse Sine','Stch.Sine', 'Chirp', 'Abs.Stch.Sine', 'Chebyshev',
+        'Square','Spike','Circle', 'Power sinus', 'Custom', 'White noise','Pink noise' ]
+    );
+    swipe.setDialogData({ 'title' : 'Select base wave', 'buttonClass': 'col-6 col-lg-4'});
+    
+    swipe.selectElement.addEventListener('change', (ev) => {
+      let value = ev.target.options[ev.target.selectedIndex].value;
+      let typeValue = Math.max(0, value - 18);
+      zsession.oscElements['synth-generator-type'].act (typeValue);
+      
+      if (typeValue == 0)
+        zsession.oscElements['synth-generator-wave'].act(value);
+    });
+  
+    zsession.elements['synth-osc-wave'] = swipe;
+    
+    new OSCElement(__ID('synth-generator-type'));
+    new OSCElement(__ID('synth-generator-wave'));
+    let wavep = new OSCKnob(__ID('synth-osc-wave-p'),
+      undefined, BALANCE);
+    wavep.serverRange = CC_RANGE;
+    
+    new OSCSwipeable(__ID('synth-osc-shaper'),
+      [...Array(18).keys()],
+      ['None', 'Arc Tang.', 'Asymmetric', 'Pow', 'Sine', 'Quantis.', 'Zigzag',
+        'Limiter', 'Up Limit', 'Low limit', 'Inverse Lim.', 'Clip', 'Asym2', 'Pow2', 'Sigmoid',
+        'TanH','Cubic','Square' ],
+      { 'title': 'Select shaper', 'buttonClass': 'col-6 col-lg-4'}
+      );
+    new OSCKnob(__ID('synth-osc-shaper-p'));
+      
+    new OSCSwipeable(__ID('synth-osc-h'),
+      [...Array(9).keys()],
+      ['Off', 'On', 'Square', '2xSub','2xAdd', '3xSub', '3xAdd',
+        '4xSub', '4xAdd'],
+      { 'title': 'Select harmonics', 'buttonClass': 'col-4 col-lg-3'}
+      );
+    new OSCKnob(__ID('synth-osc-h-f'),undefined,
+      {'type': 'Harmonic frequency', 'min' : 0, 'max' : 255, 'itype': 'i'} );
+    new OSCKnob(__ID('synth-osc-h-p'),undefined,
+      {'type': 'Harmonic power', 'min' :0, 'max' : 200, 'itype': 'i'} );
+    new OSCKnob(__ID('synth-osc-h-r'),undefined,
+      {'type': 'Power %', 'min' : 0, 'max' : 100, 'itype': 'i'} );
+  
+    new OSCGraph(__ID('synth-mag'),127);
+      
+      
+    //H725 knob - replace random harmonics
+    let element  = new OSCKnob(__ID('synth-osc-robot'));
+    /*
+    let roboBundle = zsession.oscElements['bundle-robot'] 
+      = new OSCBundle(['/osccursor/Prand', '/osccursor/Pamprandtype']);
+    element.HTMLElement.addEventListener('act', (ev)=>{
+      let value = element.getRotationValue();
+      if (value == 0)
+        roboBundle.act([0,0]);
+      else
+        roboBundle.act([convert_value(CC_RANGE,BALANCE,value),1]);
+    });
+    */
+     //T800 knob - replace base function modulation
+  element = new OSCKnob(__ID('synth-osc-terminator'));
+  /*
+  zsession.oscElements['bundle-terminator']
+    = new OSCBundle(['/osccursor/Pbasefuncmodulation',
+      '/osccursor/Pbasefuncmodulationpar3']);
+  element.HTMLElement.addEventListener('act', (ev) =>{ 
+    let value = parseInt(element.getRotationValue());
+    let half = Math.floor( (value+1)/2);
+    if (value == 0)
+      zsession.oscElements['bundle-terminator'].act([0,0]);
+    else if (value < 64)
+      zsession.oscElements['bundle-terminator'].act([1,0]);
+    else if (value < 96)
+      zsession.oscElements['bundle-terminator'].act([1,half]);
+    else
+      zsession.oscElements['bundle-terminator'].act([2,half]);
+  });
+  */
+  //Robodevil knob - replace post modulation
+  element = new OSCKnob(__ID('synth-osc-robodevil'));
+  /*
+  zsession.oscElements['bundle-robodevil']
+    = new OSCBundle(['/osccursor/Pmodulation',
+      '/osccursor/Pmodulationpar3']);
+  element.HTMLElement.addEventListener('act', (ev) =>{ 
+    let value = parseInt(element.getRotationValue());
+    let half = Math.floor( (value+1)/2);
+    if (value == 0)
+      zsession.oscElements['bundle-robodevil'].act([0,0]);
+    else if (value < 64)
+      zsession.oscElements['bundle-robodevil'].act([1,0]);
+    else if (value < 96)
+      zsession.oscElements['bundle-robodevil'].act([2,half]);
+    else
+      zsession.oscElements['bundle-robodevil'].act([3,half]);
+  });
+  */
+    zsession.initSynthOSC = true;
+  }
+  
+ 
+  
+  //Update oscillator cursor
+  zsession.osccursor = osc_sanitize(`synthcursor/${oscillator}`);
+  
+  var bChangedPart = false;
+  if (zsession.voiceID == ADSYNTH_GLOBAL) {
+    zsession.voiceID = 0;
+    zsession.elements['adsynth-voice'].setSelection(1);
+    
+    bChangedPart = true; //setting for later as sync clears msg
+  }
+  
+  [18,19].forEach ( (i)=> 
+    zsession.elements['synth-osc-wave'].selectElement.options[i]
+    .enabled=useNoise );
+  
+  osc_synch_section(__ID('section-synth-osc')). then ( () => {
+    
+    //Synch complex swiper
+    let val = parseInt(zsession.oscElements['synth-generator-type']
+      .HTMLElement.dataset.value);
+    if (val > 0) {
+      zsession.elements['synth-osc-wave'].setSelection(val+16);
+   
+      Array.from( document.querySelectorAll('#section-synth-osc .osc-element'))
+        .map ( (el) => el.id)
+        .forEach ( (id) => {zsession.oscElements[id].setEnabled(false)});
+    } else {
+      zsession.elements['synth-osc-wave'].setSelection(
+        zsession.oscElements['synth-generator-wave']
+          .HTMLElement.dataset.oscValue );
+      Array.from( document.querySelectorAll('#section-synth-osc .osc-element'))
+        .map ( (el) => el.id)
+        .filter ( (id) => id != null)
+        .forEach ( (id) => {zsession.oscElements[id].setEnabled(true)});
+    }
+        
+    if (bChangedPart)
+      displayOutcome('Switching to adsynth voice #1');
+      
+    loadSection('section-synth-osc', true);
   });
 }

@@ -30,7 +30,7 @@ function osc_sanitize(path) {
   return  path
           .replace('osccursor/', `${window.zsession.osccursor}/`)
           .replace('synthcursor/', `${window.zsession.synthcursor}/`)
-          .replace('part/', `part${window.zsession.partID}/`)
+          .replace(/part(?=(\/|$))/, `part${window.zsession.partID}`)
           .replace('/fxcursor', window.zsession.fxcursor)
           .replace('kit/', `kit${window.zsession.layerID}/`)
           .replace('#synth#', window.zsession.synthID)
@@ -43,7 +43,7 @@ function osc_sanitize(path) {
 function osc_map_to_control(data) {
   res = {};
   for (let [key,value] of Object.entries(data)) {
-    let reskey = /\/([\w\d ]+)$/.exec(key)[1];
+    let reskey = /\/([[\w\d ]+)$/.exec(key)[1];
     res[reskey] = (value.length == 1) ? value[0] : value;
   }
   return res;
@@ -67,14 +67,17 @@ function osc_script_to_single_value(data) {
  * updates all at once
  */
 function osc_synch_section(section,force=false) {
-  
+  if ( typeof section === 'string')
+    section = __ID(section);
+    
   var allElements = Array.from(
     section.querySelectorAll('.osc-element')
   ). filter ( (el) => (force)
       ? el 
       : (el.dataset.oscPath !== undefined
         && !el.classList.contains('osc-button'))
-  ).map ( el => el.id);
+  )
+  .map ( el => el.id);
   
   if (allElements.length == 0) {
     console.log('osc_synch_section: empty request');
@@ -87,12 +90,15 @@ function osc_synch_section(section,force=false) {
 function osc_synch(...elements) {
   let objects = Array.from(arguments).map ( (id) => zsession.oscElements[id] )
       .filter( element => element != undefined && element.isEnabled() && 
-      (element.oscpath != "" && element.oscpath != null) );
+      (element.oscpath != null) );
   
   if (objects.length == 0) {
     console.log(`osc_synch: empty request despite original length ${elements.length}`);
     return Promise.resolve(0);
   }
+  
+  let arrayObjects = objects.filter ( (obj) => Array.isArray(obj.oscpath));
+  objects = objects.filter ( (obj) => !Array.isArray(obj.oscpath) && obj.oscpath != "" );
   
   /**
    * Bug
@@ -132,6 +138,13 @@ function osc_synch(...elements) {
             new CustomEvent('sync', {'detail' :
                 { [`${path}`]:  result[path]}
             }));
+        }
+        
+        if (arrayObjects.length > 0) {
+          console.log('sync-ing multiple osc objects...');
+          let promises = arrayObjects.map ( (obj) =>
+            obj.sync() );
+          return Promise.allSettled(promises);
         }
     })
     .catch ( (msg) => {
@@ -194,9 +207,10 @@ class OSCChannel {
     if (params != undefined) {
       if (Array.isArray(script)) {
         for (let i=0; i<script.length;i++)
-          script[i] += (params[i] != "") 
-            ? (' ' + params[i])
-            : '';
+          script[i] += ` ${params[i]}`;
+          //script[i] += (params[i] != "") 
+          //  ? (' ' + params[i])
+          //  : '';
       } else {
         script += ' ' + params;
       }
@@ -229,8 +243,8 @@ class OSCChannel {
 //OSC Bundle will trigger sync/act events unrelated to html elements
 //this cannot be called by osc_synch BTW
 class OSCBundle extends OSCChannel {
-  constructor(path, translator) {
-    super(path, translator);
+  constructor(path, range = null) {
+    super(path, range);
     this.syncEventCallbacks = [];
     this.actEventCallbacks = [];
   }
@@ -280,10 +294,14 @@ class OSCElement extends OSCChannel{
       range
     );
     
+    if (clickableObject == null)
+      throw `Error - creating osc object with null/undef html element.`;
+      
     //Register element
     if (window.zsession.oscElements[clickableObject.id]) {
-      console.log(`Error! ${clickableObject.id} already registered.`);
-      return;
+      let msg = `Error! ${clickableObject.id} already registered.`
+      console.log(msg);
+      throw msg;
     } else {
       window.zsession.oscElements[clickableObject.id] = this;
     }
@@ -599,6 +617,7 @@ class InertKnob extends OSCKnob {
   }
   
 }
+
 /*
  * OSC Swipeables
  */
@@ -900,5 +919,173 @@ class OSCEQFilter extends OSCElement{
     this.gain.HTMLElement.disabled = !enabled;
     this.q.setEnabled(enabled);
     this.stages.setEnabled(enabled);
+  }
+}
+
+class OSCGraph extends OSCElement {
+  constructor(container, dots, defValue=64, range=CC_RANGE) {
+    super(container);
+    this.defaultValue = defValue;
+    this.dots = Array(dots).fill(defValue);
+    this.currentDot = 0;
+    
+    this.canvas = document.createElement('canvas');
+    this.canvas.classList.add('canvas','col-12');
+    this.canvas.style.minWidth = `${dots}px`;
+    
+    //this.HTMLElement.appendChild(this.canvas);
+    
+    let CREATE_SLIDER = (id, max) => {
+      let r = document.createElement('div');
+      r.classList.add('row','no-gutters');
+      
+      let range = document.createElement('input');
+      range.type = 'range';
+      range.style.width='100%';
+      range.id = `${container.id}-${id}`;
+      range.name= range.id;
+      range.min = 0;
+      range.max = max;
+      this[`${id}Range`] = range;
+      
+      let col = document.createElement('div');
+      col.classList.add('col-10');
+      col.appendChild(range);
+      r.appendChild(col);
+      
+      col = document.createElement('div');
+      col.classList.add('col-2');
+      let label = document.createElement('p')
+      label.classList.add('tc');
+      //label.id = `${container.id}-${id}-label`;
+      this[`${id}RangeLabel`] =label;
+      col.appendChild(label);
+      r.appendChild(col);
+      
+      return r;
+    };
+    
+    let content = document.createElement('div');
+    content.classList.add('container','content');
+    content.appendChild(this.canvas);
+    
+    content.appendChild(CREATE_SLIDER('target', this.dots.length-1));
+    //listen to select harmonic
+    this.targetRange.addEventListener('input', ( ev ) => {
+      this.currentDot = parseInt(this.targetRange.value);
+      this.targetRangeLabel.innerHTML = this.currentDot;
+      this.updateDot();
+      this.drawBars();
+    });
+    
+    content.appendChild(CREATE_SLIDER('value', range.max));
+    
+    let btn =document.createElement('button');
+    btn.classList.add('selected', 'col-4', 'offset-8');
+    btn.innerHTML = '<small>Reset</small>';
+    btn.addEventListener('click', ()=>{
+      this.setValue(Array(this.defaultValue));
+    });
+    
+    content.append(btn);
+    
+     this.valueRange.addEventListener('change', ( ev ) => {
+      this.dots[this.currentDot] = parseInt(this.valueRange.value);
+      this.valueRangeLabel.innerHTML = this.valueRange.value;
+      this.act(this.valueRange.value, this.currentDot).then ( ()=>{
+        this.drawBars();
+      });
+    });
+    
+    this.targetRange.value = 0;
+    this.targetRangeLabel.innerHTML = '0';
+    this.updateDot();
+    
+    this.HTMLElement.appendChild(content);
+    //this.setContent(content);
+    this.oscpath = []; //force OSC synch to call sync()
+  }
+  
+  drawBars() {
+    let height = this.canvas.height;
+    let step =  toFixed(this.canvas.width / this.dots.length, 2);
+    let canvasHeight = {'min': 0, 'max' : height, 'itype' : 'i' };
+    
+    let ctx = this.canvas.getContext('2d');
+    ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+    
+    let mid = height-convert_value(this.range, canvasHeight, 
+      Math.round(this.range.max/2));
+    
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    ctx.strokeStyle = 'gray';
+    ctx.lineWidth = 1;
+    ctx.lineTo(this.canvas.width, mid);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(0, height-convert_value(this.range, canvasHeight, this.dots[0]));
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < this.dots.length; i++) {
+      ctx.lineTo(i*step, height-convert_value(this.range, canvasHeight, this.dots[i]));
+    }
+    
+    ctx.stroke();
+    
+    //draw selection
+    ctx.beginPath();
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    let prevDot = Math.max ( 0, this.currentDot-1 );
+    let nextDot = Math.min ( this.dots.length-1, this.currentDot+1 );
+    
+    ctx.moveTo(prevDot*step, 
+      height-convert_value(this.range, canvasHeight, this.dots[prevDot]));
+      
+    for (let i = prevDot; i < nextDot+1; i++)
+      ctx.lineTo(i*step, height-convert_value(this.range, canvasHeight, this.dots[i]));
+    ctx.stroke();
+  }
+  
+  act (param, index) {
+    return new ZynthoREST().post('script', 
+      {'script' : `${this.HTMLElement.dataset.oscPath}${index} ${param}`})
+    .then ( (data)=>{
+      this.HTMLElement.dispatchEvent (new CustomEvent('act',
+        {  'detail' : data}));
+      this.updateDot();
+      return data;
+    });
+  }
+  
+  sync() {
+    //this.displayScript();
+    let path = osc_sanitize(this.HTMLElement.dataset.oscPath)
+      + `[0-${this.dots.length-1}]`;
+      
+    return new ZynthoREST().query('script/harmonics', {
+      'path' : path
+    }).then ( (data) => {
+      this.HTMLElement.dispatchEvent (new CustomEvent('sync',
+        {  'detail' : data}));
+
+      this.setValue(data, true);
+      
+      return data;
+    });
+  }
+  
+  setValue(values) {
+    this.dots = values;
+    this.drawBars();
+    this.updateDot();
+  }
+  
+  updateDot() {
+    this.valueRange.value = 
+    this.valueRangeLabel.innerHTML = 
+      this.dots[this.targetRange.value];
   }
 }

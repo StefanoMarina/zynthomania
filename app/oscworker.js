@@ -51,8 +51,13 @@ class OSCWorker extends EventEmitter {
    * @throws if called with an empty stack
    */
   listen(timeout) {
-    if (this.stack.length == 0)
-      throw "OscWorker required to listen with an empty stack";
+    /**
+     * todo: stack may be already fulfilled
+     */
+    if (this.stack.length == 0) {
+      return Promise.resolve(true);
+    }
+      //throw "OscWorker required to listen with an empty stack";
     
     if (timeout !== undefined) {
       setTimeout(() =>{
@@ -80,9 +85,9 @@ class OSCWorker extends EventEmitter {
   push(address, callback) {
     if (address === undefined)
       throw "OscWorker push request with undefined address";
-    else if ( address.startsWith('/zmania') ) {
+    /*else if ( address.startsWith('/zmania') ) {
       return;
-    }
+    }*/
       
     this.stack.push(address);
     this.emitter.once(address, (packet) => {
@@ -111,7 +116,7 @@ class OSCWorker extends EventEmitter {
     
     packets.forEach( (pack) => {  
         this.push(pack.address, callback)
-    } );
+    });
   }
 }
 

@@ -17,6 +17,7 @@
 ***********************************************************************/
 
 function startTimerDisplay() {
+  //console.log('starting timer');
   //Loading timer
   clearTimeout(window.timers['msg']);
         
@@ -24,6 +25,10 @@ function startTimerDisplay() {
   //Run loading animation if not already
   let statusIcon = document.getElementById('q-status');
   let messageObject = document.getElementById('message');
+  
+  let bigtext = document.getElementById('instrumentName');
+  zsession.oldMessage= bigtext.innerHTML;
+  bigtext.innerHTML = 'Loading';
   
   //Run loading animation if not already
   if (messageObject.innerHTML.match(/^[ \.]+$/) == null) {
@@ -58,8 +63,15 @@ function startTimerDisplay() {
 }
 
 function stopTimerDisplay() {
+  //console.log('stopping timer');
   clearInterval(window.timers['ajax']);
-  window.timers['ajax'] = null;
+  delete window.timers['ajax'];
+  
+  let bigtext = document.getElementById('instrumentName');
+  if (zsession.oldMessage) {
+    document.getElementById('instrumentName').innerHTML = zsession.oldMessage;
+    delete zsession['oldMessage'];
+  }
   //document.getElementById('message').innerHTML = '';
 }
 
@@ -84,6 +96,7 @@ class ZynthoREST {
   constructor() {
     this.contentType = 'application/json; charset=utf-8';
     this.dataType = 'application/json';
+    this.timeout = 5000;
   }
   
   //Wraps XHR in a promise, auto-handle, error
@@ -101,6 +114,7 @@ class ZynthoREST {
       xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
         displayOutcome(''); //just show OK
+       // stopTimerDiplay();
         
         if (xhr.status === 200)
           resolve( (this.responseText.length > 0)
@@ -113,10 +127,11 @@ class ZynthoREST {
         }
       };
 
-      xhr.timeout = 5000;
+      xhr.timeout = this.timeout;
       xhr.ontimeout =  ()=> {
-        displayOutcome('Timeout!', true);
-        let errorMsg = xhr.status + "-" + xhr.statusText;
+        //stopTimerDisplay();
+        let errorMsg = `Timeout! ${xhr.status} - ${xhr.statusText}`;
+        displayOutcome(errorMsg, true);
         reject(errorMsg);
       };
       xhr.send(params.data);

@@ -1,3 +1,19 @@
+<section id="section-synth-layer" data-title="Synth" class="container">
+  <p><small>Enable one of these layers to begin synth-ing.</small></p>
+  <div class="row">
+    <div class="col-4"><button class="button selected osc-button"
+      data-osc-path="/part/kit/Padenabled T"
+    >Adsynth</button></div>
+    <div class="col-4"><button class="button selected osc-button"
+      data-osc-path="/part/kit/Psubenabled T"
+    >Subsynth</button></div>
+    <div class="col-4"><button class="button selected osc-button"
+      data-osc-path="/part/kit/Ppadenabled T"
+    >Padsynth</button></div>
+  </div>
+</section>
+
+<!-- adsynth main -->
 <section id="section-synth-adsynth" data-title="Adsynth" class="container">
   <div class="row">
     <div class="col-2 panel">
@@ -13,99 +29,106 @@
     </div>
   </div>
   
-  <p class="d-block d-lg-none"><small>Click control to enable, swipe/long touch to open section.</small></p>
-  <p class="d-lg-block d-none"><small>Click control to enable, Left click to open section.</small></p>
+  <div id="synth-adsynth-enable-before">
+    <small>Enable synth before opening any section.</small>
+  </div>
   
-  <table class="matrix" id="voice-matrix">
-    <tr>
-      <td><label
-        id="adsynth-vco-env-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PFreqEnvelopeEnabled"
-        data-label="VCO Envelope">ENV</label>
-      </td>
-      <td><i class="fa fa-chevron-right"></i></td>
-      <td><button class="minimal button" onclick="onSynthFrequency()">VCO</button></td>
-      <td><i class="fa fa-chevron-left"></i></td>
-      <td><label
-        id="adsynth-vco-lfo-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PFreqLfoEnabled"
-        data-label="VCO LFO">LFO</label>
-      </td>
-    </tr>
-     <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td>
-        <label
-        id="adsynth-voice-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/Enabled"
-        data-label="Voice">Voice</label>
-      </td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-      <td><label
-        id="adsynth-vcf-env-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PFilterEnvelopeEnabled"
-        data-label="VCF Envelope">ENV</label></td>
-      <td><i class="fa fa-chevron-right"></i></td>
-      <td><label
-        id="adsynth-vcf-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PFilterEnabled"
-        data-label="VCF">VCF</label></td>
-      <td><i class="fa fa-chevron-left"></i></td>
-      <td><label
-        id="adsynth-vcf-lfo-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PFreqLfoEnabled"
-        data-label="VCF LFO">LFO</label></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-     <td><label
-        id="adsynth-vca-env-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PAmpEnvelopeEnabled"
-        data-label="VCA Envelope">ENV</label></td>
-      <td><i class="fa fa-chevron-right"></i></td>
-      <td><button class="minimal button" onclick="onSynthAmplitude()">VCA</button></td>
-      <td><i class="fa fa-chevron-left"></i></td>
-      <td><label
-        id="adsynth-vca-lfo-enable" 
-        class="osc-element osc-path-element"
-        data-osc-path="/synthcursor/PAmpLfoEnabled"
-        data-label="VCA LFO">LFO</label></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-  </table>
-  
-  <h4>Global Controls</h4>
-  <div class="row justify-content-center">
-    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFrequency(127)">Frequency</button></div>
-    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFilter(127)">Filter</button></div>
-    <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthAmplitude(127)">Amp</button></div>
+  <div id="synth-adsynth-matrix">
+    <p class="d-block d-lg-none"><small>Click control to enable, swipe/long touch to open section.</small></p>
+    <p class="d-lg-block d-none"><small>Click control to enable, Left click to open section.</small></p>
+    
+    <table class="matrix" id="voice-matrix">
+      <tr>
+        <td><label
+          id="adsynth-vco-env-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PFreqEnvelopeEnabled"
+          data-label="VCO Envelope">ENV</label>
+        </td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td><button class="minimal button" onclick="onSynthFrequency()">VCO</button></td>
+        <td><i class="fa fa-chevron-left"></i></td>
+        <td><label
+          id="adsynth-vco-lfo-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PFreqLfoEnabled"
+          data-label="VCO LFO">LFO</label>
+        </td>
+      </tr>
+       <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+        <td><button class="minimal button" onclick="onSynthAdsynthFM()">FM</button></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td>
+          <label
+          id="adsynth-voice-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/Enabled"
+          data-label="OSC">Voice</label>
+        </td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+        <td><label
+          id="adsynth-vcf-env-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PFilterEnvelopeEnabled"
+          data-label="VCF Envelope">ENV</label></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td><label
+          id="adsynth-vcf-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PFilterEnabled"
+          data-label="VCF">VCF</label></td>
+        <td><i class="fa fa-chevron-left"></i></td>
+        <td><label
+          id="adsynth-vcf-lfo-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PFreqLfoEnabled"
+          data-label="VCF LFO">LFO</label></td>
+      </tr>
+      <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+       <td><label
+          id="adsynth-vca-env-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PAmpEnvelopeEnabled"
+          data-label="VCA Envelope">ENV</label></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td><button class="minimal button" onclick="onSynthAmplitude()">VCA</button></td>
+        <td><i class="fa fa-chevron-left"></i></td>
+        <td><label
+          id="adsynth-vca-lfo-enable" 
+          class="osc-element osc-path-element"
+          data-osc-path="/synthcursor/PAmpLfoEnabled"
+          data-label="VCA LFO">LFO</label></td>
+      </tr>
+      <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+    </table>
+    
+    <h4>Global Controls</h4>
+    <div class="row justify-content-center">
+      <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFrequency(127)">Frequency</button></div>
+      <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthFilter(127)">Filter</button></div>
+      <div class="col-4 col-md-3 col-lg-2 panel"><button class="button" onclick="onSynthAmplitude(127)">Amp</button></div>
+    </div>
   </div>
   
 </section>
@@ -151,7 +174,7 @@
     <tr>
       <td><button class="minimal button" onclick="onSynthSubMagnitude()">HARM</button></td>
       <td><i class="fa fa-chevron-right"></i></td>
-      <td><i>VOICE</i></td>
+      <td><i class="fas fa-wave-square"></i></td>
       <td><i class="fa fa-chevron-left"></i></td>
       <td><button class="minimal button" onclick="onSynthSubBandwidth()">BW</button></td>
     </tr>
@@ -206,65 +229,74 @@
     </div>
     
   </div>
-  <p class="d-block d-lg-none"><small>Click control to enable, swipe/long touch to open section.</small></p>
-  <p class="d-lg-block d-none"><small>Click control to enable, Left click to open section.</small></p>
-  <small>Enable PAD before entering a section.</small>
-  <table class="matrix">
-    <tr>
-      <td><button class="minimal button" onclick="onSynthFrequencyEnvelope()">ENV</button></td>
-      <td><i class="fa fa-chevron-right"></i></td>
-      <td><button class="minimal button" onclick="onSynthFrequency()">VCO</button></td>
-      <td><i class="fa fa-chevron-left"></i></td>
-      <td><button class="minimal button" onclick="onSynthFrequencyLFO()">LFO</button></td>
-    </tr>
+  <div id="synth-padsynth-enable-before">
+    <small>Enable synth before opening any section.</small>
+  </div>
+  <div id="synth-padsynth-matrix">
+    <p class="d-block d-lg-none"><small>Click control to enable, swipe/long touch to open section.</small></p>
+    <p class="d-lg-block d-none"><small>Click control to enable, Left click to open section.</small></p>
+    <table class="matrix">
+      <tr>
+        <td><button class="minimal button" onclick="onSynthFrequencyEnvelope()">ENV</button></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td><button class="minimal button" onclick="onSynthFrequency()">VCO</button></td>
+        <td><i class="fa fa-chevron-left"></i></td>
+        <td><button class="minimal button" onclick="onSynthFrequencyLFO()">LFO</button></td>
+      </tr>
+       <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+        <td><button class="button minimal" onclick="onSynthPADHarmonics()">HARM</button></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td>
+          <button class="button minimal"
+          onclick="onSynthPADOscillator()"
+            >Voice</button>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
      <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-      <td colspan="5"><small>Voice not editable :'(</small></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-   <tr>
-      <td><button class="minimal button" onclick="onSynthFilterEnvelope()">ENV</button></td>
-      <td><i class="fa fa-chevron-right"></i></td>
-      <td><button class="minimal button" onclick="onSynthFilter()">VCF</button></td>
-      <td><i class="fa fa-chevron-left"></i></td>
-      <td><button class="minimal button" onclick="onSynthFilterLFO()">LFO</button></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-      <td><button class="minimal button" onclick="onSynthAmplitudeEnvelope()">ENV</button></td>
-      <td><i class="fa fa-chevron-right"></i></td>
-      <td><button class="minimal button" onclick="onSynthAmplitude()">VCA</button></td>
-      <td><i class="fa fa-chevron-left"></i></td>
-      <td><button class="minimal button" onclick="onSynthAmplitudeLFO()">LFO</button></td>
-    </tr>
-    <tr>
-      <td colspan="2"></td>
-      <td><i class="fa fa-chevron-down"></i></td>
-      <td colspan="2"></td>
-    </tr>
-  </table>
+        <td><button class="minimal button" onclick="onSynthFilterEnvelope()">ENV</button></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td><button class="minimal button" onclick="onSynthFilter()">VCF</button></td>
+        <td><i class="fa fa-chevron-left"></i></td>
+        <td><button class="minimal button" onclick="onSynthFilterLFO()">LFO</button></td>
+      </tr>
+      <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+        <td><button class="minimal button" onclick="onSynthAmplitudeEnvelope()">ENV</button></td>
+        <td><i class="fa fa-chevron-right"></i></td>
+        <td><button class="minimal button" onclick="onSynthAmplitude()">VCA</button></td>
+        <td><i class="fa fa-chevron-left"></i></td>
+        <td><button class="minimal button" onclick="onSynthAmplitudeLFO()">LFO</button></td>
+      </tr>
+      <tr>
+        <td colspan="2"></td>
+        <td><i class="fa fa-chevron-down"></i></td>
+        <td colspan="2"></td>
+      </tr>
+    </table>
+  </div>
 </section>
   
-<!--Adsynth oscilllator -->
-<section id="section-synth-osc" data-title="Adsynth" class="container"
-  data-back="section-adsynth">
+<!--Oscillator editor -->
+<section id="section-synth-osc" data-title="Oscillator" class="container">
   <!-- Swipeable synth-osc-wave actually handles 2 OSC types -->
   <div class="osc-element d-none" id="synth-generator-type"
-    data-osc-path="/part/kit/synth/voice/Type"></div>
+    data-osc-path="/part/kit/adpars/voice/Type"></div>
   <div class="osc-element d-none" id="synth-generator-wave"
-    data-osc-path="/synthcursor/OscilSmp/Pcurrentbasefunc"></div>
+    data-osc-path="/osccursor/Pcurrentbasefunc"></div>
   
   <div class="row">
     <div class="col-12 col-lg-6 panel">
@@ -276,7 +308,8 @@
         </div>
         <div class="col-4">
           <div class="osc-element osc-knob minimal " id="synth-osc-wave-p"
-          data-osc-path="/synthcursor/OscilSmp/Pbasefuncpar" data-osc-type="i">
+          data-label="Wave Shape"
+          data-osc-path="/osccursor/Pbasefuncpar" data-osc-type="i">
           </div>
         </div>
       </div>
@@ -287,53 +320,124 @@
         <div class="col-8">
           <div class="osc-element minimal" id="synth-osc-shaper"
           data-label="Shaper function"
-          data-osc-path="/synthcursor/OscilSmp/Pwaveshapingfunction"></div>
+          data-osc-path="/osccursor/Pwaveshapingfunction"></div>
         </div>
         <div class="col-4">
           <div class="osc-element minimal osc-knob" id="synth-osc-shaper-p"
           data-label="Shaper value"
-          data-osc-path="/synthcursor/OscilSmp/Pwaveshaping" data-osc-type="i">
+          data-osc-path="/osccursor/Pwaveshaping" data-osc-type="i">
           </div>
         </div>
       </div>
     </div>
   </div>
+  <div class="row">
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="synth-osc-robot"
+        data-osc-path="/zmania/osccursor/H725"
+        data-label="H7-25"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="synth-osc-terminator"
+        data-osc-path="/zmania/osccursor/T800"
+        data-label="T-800"></div>
+    </div>
+    <div class="col-4 panel">
+      <div class="osc-element osc-knob" id="synth-osc-robodevil"
+        data-osc-path="/zmania/osccursor/Robodevil"
+        data-label="RoboDevil"></div>
+    </div>
+  </div>
+ 
   <div class="row">
     <div class="col-12 col-lg-6 panel">
       <div class="content row no-gutters border">
-        <header class="col-12 header osc-header">Harmonics</header>
-        <div class="col-4">
+        <header class="col-12 header osc-header">Adaptive Harmonics</header>
+        <div class="col-3">
           <div class="osc-element minimal" id="synth-osc-h"
             data-label="harmonics"
-            data-osc-path="/synthcursor/OscilSmp/Padaptiveharmonics"></div>
+            data-osc-path="/osccursor/Padaptiveharmonics"></div>
         </div>
-        <div class="col-4">
+        <div class="col-3">
           <div class="osc-element osc-knob minimal" id="synth-osc-h-f"
             data-label="harmonics freq"
-            data-osc-path="/synthcursor/OscilSmp/Padaptiveharmonicsbasefreq" data-osc-type="i">
+            data-osc-path="/osccursor/Padaptiveharmonicsbasefreq" data-osc-type="i">
           </div>
         </div>
-        <div class="col-4">
+        <div class="col-3">
           <div class="osc-element osc-knob minimal" id="synth-osc-h-p"
             data-label="harmonics power"
-            data-osc-path="/synthcursor/OscilSmp/Padaptiveharmonicspower" data-osc-type="i">
+            data-osc-path="/osccursor/Padaptiveharmonicspower" data-osc-type="i">
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="osc-element osc-knob minimal" id="synth-osc-h-r"
+            data-label="harmonics power"
+            data-osc-path="/osccursor/Padaptiveharmonicspar" data-osc-type="i">
           </div>
         </div>
       </div>
     </div>
   </div>
-  <h4>FM</h4>
-  <div class="row">
-    <div class="col-8 panel">
-      <div class="osc-element osc-swipeable" id='synth-osc-fm'
+  
+  <div class="osc-element osc-graph" data-label="Magnitude"
+    data-osc-path="/osccursor/magnitude" id="synth-mag">
+  </div>
+  
+</section>
+
+<!-- Adsynth FM Editor -->
+<section id="section-adsynth-fm" data-title="FM" data-back="section-adsynth">
+  <h4>FM Matrix</h4>
+   <table class="matrix" id="voice-matrix">
+    <tr>
+      <td><label
+        id="adsynth-fm-vco-env-enable" 
+        class="osc-element osc-path-element"
+        data-osc-path="/synthcursor/PFMFreqEnvelopeEnabled"
+        data-label="VCO Envelope">ENV</label>
+      </td>
+      <td><i class="fa fa-chevron-right"></i></td>
+      <td><button class="minimal button" onclick="onSynthFMFrequency()">VCO</button></td>
+      <td colspan="2"></td>
+    </tr>
+    <tr>
+      <td colspan="2"></td>
+      <td><i class="fa fa-chevron-down"></i></td>
+      <td colspan="2"></td>
+    </tr>
+    <tr>
+      <td>
+        <button class="minimal button" onclick="onSynthAdsynthFMOscillator()">Wave</button>
+      </td>
+      <td><i class="fa fa-chevron-right"></i></td>
+      <td>
+        <div class="osc-element minimal osc-swipeable" id='synth-osc-fm'
         data-osc-path="/synthcursor/PFMEnabled"
         data-label="FM Type">
-      </div>
-    </div>
-    <div class="col-4 panel">
-      <button class="button" onclick='onSynthFMFrequency()'>FM Frequency</button>
-    </div>
-  </div>
+        </div>
+      </td>
+      <td colspan="2"></td>
+    </tr>
+    <tr>
+      <td colspan="2"></td>
+      <td><i class="fa fa-chevron-down"></i></td>
+      <td colspan="2"></td>
+    </tr>
+    <tr>
+      <td><label
+        id="adsynth-fm-vca-env-enable" 
+        class="osc-element osc-path-element"
+        data-osc-path="/synthcursor/PFMAmpEnvelopeEnabled"
+        data-label="VCO Envelope">ENV</label>
+      </td>
+      <td><i class="fa fa-chevron-right"></i></td>
+      <td>VCA</td>      
+      <td colspan="2"></td>
+    </tr>
+  </table>
+  
+  <h4 id="VCA">VCA</h4>
   <div class="row">
     <div class="col-4 panel">
       <div class="osc-element osc-knob" id='synth-fm-volume'
@@ -364,7 +468,7 @@
      <div class="col-4 col-lg-2 panel">
         <div class="osc-element osc-knob" id="synth-uni-spread"
           data-osc-path="/synthcursor/Unison_frequency_spread"
-          data-label="Spread"></div>
+          data-label="Detune"></div>
      </div>
      <div class="col-4 col-lg-2 panel">
         <div class="osc-element osc-knob" id="synth-uni-phase"
@@ -729,75 +833,18 @@
       </div>
     </div>
   </div>
-  <div class="row">
-    <div class="col-1">
-      <div class="osc-element osc-button minimal"
-        id="sub-h-clear"
-        data-osc-path="/synthcursor/Phmag[0-31] 0"
-        ><div class="content"><i class="fa fa-undo"></i></div></div>
-    </div>
-    <div class="col">
-      <h4 class="d-none d-lg-block">Magnitude</h4>
-      <div class="swipeable d-lg-none" id="magnitude-selector"></div>
-    </div>
-  </div>
   
-  <div class="row p-top">
-    <div class="col-12 col-md-6 col-lg-4 d-lg-block mag-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block mag-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
-        <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block mag-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block mag-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
+  <div class="osc-graph osc-element" id="sub-magnitude"
+    data-osc-path="/synthcursor/Phmag"
+    data-label="Magnitude">
   </div>
-  
+
 </section>
 
 <!-- subsynth bandwidth -->
 <section id="synth-subsynth-bandwidth" class="container"
   data-title="Subsynth Bandwidth" data-back="section-synth-subsynth">
+  <small>Press <i class="fa fa-sync"></i> Apply after change.</small>
   <div class="row">
     <div class="col-6 col-lg-3 panel">
       <div class="osc-element osc-swipeable"
@@ -820,66 +867,130 @@
         ></div>
     </div>
   </div>
-  <div class="row">
-    <div class="col-3">
-      <div class="osc-element osc-button minimal"
-        id="sub-bw-clear"
-        data-osc-path="/synthcursor/Phmrelbw[0-31] 64"
-        ><div class="content"><i class="fa fa-undo"></i></div></div>
-    </div>
-    <div class="col">
-      <h4 class="d-none d-lg-block">Relative Bandwidth</h4>
-      <div class="swipeable d-lg-none" id="bw-selector"></div>
-    </div>
-  </div>
-  <div class="row p-top">
-    <div class="col-12 col-md-6 col-lg-4 d-lg-block bw-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block bw-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
-        <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block bw-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block bw-sec-page">
-      <div class="faderContainer">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-        <input type="range" orient="vertical" class="osc-element osc-fader">
-      </div>
-    </div>
+   <div class="osc-graph osc-element" id="sub-relbw"
+    data-osc-path="/synthcursor/Phrelbw"
+    data-label="Relative Bandwidth">
   </div>
 </section>
+
+<!-- padsynth harmonics -->
+<section id="synth-padsynth-harmonics" data-title="Harmonics"
+  data-back="section-synth-padsynth" class="container">
+  <div class="row justify-content-center">
+    <div class="col-6">
+      <div class="osc-swipeable osc-element minimal" id="pad-spectrum"
+        data-osc-path="/synthcursor/Pmode"></div>
+    </div>
+  </div>
+  
+  <h4>Metallizer</h4>
+  <small>overtones that gives metallic, ringy harmonics.</small>
+  <div class="row justify-content-center no-gutters border border-collapse">
+    <div class="col-6">
+      <div class="osc-swipeable osc-element" id="padsynth-ot-position"
+        data-osc-path="/synthcursor/Phrpos.type"
+        data-label="Position"></div>
+    </div>
+    <div class="col-2">
+      <div class="osc-element osc-knob" id="padsynth-ot-p1"
+      data-osc-path="/synthcursor/Phrpos.par1"
+      data-label="P1"></div>
+    </div>
+    <div class="col-2">
+      <div class="osc-element osc-knob" id="padsynth-ot-p2"
+      data-osc-path="/synthcursor/Phrpos.par2"
+      data-label="P2"></div>
+    </div>
+    <div class="col-2">
+      <div class="osc-element osc-knob" id="padsynth-ot-p3"
+      data-osc-path="/synthcursor/Phrpos.par3"
+      data-label="ForceH"></div>
+    </div>
+  </div>
+  
+  <div id="padsynth-bandwidth-section" class="m-top">
+    <h4>Bandwidth</h4>
+    <small>Bandwidth harmonics give a chorus-y feel.</small>
+    <div class="row justify-content-center">
+      <div class="col-8 panel">
+        <div class="osc-swipeable osc-element" id="padsynth-bw-scale"
+        data-osc-path="/synthcursor/Pbwscale"
+        data-label="Scale"></div>
+      </div>
+      <div class="col-4 panel">
+        <div class="osc-element osc-knob" id="padsynth-bw"
+        data-osc-path="/synthcursor/Pbandwidth"
+        data-label="Bandwidth;BW"></div>
+      </div>
+    </div>
+    <h4>Harmonic shape</h4>
+    <small>shape of a single harmonic</small>
+    <div class="row">
+      <div class="col-6 panel">
+        <div class="osc-element osc-swipeable" id="padsynth-bw-basetype"
+        data-label="Curve Shape"
+        data-osc-path="/synthcursor/Php.base.type" ></div>
+      </div>
+      <div class="col-6 panel">
+        <div class="osc-element osc-swipeable" id="padsynth-bw-onehalf"
+        data-label="Curve points"
+        data-osc-path="/synthcursor/Php.onehalf" ></div>  
+      </div>
+    </div>
+    <h4>Harmonic spread</h4>
+    <div class="row no-gutters">
+      <div class="col-3">
+        <div class="osc-element osc-knob" id="padsynth-bw-spread1"
+          data-label="Width" data-osc-path="/synthcursor/Php.base.par1">
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="osc-element osc-knob" id="padsynth-bw-spread2"
+          data-label="Repeat" data-osc-path="/synthcursor/Php.freqmult">
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="osc-element osc-knob" id="padsynth-bw-spread3"
+          data-label="Spread" data-osc-path="/synthcursor/Php.modulator.par1">
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="osc-element osc-knob" id="padsynth-bw-spread4"
+          data-label="Density" data-osc-path="/synthcursor/Php.modulator.freq">
+        </div>
+      </div>
+    </div>
+    <h4>2nd modulation</h4>
+    <small>2nd mod is applied to base shape.</small>
+    <div class="row">
+      <div class="col-6 panel">
+        <div class="osc-element osc-swipeable" id="padsynth-bw-amptype"
+        data-label="Curve Shape"
+        data-osc-path="/synthcursor/Php.amp.type" ></div>
+      </div>
+      <div class="col-6 panel">
+        <div class="osc-element osc-swipeable" id="padsynth-bw-ampmode"
+        data-label="Formula"
+        data-osc-path="/synthcursor/Php.amp.mode" ></div>  
+      </div>
+    </div>
+    <div class="row no-gutters">
+      <div class="col-4">
+        <div class="osc-element osc-boolean" id="padsynth-bw-autoscale"
+          data-label="autoscale" data-osc-path="/synthcursor/Php.autoscale">
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="osc-element osc-knob" id="padsynth-bw-amp-par1"
+          data-label="Stretch 1" data-osc-path="/synthcursor/Php.amp.par1">
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="osc-element osc-knob" id="padsynth-bw-amp-par2"
+          data-label="Stretch 2" data-osc-path="/synthcursor/Php.amp.par2">
+        </div>
+      </div>
+    </div>
+  </div>  
+</section>
+

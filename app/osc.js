@@ -88,4 +88,153 @@ module.exports.registerOSC = function (zynServer) {
        zconsole.error(`session save error: ${err}`);
      }
    });
+   
+   /*
+    * Special synth actions
+    */
+    
+  //H725 - adsynth but not padsynth
+  zynServer.parser.translate(
+    '/zmania/part[0-15]/kit[0-15]/adpars/VoicePar[0-7]/OscilSmp/H725')
+    .packets.map ( (packet) => packet.address )
+    .forEach ( (addr) => emitter.on(addr, zynthomania_osc_h725));
+  
+  zynServer.parser.translate(
+    '/zmania/part[0-15]/kit[0-15]/adpars/VoicePar[0-7]/OscilSmp/T800')
+    .packets.map ( (packet) => packet.address )
+    .forEach ( (addr) => emitter.on(addr, zynthomania_osc_T800));
+  zynServer.parser.translate(
+    '/zmania/part[0-15]/kit[0-15]/padpars/oscilgen/T800')
+    .packets.map ( (packet) => packet.address )
+    .forEach ( (addr) => emitter.on(addr, zynthomania_osc_T800));
+  
+  zynServer.parser.translate(
+    '/zmania/part[0-15]/kit[0-15]/adpars/VoicePar[0-7]/OscilSmp/Robodevil')
+    .packets.map ( (packet) => packet.address )
+    .forEach ( (addr) => emitter.on(addr, zynthomania_osc_RoboDevil));
+  zynServer.parser.translate(
+    '/zmania/part[0-15]/kit[0-15]/padpars/oscilgen/Robodevil')
+    .packets.map ( (packet) => packet.address )
+    .forEach ( (addr) => emitter.on(addr, zynthomania_osc_RoboDevil));
+}
+
+/**
+ * H725 function
+ */
+function zynthomania_osc_h725(zyn, args, address) {
+  let realpath = address.substr(7, address.length-4-7-1); //-param -zmania -/
+  zconsole.debug(`Real path : ${realpath}`);
+  
+  let paths = [`${realpath}/Prand`,
+      `${realpath}/Pamprandtype`,
+      `${realpath}/Pamprandpower`];
+   
+  if (args.length == 0) { //GET request
+    zyn.oscPromise(paths, 1000)
+    .then ( (result) => {
+  
+      let value = 0, randtype = result[paths[1]][0];
+      
+      if ( randtype > 0)
+        value = result[paths[2]][0];
+        
+      zyn.emit(address,  [{ 'type': 'i', 'value' : value }]);
+    });
+  } else {
+    
+     let value = args[0].value;
+     let scores = Array(3);
+     let rand = 64 - value;
+     
+     if (value == 0)
+        scores = [0,0,0];
+     else
+       scores = [rand, 1, value];
+    
+    let sends = [];
+    for (let i = 0; i < 3; i++)
+      sends.push(`${paths[i]} ${scores[i]}`);
+    
+    zyn.sendOSC(zyn.parser.translateLines(sends));
+  }
+}
+
+function zynthomania_osc_T800(zyn, args, address) {
+  let realpath = address.substr(7, address.length-4-7-1); //-param -zmania -/
+  zconsole.debug(`Real path : ${realpath}`);
+  
+  let paths = [
+      `${realpath}/Pbasefuncmodulationpar1`,
+      `${realpath}/Pbasefuncmodulation`,
+      `${realpath}/Pbasefuncmodulationpar3`
+  ];
+  
+  if (args.length == 0) { //GET request
+    zyn.oscPromise(paths, 1000).then ( (result)=>{
+      let value = result[paths[1]][0];
+      let type = result[paths[2]][0];
+      
+      if (type == 0)
+        value = 0;
+        
+      zyn.emit(address,  [{ 'type': 'i', 'value' : value }]);
+    });
+  } else { //set
+    let value = args[0].value;
+    let half = Math.floor( (value+1)/2);
+    if (value == 0)
+      scores = [0,0,0];
+    else if (value < 64)
+      scores = [value,1,0];
+    else if (value < 96)
+      scores = [value,1,half];
+    else
+      scores = [value,2,half];
+    
+    let sends = [];
+    for (let i = 0; i < 3; i++)
+      sends.push(`${paths[i]} ${scores[i]}`);
+    
+    zyn.sendOSC(zyn.parser.translateLines(sends));
+  }
+}
+
+function zynthomania_osc_RoboDevil(zyn, args, address) {
+  let realpath = address.substr(7, address.length-'Robodevil'.length-7-1); //-param -zmania -/
+  zconsole.debug(`Real path : ${realpath}`);
+  
+  let paths = [
+      `${realpath}/Pmodulationpar1`,
+      `${realpath}/Pmodulation`,
+      `${realpath}/Pmodulationpar3`
+  ];
+  
+  if (args.length == 0) { //GET request
+    zyn.oscPromise(paths, 1000).then ( (result)=>{
+      let value = result[paths[1]][0];
+      let type = result[paths[2]][0];
+      
+      if (type == 0)
+        value = 0;
+        
+      zyn.emit(address,  [{ 'type': 'i', 'value' : value }]);
+    });
+  } else { //set
+    let value = args[0].value;
+    let half = Math.floor( (value+1)/2);
+    if (value == 0)
+      scores = [0,0,0];
+    else if (value < 64)
+      scores = [value,1,0];
+    else if (value < 96)
+      scores = [value,2,half];
+    else
+      scores = [value,3,half];
+    
+    let sends = [];
+    for (let i = 0; i < 3; i++)
+      sends.push(`${paths[i]} ${scores[i]}`);
+    
+    zyn.sendOSC(zyn.parser.translateLines(sends));
+  }
 }

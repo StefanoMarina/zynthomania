@@ -310,7 +310,13 @@
                 <button class="minimal" id="synth-toolbar-pad-enabled" onclick="onSynth('pad')">pad</button>
               </nav>
             </div>
-            <div class="col-3"><div class="swipeable" id="adsynth-voice"></div></div>
+            <div class="col-3">
+                <div class="swipeable" id="adsynth-voice"></div>
+                <button class="button osc-button" id="padpars-prepare"
+                  data-osc-path="/part/kit/padpars/prepare">
+                  <i class="fa fa-sync"></i><small>Apply</small>
+                </button>
+            </div>
           </div>
         
         </header>

@@ -287,7 +287,7 @@ class ZynthoServer extends EventEmitter {
       if (oscMsg.address.startsWith('/zmania')) {
         zconsole.notice(`zyntho message on osc: ${oscMsg.address}`);
         let parsed = this.parser.translate(oscMsg.address);
-        this.oscEmitter.on(parsed.address, this, parsed.args);
+        this.oscEmitter.on(parsed.address, this, parsed.args, parse.address);
         return;
       }
       
@@ -765,7 +765,7 @@ class ZynthoServer extends EventEmitter {
         packet.packets.forEach( (p) => {
           if (p.address.startsWith('/zmania')) {
             zconsole.debug(`zyntho message on send-osc: ${p.address}`);
-            this.oscEmitter.emit(p.address, this, p.args)
+            this.oscEmitter.emit(p.address, this, p.args, p.address)
           } else {
             filteredBundle.packets.push(p);
           }
@@ -777,7 +777,7 @@ class ZynthoServer extends EventEmitter {
       return;
     } else if (packet.address.startsWith('/zmania')) {
       zconsole.debug(`single zyntho message on send-osc: ${packet.address}`);
-      this.oscEmitter.emit(packet.address, this, packet.args);
+      this.oscEmitter.emit(packet.address, this, packet.args, packet.address);
       return;
     } else 
       this.osc.send.call(this.osc, packet);
@@ -810,11 +810,14 @@ class ZynthoServer extends EventEmitter {
       ? this.parser.translateLines(messages)
       : this.parser.translate(messages);
     
+    
+    
     var result = {};
     worker.pushPacket(packet, (addr, args)=>{
       result[addr] = args.map ( arg => arg.value );
     });
     
+
     this.osc.send(packet);
     return worker.listen(timeout).then( ()=> {return result;});
   }

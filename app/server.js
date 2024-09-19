@@ -263,6 +263,7 @@ function post_script(req, res) {
       let index = 0;
       let key = add;
       
+      
       while (result[key] !== undefined) {
         key = `${add}_${++index}`;
       }
@@ -284,6 +285,8 @@ function post_script(req, res) {
   }
 }
 app.post('/script', post_script);
+
+
 
 /**
  * /status/partfx
@@ -471,6 +474,38 @@ function get_status_session (rq, res) {
   res.json ( app.zyntho.session);
 }
 app.get('/status/session', get_status_session);
+
+function get_script_harmonics(req,res) {
+  zconsole.logGet(req);
+  
+  if (req.query.path === undefined) {
+    res.statusMessage = 'Invalid OSC.';
+    res.status(400).end();
+    return;
+  }
+  
+  let path = req.query.path;
+  
+  let worker = new OSCWorker(app.zyntho);
+  let packet = app.zyntho.parser.translateLines(path);
+  
+  let result = Array(parseInt(packet.packets.length));
+  
+  worker.pushPacket(packet, ( addr, args )=> {
+    let index = parseInt(/(\d+)$/.exec(addr)[1]);
+    result[index] = args[0].value;
+  });
+  
+  app.zyntho.sendOSC(packet);
+  worker.listen(5000).then ( () => {
+    res.json(result);
+    res.end();
+  }).catch( (err) => {
+    res.statusMessage = 'Request timeout';
+    res.status(402).end();
+  });
+}
+app.get('/script/harmonics', get_script_harmonics);
 
 function get_system_info(req, res) {
   zconsole.logGet(req);  
