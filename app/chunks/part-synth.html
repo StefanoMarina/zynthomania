@@ -293,11 +293,12 @@
 <!--Oscillator editor -->
 <section id="section-synth-osc" data-title="Oscillator" class="container">
   <!-- Swipeable synth-osc-wave actually handles 2 OSC types -->
+  <!--
   <div class="osc-element d-none" id="synth-generator-type"
     data-osc-path="/part/kit/adpars/voice/Type"></div>
   <div class="osc-element d-none" id="synth-generator-wave"
     data-osc-path="/osccursor/Pcurrentbasefunc"></div>
-  
+  -->
   <div class="row">
     <div class="col-12 col-lg-6 panel">
       <div class="content row no-gutters border">
@@ -532,8 +533,8 @@
 <!-- general envelope editor -->
 <section id="synth-envelope-editor" class="container"
   data-copy="env">
-  <div class="row">
-    <div class="offset-2 col-4 panel">
+  <div class="row justify-content-center">
+    <div class="col-4 panel">
       <div class="osc-element osc-boolean" id="adsr-forced-release"
         data-label="Forced Release; F. release"
         data-partial="Pforcedrelease"></div>
@@ -545,51 +546,9 @@
     </div>
   </div>
   
-  <div id="env-section-times">
-    <h4>Envelope Times</h4>
-    <div class="row no-gutters">
-      <div class="offset-lg-0  col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-t-a"
-          data-partial="PA_dt"
-          data-label="Attack"></div>
-      </div>
-      <div class="col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-t-d"
-          data-partial="PA_dt"
-          data-label="Decay"></div>
-      </div>
-      <div class="col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-t-r"
-          data-partial="PR_dt"
-          data-label="Release"></div>
-      </div>
-    </div>
-  </div>
-  <div id="env-section-values">
-    <h4>Values at point</h4>
-    <div class="row no-gutters">
-      <div class="offset-lg-0 col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-v-a"
-          data-partial="PA_val"
-          data-label="Attack"></div>
-      </div>
-      <div class="col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-v-d"
-          data-partial="PD_val"
-          data-label="Decay"></div>
-      </div>
-      <div class="col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-v-s"
-          data-partial="PS_val"
-          data-label="Sustain"></div>
-      </div>
-      <div class="col-3 panel">
-        <div class="osc-element osc-knob" id="adsr-v-r"
-          data-partial="PR_val"
-          data-label="Release"></div>
-      </div>
-    </div>
-  </div>
+  <div class="osc-element osc-graph" id="synth-envelope-graph"
+    data-label="Graphic Envelope"></div>
+  
 </section>
 
 <!-- general LFO editor -->

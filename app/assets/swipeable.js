@@ -96,6 +96,9 @@ class Swipeable {
   }
 
   setSelection(index, trigger=false) {
+    if (index > this.selectElement.options.length)
+      throw `Swipeable ${this.element.id}: request ${index} is greater than length ${this.selectElement.options.length}`;
+      
     this.selectElement.selectedIndex = index;
     this.element.querySelector('label').innerHTML =
       this.selectElement.options[index].text;

@@ -846,7 +846,8 @@ function onSynthPadsynth() {
      showIf('synth-padsynth-enable-before', !value );
      showIf('synth-padsynth-matrix', value );
      __ID('padpars-prepare').disabled = !value;
-     
+
+     zsession.onChangeSynth=onSynth;
      zsession.reloadSynthSubSection = onSynthPadsynth;
      loadSection('section-synth-padsynth');
    });
@@ -1029,7 +1030,7 @@ function onSynthAmplitudeEnvelope() {
     
   loadEnvelopeEditor('Amp Envelope', 
    enable, sc,
-   [1,1,1,0,0,1,0]
+   'vca'
    );
 }
 
@@ -1084,7 +1085,10 @@ function onSynthFilterEnvelope() {
   loadEnvelopeEditor(
   'Filter Envelope', 
   enable, sc,
-  [1,1,1,1,1,0,1]
+  'vcf',
+  (enable) 
+    ? osc_sanitize('/synthcursor/VoiceFilter/Pfreq')
+    : osc_sanitize('/synthcursor/GlobalFilter/Pfreq')
   );
 }
 
@@ -1129,9 +1133,9 @@ function onSynthFrequencyEnvelope() {
   zsession.setCopy('env', `${sc}/`, onSynthFrequencyEnvelope);
   
   loadEnvelopeEditor(
-  'Wave Frequency Env.', 
+  'Frequency ASR', 
   enable, sc,
-  [1,0,1,1,0,0,1]
+  'vco'
   );
 }
 
@@ -1159,7 +1163,7 @@ function onSynthFMAmplitudeEnvelope() {
     
   loadEnvelopeEditor('FM Amp Envelope', 
    enable, sc,
-   [1,1,1,0,0,1,0]
+   'vca'
    );
 }
 

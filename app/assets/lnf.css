@@ -124,7 +124,7 @@ body {
 menu, nav, .navbar {
   margin-top: 5px;
   margin-bottom: 5px;
-  display: table;
+  display: table-row;
   width: 100%;
 }
 
@@ -226,11 +226,21 @@ button > .icon {display:inline-block; }
 }
 
 .selected > .icon, .icon.selected, .icon:hover {
-  background-color: var(--color-lcd) !important;
+  background-color: var(--color-lcd);
+}
+
+/* disable highlight for knobs */
+.selected > .i-knob, .i-knob.selected, .i-knob:hover {
+  background-color: transparent !important;
+  background-image: url('knob_alt.svg');
 }
 
 .i-knob {
   background-image: url('knob.svg');
+}
+
+.disabled .i-knob {
+  background-image: url('knob_disabled.svg');
 }
 
 /* knobs rotate */
@@ -688,6 +698,10 @@ section.row.opened {display: flex !important}
   .osc-knob.minimal {padding-top: 0.1em}
   .osc-element .fa, .osc-element .fas { font-size: 80% }
 }
+.osc-element canvas {
+  width: 95%;
+  height: 100%;
+}
 
 .osc-fader {
   writing-mode: vertical-lr;
@@ -696,7 +710,12 @@ section.row.opened {display: flex !important}
   width: 16px;
   vertical-align: bottom;
 }
-
+.osc-fader-h {
+  writing-mode: initial !important;
+  direction: initial !important;
+  appearance: initial !important;
+  width: 100% !important;
+}
 
 /*
  * Specific elements

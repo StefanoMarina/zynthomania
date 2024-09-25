@@ -132,6 +132,13 @@ const HERTZ = {
   fromBPM : function (bpm) { return bpm/60; }
 }
 
+const FILTER_RANGE = { 
+  'min': 31.25,
+  'max': 32000.0,
+  'type': 'Frequency', 
+  'itype': 'f' 
+}
+
 const LFO_FADER = {
   'type' : 'seconds (partial)',
   'min' : 0,
@@ -151,6 +158,18 @@ const BYTE_RANGE = {
   'min': 0,
   'max' : 255,
   'itype' : 'i'
+}
+
+const ENVELOPE_RANGE = {
+  'type' : 'Seconds',
+  'min' : 0,
+  'max' : 41,
+  'itype': 'f'
+}
+
+function toRange(number) {
+  let itype= Number.isInteger(number) ? 'i' : 'f';
+  return {'min': 0, 'max' : number, 'itype' : itype};
 }
 
 function convert_value(A,B,value) {

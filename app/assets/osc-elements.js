@@ -35,7 +35,7 @@ function osc_sanitize(path) {
           .replace('kit/', `kit${window.zsession.layerID}/`)
           .replace('#synth#', window.zsession.synthID)
           .replace('synth/', window.zsession.synthname+'/')
-          .replace('voice/', `${voice_translate}/`);
+          .replace(/voice(?=(\/|$))/, `${voice_translate}`);
 }
 
 //Reduce a sync result data object to its last parameters, removing
@@ -49,6 +49,12 @@ function osc_map_to_control(data) {
   return res;
 }
 
+/**
+ * This function turns single element array into direct value
+ * If the array contains more than one element,
+ * the original array is returned instead.
+ * @returns either a single value or an array
+ */
 function osc_script_to_single_value(data) {
   if (typeof data !== 'object') {
     return data;
@@ -412,6 +418,9 @@ class OSCElement extends OSCChannel{
       this.HTMLElement.classList.remove('disabled');
     else
       this.HTMLElement.classList.add('disabled');
+    
+    if (this.HTMLElement.tagName.toLowerCase() == 'input')
+      this.HTMLElement.disabled = !bool;
   }
   
   isEnabled() {
@@ -785,7 +794,7 @@ class OSCTempo extends OSCLabel {
 }
 
 class OSCFader extends OSCElement {
-  constructor(fader, range) {
+  constructor(fader, range=CC_RANGE) {
     super(fader, null, range);
     fader.min = range.min;
     fader.max = range.max;
@@ -1087,5 +1096,270 @@ class OSCGraph extends OSCElement {
     this.valueRange.value = 
     this.valueRangeLabel.innerHTML = 
       this.dots[this.targetRange.value];
+  }
+}
+
+class OSCEnvelope extends OSCElement {
+  constructor ( container ) {
+    super(container);
+    
+    //button bar
+    let row = document.createElement('div');
+    row.classList.add('row', 'justify-content-center');
+    
+    let swipediv = document.createElement('div');
+    swipediv.classList.add('swipeable');
+    swipediv.id = `${container.id}-swipe`;
+    
+    this.swipeable = new Swipeable(swipediv);
+    this.swipeable.setDialogData(
+      {'title': 'Envelope point', 'buttonClass': 'col-6' });
+      
+    //this.navbar = document.createElement('nav');
+    
+    this.swipeable.selectElement.addEventListener('change', (ev)=>{
+      this.setCurrentPoint(ev.target.options[ev.target.selectedIndex].value);
+    });
+    
+    row.appendChild(swipediv);
+    
+    //graph
+    this.canvas = document.createElement('canvas');
+    this.canvas.classList.add('canvas');
+    let content = document.createElement('div');
+    content.classList.add('content');
+    content.appendChild(row);
+    content.appendChild(this.canvas);
+    
+    let CREATE_SLIDER = (id, max) => {
+      let r = document.createElement('div');
+      r.classList.add('row','no-gutters');
+      
+      let range = document.createElement('input');
+      range.type = 'range';
+     // range.style.width='100%';
+      range.classList.add('osc-fader-h');
+      range.id = `${container.id}-${id}`;
+      range.name= range.id;
+      range.min = 0;
+      range.max = max;
+      this[`${id}Fader`] = new OSCFader(range);
+      
+      let col = document.createElement('div');
+      col.classList.add('col-10');
+      col.appendChild(range);
+      r.appendChild(col);
+      
+      col = document.createElement('div');
+      col.classList.add('col-2');
+      let label = document.createElement('label')
+      label.classList.add('tc');
+      label.id = `${container.id}-${id}-label`;
+      label.for = range.id;
+      range.addEventListener('change', (ev) => {
+        label.innerHTML = range.value;
+      });
+      //this[`${id}RangeLabel`] =label;
+      col.appendChild(label);
+      r.appendChild(col);
+      
+      return r;
+    };
+    
+    content.appendChild(CREATE_SLIDER('x',127));
+    content.appendChild(CREATE_SLIDER('y',127));
+    
+    
+    
+    this.xFader.HTMLElement.addEventListener('change', (ev)=>{
+      let value = parseInt(ev.target.value);
+      this.envelope.points[this.currentPoint].time = value;
+      this.drawEnvelope();
+    });
+    this.yFader.HTMLElement.addEventListener('change', (ev)=>{
+      let value = parseInt(ev.target.value);
+      this.envelope.points[this.currentPoint].value = value;
+      this.drawEnvelope();
+    });
+    
+    
+    container.appendChild(content);
+  }
+  
+  setEnvelope(path, mode, cutoffpath = null)  {
+    this.sourcePath = osc_sanitize(path);
+    this.oscpath = [];
+    switch (mode) {
+      case 'vco' : this.envelope = new VCOEnvelope(this.sourcePath);break;
+      case 'vca' : this.envelope = new VCAEnvelope(this.sourcePath);break;
+      case 'vcf' : this.envelope = new VCFEnvelope(this.sourcePath, cutoffpath);break;
+    }
+    
+    this.envelope.points.forEach ( (point) => {
+      if (point.timepath!=null)
+        this.oscpath.push(point.timepath);
+      if (point.valuepath!=null)
+        this.oscpath.push(point.valuepath);
+    });
+    
+    let availableButtons = this.envelope.points.filter ( p => !p.disabled);
+    this.swipeable.setOptions(
+      availableButtons.map ( p => this.envelope.points.indexOf(p) ),
+      availableButtons.map ( p => p.label)
+    );
+      
+    /*
+    this.navbar.innerHTML = '';
+    for (let i = 0; i < this.envelope.points.length; i++) {
+      if (i == this.envelope.sustain)
+        continue; //skip sustain
+        
+      let button = document.createElement('button');
+      button.innerHTML = this.envelope.points[i].label;
+      button.classList.add('envelope-selector');
+      button.value = i;
+      button.addEventListener('click', ()=>{
+        this.navbar.querySelectorAll('.envelope-selector.selected').forEach (
+          btn => btn.classList.remove('selected') );
+        button.classList.add('selected');
+        
+        this.setCurrentPoint(button.value);
+      });
+      this.navbar.appendChild(button);
+    }
+    */
+    this.setCurrentPoint(0);
+  }
+  
+  setCurrentPoint(index) {
+    this.currentPoint = index;
+    this.drawEnvelope();
+    
+    let point = this.envelope.points[index];
+
+    showIf(this.xFader.HTMLElement.parentNode.parentNode, 
+      point.timepath != null);
+    showIf(this.yFader.HTMLElement.parentNode.parentNode, 
+      point.valuepath != null);
+    
+    this.xFader.oscpath = point.timepath;
+    this.yFader.oscpath = point.valuepath;
+    
+    this.xFader.HTMLElement.value = point.time;
+    document.getElementById(`${this.HTMLElement.id}-x-label`)
+      .innerHTML = point.time;
+    this.yFader.HTMLElement.value = point.value;
+    document.getElementById(`${this.HTMLElement.id}-y-label`)
+      .innerHTML = point.value;
+  }
+  
+  setValue(data, fromServer=true) {
+    this.envelope.points.forEach ( point => {
+      if (point.timepath != null)
+        point.time = data[point.timepath][0];
+      if (point.valuepath != null)
+        point.value = data[point.valuepath][0];
+    });
+    
+    this.drawEnvelope();
+  }
+  
+  drawEnvelope() {
+    let ctx = this.canvas.getContext('2d');
+    ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+    
+    let mid = Math.floor(this.canvas.height/2);
+    
+    //gray 64 line
+    ctx.strokeStyle = 'gray';
+    ctx.lineWidth = 1;
+    
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    ctx.lineTo(this.canvas.width, mid);
+    ctx.stroke();
+    
+    let poles = this.envelope.convertPoints(this.canvas.width,
+      this.canvas.height);
+
+    this.drawPoles(ctx, poles);
+  
+  }
+  
+  testLine ( x, y, x2, y2) {
+     let ctx = this.canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();    
+  }
+  
+  drawPoles(ctx, poles) {
+    //draw values
+    ctx.strokeStyle = 'gray';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'gray';
+    ctx.font = '14px LCD';
+    
+    let cursor = 0;
+    
+    //write label 0
+    if (poles[0].label) {
+      ctx.fillText(poles[0].label, 4, 12);
+    }
+    
+    for (let i = 1; i < poles.length; i++) {
+      cursor += poles[i].pos[0];
+      
+      if (!poles[i].label)
+        continue;
+        
+      let pole = poles[i];
+      ctx.beginPath();
+      ctx.moveTo(cursor, 0);
+      ctx.lineTo(cursor, this.canvas.height);
+      ctx.stroke();
+      
+      let posX = (i == poles.length-1) 
+        ? cursor - (ctx.measureText(poles[i].label).width + 4 )
+        : cursor + 4;
+      //let posY =  Math.floor((pole.pos[1]+poles[i-1].pos[1])/2);
+      
+      ctx.fillText(poles[i].label, posX, 12);
+    }
+    
+    //draw lines
+    cursor = 0;
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < poles.length-1; i++) {
+      let pole = poles[i];
+      cursor += pole.pos[0];
+      
+      if (poles[i+1].style) {
+        ctx.stroke(); //close previous line
+        ctx.beginPath();
+        ctx.strokeStyle = poles[i+1].style;
+      }
+      ctx.moveTo(cursor, pole.pos[1]);
+      ctx.lineTo(cursor+poles[i+1].pos[0], poles[i+1].pos[1]);
+    }
+    ctx.stroke();
+    
+    //draw dots
+    cursor = 0;
+    for (let i = 0; i < poles.length; i++) {
+      cursor += poles[i].pos[0];      
+      if ( poles[i].disabled ) {
+        ctx.fillStyle = 'gray';
+        ctx.beginPath();
+        ctx.arc ( cursor, poles[i].pos[1], 4, 0, Math.PI*2);
+        ctx.fill();
+      } else  {
+        ctx.fillStyle = (i == this.currentPoint) ? 'red' : 'black';
+        ctx.fillRect ( cursor-4, poles[i].pos[1]-4, 8, 8);
+      }
+    }
   }
 }

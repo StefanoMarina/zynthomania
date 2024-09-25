@@ -247,7 +247,7 @@ function post_script(req, res) {
   try {
     bundle = (Array.isArray(req.body.script))
             ? app.zyntho.parser.translateLines(req.body.script)
-            :app.zyntho.parser.translate(req.body.script);
+            : app.zyntho.parser.translate(req.body.script);
     
   } catch (err) {
     res.statusMessage = 'Invalid syntax.';
@@ -263,7 +263,6 @@ function post_script(req, res) {
       let index = 0;
       let key = add;
       
-      
       while (result[key] !== undefined) {
         key = `${add}_${++index}`;
       }
@@ -274,6 +273,17 @@ function post_script(req, res) {
     
     app.zyntho.sendOSC(bundle);
     worker.listen(5000).then(()=>{
+      
+      if (req.body.asArray) {
+        let array = [];
+        //force result order to be in packets list order
+        bundle.packets.map ( (pack) => {
+          let val = result[pack.address];
+          //force single value if not array
+          array.push(val.length == 1 ? val[0] : val);
+        });
+      }
+      
       res.json(result);
     }).catch( ()=> {
       res.statusMessage='No OSC Response';
