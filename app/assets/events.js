@@ -46,7 +46,6 @@ function onPaste() {
 function onLoadPreset() {
   let val = __ID('toolbar-presets').value;
   let section = document.querySelector('section.opened');
-  console.log(`presets for section ${section}`);
   
   if (val == null) return;
   
@@ -68,6 +67,7 @@ function onLoadPreset() {
       return osc_synch_section(section);
     })
     .then (() => {
+      displayOutcome(`Loaded preset ${val}`);
       section.dispatchEvent(new CustomEvent('preset'));
     });
 }
@@ -139,25 +139,6 @@ function onBanksBankSelect() {
   promise.then ( (instruments) =>{
     __ID('bankName').innerHTML= "/"+selection;
     loadInstrumentSection(instruments, selection == 'favorites');
-    /*
-      console.log(instruments);
-      let select = __ID('select-instrument');
-      select.options.length = 0;
-      
-      instruments.forEach ( (instr) => {
-        let option = new Option ( instr.name, instr.path);
-        if (selection == 'favorites' ||
-          favPaths.indexOf(instr.path) > -1 ){
-            option.classList.add('bookmark');
-        }
-        select.options.add(option);
-      });
-      
-      select.size = select.options.length+1;
-      
-      __ID('bankName').innerHTML= "/"+selection;
-      loadSection('section-select-patch');
-      */
   });
 }
 
@@ -458,33 +439,37 @@ function onFXGlobal() {
       
     zsession.initFxGlobal = true;
   }
-    new ZynthoREST().post('script', {
-        'requestResult': 1, 'script': '/sysefx[0-3]/efftype'})
-      .then ( (data) => {
-        console.log(data);
+  __ID('fx-editor').dataset.preset = 'fxedit-global';
+  
+  new ZynthoREST().post('script', {
+      'requestResult': 1, 'script': '/sysefx[0-3]/efftype'})
+    .then ( (data) => {
+      //console.log(data);
+      
+      let section = __ID('section-global-fx');
+      
+      for (let i = 0; i < 4; i++) {
+        let btn = __ID(`glob-fx-${i}`);
+        let val = data[`/sysefx${i}/efftype`][0];
         
-        let section = __ID('section-global-fx');
+        btn.innerHTML = effectTypeToString(val);
         
-        for (let i = 0; i < 4; i++) {
-          let btn = __ID(`glob-fx-${i}`);
-          let val = data[`/sysefx${i}/efftype`][0];
-          
-          btn.innerHTML = effectTypeToString(val);
-          
-          section.querySelectorAll(`.gfx-name${i}`).forEach ( (el) => {
-            el.innerHTML = effectTypeToString(val,true);
-          });
-        }
-        
-        return osc_synch_section(__ID('section-global-fx'));
-    }).then (() =>{
-        loadSection('section-global-fx');
-        setSelectedToolbarButton(__ID('main-toolbar-fx'));
-    });
+        section.querySelectorAll(`.gfx-name${i}`).forEach ( (el) => {
+          el.innerHTML = effectTypeToString(val,true);
+        });
+      }
+      
+      return osc_synch_section(__ID('section-global-fx'));
+  }).then (() =>{
+      loadSection('section-global-fx');
+      setSelectedToolbarButton(__ID('main-toolbar-fx'));
+  });
 }
 
 function onFXGlobalEdit(fxid) {
     zsession.fxcursor=`/sysefx${fxid}`;
+    zsession.fxID = fxid;
+    
     zsession.setCopy('fx',`${zsession.fxcursor}/`, ()=> {
       onFXGlobalEdit(fxid);
     });
@@ -492,9 +477,11 @@ function onFXGlobalEdit(fxid) {
     new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
       .then ( (data) => {
         loadFXEditor(data, `Edit Glob FX #${fxid}`, 'section-global-fx');
-        document.querySelector('#fx-type select')
-          .addEventListener('change', onFXGlobalEditFxChanged);
         
+        let selectElement = document.querySelector('#fx-type select');
+        selectElement.removeEventListener('change', onFXGlobalEditFxChanged);
+        selectElement.addEventListener('change', onPartFXEditFxChanged);
+      
         zsession.oscElements['fx-part-bypass'].setEnabled(false);
         zsession.oscElements['fx-part-bypass']
           .HTMLElement.parentNode.classList.add('hidden');
@@ -872,8 +859,8 @@ function onSynthPADHarmonics() {
     });
     obj = new OSCSwipeable(__ID('padsynth-ot-position'),
       [...Array(8).keys()],
-      ['Harmonic', 'Shift Up', 'Shift Low', 'Power U', 'Power L',
-        'Sine', 'Power', 'Shift'],
+      ['Exact', 'Spread', 'Condense', 'Implode', 
+        'Explode', 'Sine', 'Power', 'Shift'],
       {'title': 'Overtones position', 'buttonClass': 'col-6 col-md-4'}
     );
     
@@ -883,12 +870,8 @@ function onSynthPADHarmonics() {
     });
     
     //Non-harmonics may use parameters
-    obj.swipeable.selectElement.addEventListener('change', (ev)=> {
-      [1,2,3].forEach ( (i) => {
-        window.zsession.oscElements[`padsynth-ot-p${i}`]
-          .setEnabled(ev.target.value > 0);
-      });
-    });
+    obj.swipeable.selectElement.addEventListener('change', 
+      onSynthPadHarmonicsRefresh);
     
     new OSCSwipeable(__ID('padsynth-bw-scale'),
       [...Array(8).keys()],
@@ -936,9 +919,59 @@ function onSynthPADHarmonics() {
   }
   
   osc_synch_section('synth-padsynth-harmonics').then ( ()=> {
+    onSynthPadHarmonicsRefresh({'target': zsession.oscElements[
+        'padsynth-ot-position'].swipeable.selectElement});
+        
     loadSection('synth-padsynth-harmonics');
   });
 }
+
+function onSynthPadHarmonicsRefresh(ev) {
+  let select = ev.target;
+  
+  [1,2,3].forEach ( (i) => {
+    window.zsession.oscElements[`padsynth-ot-p${i}`]
+        .setEnabled(ev.target.value > 0);
+    if ( i < 3)
+      window.zsession.oscElements[`padsynth-ot-p${i}`].setLabel(`P${i}`);
+  });
+      
+  switch ( parseInt(ev.target.value) ) {
+    case 0 :  //harmonics
+    
+    break;
+    case 1:
+    case 2:
+      window.zsession.oscElements[`padsynth-ot-p2`]
+        .setLabel('Threshold;Thresh');
+    case 3:
+      window.zsession.oscElements[`padsynth-ot-p1`]
+        .setLabel('Spread');
+      window.zsession.oscElements[`padsynth-ot-p2`]
+        .setLabel('Point');
+    break;
+    case 4:
+      window.zsession.oscElements[`padsynth-ot-p1`]
+        .setLabel('Blend');
+      window.zsession.oscElements[`padsynth-ot-p2`]
+        .setLabel('Power');
+    break;
+    case 5:
+      window.zsession.oscElements[`padsynth-ot-p1`]
+        .setLabel('Phase');
+      window.zsession.oscElements[`padsynth-ot-p2`]
+        .setLabel('Freq');
+    case 6: //power
+    window.zsession.oscElements[`padsynth-ot-p2`]
+      .setLabel('Accel');
+    break;
+    case 7 : //shift
+      window.zsession.oscElements[`padsynth-ot-p2`].setEnabled(false);
+    break;
+    
+  }
+}
+
 function onSynthAdsynthFM() {
   if (zsession.initSynthFM === undefined) {
     new OSCSwipeable(__ID('synth-osc-fm'),
@@ -1683,10 +1716,11 @@ function onPartFX() {
          //obj.HTMLElement.addEventListener('sync',onPartFXMatrixUpdate);
       }
     
-    __ID('section-part-fx').addEventListener(
-      'preset', onPartFX);
+    __ID('section-part-fx').addEventListener( 'preset', onPartFX);
     zsession.initPartFX = true;
   }
+  
+  __ID('fx-editor').dataset.preset = 'fxedit-part';
   
   new ZynthoREST().query('/status/partfx', 
     {id: zsession.partID} ).then ( (data) => {
@@ -1735,26 +1769,28 @@ function onPartFXMatrixAct(data){
 }
 
 function onPartFXEdit(fxid) {
-    zsession.fxcursor=`/part${zsession.partID}/partefx${fxid}`;
-    zsession.fxID = fxid;
-    
-    zsession.setCopy('fx',`${zsession.fxcursor}/`, ()=> {
-      onPartFXEdit(fxid);
-    });
-    
-    new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
-      .then ( (data) => {
-        loadFXEditor(data, `Edit Part FX #${fxid}`, 'section-part-fx');
-          
-        document.querySelector('#fx-type select')
-          .addEventListener('change', onPartFXEditFxChanged);
-        zsession.oscElements['fx-part-bypass'].setEnabled(true);
-        zsession.oscElements['fx-part-bypass']
-          .HTMLElement.parentNode.classList.remove('hidden');
-          
-        document.querySelector('#fx-part-bypass')
-          .addEventListener('sync', onPartFXEditFxBypass);
-    });
+  zsession.fxcursor=`/part${zsession.partID}/partefx${fxid}`;
+  zsession.fxID = fxid;
+
+  zsession.setCopy('fx',`${zsession.fxcursor}/`, ()=> {
+    onPartFXEdit(fxid);
+  });
+
+  new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
+    .then ( (data) => {
+      loadFXEditor(data, `Edit Part FX #${fxid}`, 'section-part-fx');
+      let selectElement = 
+        zsession.oscElements['fx-type'].swipeable.selectElement;
+      
+      selectElement.removeEventListener('change', onFXGlobalEditFxChanged);
+      selectElement.addEventListener('change', onPartFXEditFxChanged);
+      
+       __ID('fx-part-bypass').addEventListener('sync', onPartFXEditFxBypass);
+      
+      zsession.oscElements['fx-part-bypass'].setEnabled(true);
+      zsession.oscElements['fx-part-bypass']
+        .HTMLElement.parentNode.classList.remove('hidden');
+  });
 }
 
 function onPartFXEditFxChanged(event) {
@@ -1769,6 +1805,19 @@ function onPartFXEditFxBypass(event) {
     __ID(`part-fx-${fxid}`).classList.add('disabled');
   else
     __ID(`part-fx-${fxid}`).classList.remove('disabled');
+}
+
+function onPresetFX(ev) {
+  new ZynthoREST().query('status/fx', {'path': zsession.fxcursor})
+    .then ( (data) => {
+      if(zsession.fxcursor.startsWith('/sysefx'))
+        loadFXEditor(data, `Edit Glob FX #${zsession.fxID}`, 'section-global-fx');
+      else
+        loadFXEditor(data, `Edit Part FX #${zsession.fxID}`, 'section-part-fx');
+
+      zsession.oscElements['fx-type'].swipeable.selectElement
+          .dispatchEvent(new Event('change'));    
+  });
 }
 
 function onTempo() {

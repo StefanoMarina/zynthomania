@@ -663,12 +663,20 @@ function post_apply_preset(req,res) {
   let keychain = (req.body.keychain === undefined) ? null
     : req.body.keychain;
   
+  /**
+   * note:
+   * Timeout is not an error here, because certain OSC may not return
+   * a message.
+   */
   app.zyntho.loadPreset(req.body.bank, keychain, req.body.name)
     .then ( ()=> {
       res.status(200);
     }).catch ( (err)=> {
-      zconsole.error(err);
-      res.status(500);
+      if (err != 'timeout') {
+        zconsole.error(err);
+        res.status(500);
+      } else
+        res.status(200);
     }).finally( ()=> {
       res.end();
     });

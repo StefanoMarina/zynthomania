@@ -35,7 +35,7 @@ function _onFileRead(data, params, loadCallback) {
     let packets = null;
     let osc = null;
     let error = null;
-    
+    let result = [];
     for (let line of lines) {
       error = null;
       line = line.trimLeft().trimRight();
@@ -57,6 +57,8 @@ function _onFileRead(data, params, loadCallback) {
             error = `OSCFile: could not translate packet ${JSON.stringify(packets)} : ${err}`;
           } finally {
             packets = null;
+            if ( osc != null)
+              result.push(osc);
           }
         }        
       } else if (packets != null) {
@@ -68,16 +70,19 @@ function _onFileRead(data, params, loadCallback) {
         } catch (err) {
           osc = null;
           error = `OSCFile: could not translate ${line} : ${err}`;
+        } finally {
+          if (osc != null)
+            result.push(osc);
         }
       }
     }
           
     if (loadCallback !== undefined)
-      loadCallback(error, osc);
+      loadCallback(error, result);
     else if (error != null)
       throw error;
     else
-      return osc;
+      return result;
   }
 
 module.exports = {};

@@ -62,7 +62,7 @@ class OSCWorker extends EventEmitter {
     if (timeout !== undefined) {
       setTimeout(() =>{
         if (this.stack.length > 0) {
-          this.emit('abort');
+          this.emit('timeout');
         }
       }, timeout);
     }
@@ -70,7 +70,7 @@ class OSCWorker extends EventEmitter {
     return new Promise( (resolve,reject) => {
         this.once('done', resolve);
         if (timeout !== undefined)
-          this.once('abort',reject);
+          this.once('timeout', ()=>{reject('timeout')});
     })
   }
   

@@ -27,10 +27,13 @@ function startTimerDisplay() {
   let messageObject = document.getElementById('message');
   
   let bigtext = document.getElementById('instrumentName');
-  zsession.oldMessage= bigtext.innerHTML;
+  if ( bigtext != 'Loading' || !zesssion.oldMessage)
+    zsession.oldMessage= bigtext.innerHTML;
+    
   bigtext.innerHTML = 'Loading';
   
   //Run loading animation if not already
+  /*
   if (messageObject.innerHTML.match(/^[ \.]+$/) == null) {
     
     //window.zsession.beforeQueryText = text;
@@ -60,6 +63,7 @@ function startTimerDisplay() {
       messageObject.innerHTML = text;
     }, 500);
   }
+  */
 }
 
 function stopTimerDisplay() {

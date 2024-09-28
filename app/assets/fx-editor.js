@@ -47,7 +47,19 @@ function loadFXEditor(data, title, backTo) {
       {'title': 'select Formula' });
      
     new OSCBoolean(document.getElementById('fx-part-bypass'));
-    
+    __ID('fx-editor').addEventListener('preset', onPresetFX);
+    /*
+    __ID('fx-editor').addEventListener('preset', ()=> {
+      console.log ( ' a preset was loaded ');
+      
+      //trigger name update
+      zsession.oscElements['fx-type'].HTMLElement
+        .dispatchEvent(new Event('change'));
+      
+      //let selectElement = document.querySelector('#fx-type select');
+    });
+    * */
+ 
     zsession.initFXEditor = true;
   }
   

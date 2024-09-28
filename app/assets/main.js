@@ -167,12 +167,12 @@ function loadSection(sectionID, subsection=false) {
    
    section.classList.add('opened');
   
-  showIf ('synth-header', sectionID.indexOf('synth') > -1);
-  if ( sectionID.indexOf('synth') > -1 ){
-    
-  } else {
+  //non synth section
+  if ( sectionID.indexOf('synth') == -1) {
     zsession.reloadStack = [];
-  }
+    __ID('synth-header').classList.add('hidden');
+  } else
+    __ID('synth-header').classList.remove('hidden');
   
   let showToolbar = false;
   
@@ -209,10 +209,12 @@ function loadSection(sectionID, subsection=false) {
     presetSel.options[0].text = 'No presets';
     presetSel.disabled = true;
   }
-    
+  __ID('section-toolbar').classList.add('hidden');
+  /*
   let sectionToolbar = document.getElementById('section-toolbar');
-  showIf(sectionToolbar, showToolbar && sectionToolbar.classList
-    .contains('hidden') == false);
+  showIf(sectionToolbar, 
+    showToolbar && sectionToolbar.classList.contains('hidden') == false);
+  */
   showIf('show-toolbar', showToolbar);
 }
 

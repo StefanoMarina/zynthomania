@@ -822,7 +822,14 @@ class ZynthoServer extends EventEmitter {
     return worker.listen(timeout).then( ()=> {return result;});
   }
   
-  
+  /**
+   * Loads and execute a preset file
+   * @params bank preset subfolder
+   * @params keychain array described as [partID, kitID, fxID]
+   * @params display name of the preset
+   * @returns a promise
+   */
+   
   loadPreset(bank, keychain, preset) {
     let presetFile = preset.replaceAll(' ','_') + '.osc';
     let presetPath = `${this.IO.workingDir}/presets/${bank}/${presetFile}`;
@@ -831,23 +838,78 @@ class ZynthoServer extends EventEmitter {
     
     let packets = OSCFile.loadSync(presetPath,keychain);
     
-    let worker = new OSCWorker(this);
-    worker.pushPacket(packets);
-    this.sendOSC(packets);
-    return worker.listen();
+    console.log ('packets: ' + JSON.stringify(packets));
+    
+    if ( packets.length == 0) {
+      throw `Bad script(packet length is 0)`;
+    }
+    
+    if ( packets.length > 10 ) {
+      zconsole.warning(
+        `Preset ${presetPath} contains more than 10 single presets. ` +
+          'Perhaps brackets are missing?');
+    }
+    
+    if (packets.length == 1) {
+       /*
+       * note:
+       * since not all osc message return themselves, a worker may hung
+       * if a parameter is not received. Hence, the timeout is set really
+       * low (0.5sec), and should not be handled as an error.
+       */
+       
+      let worker = new OSCWorker(this);
+      worker.pushPacket(packets);
+      this.sendOSC(packets);
+      return worker.listen(500).catch ( (err)=> {
+        if (err == 'timeout')
+          return Promise.resolve(true);
+        else
+          return Promise.reject(err);
+      }); 
+    }
+    
+    //each promise is resolved with timeout 25 ms or ok
+    let promises = [];
+    packets.forEach ( (packet) => {
+      let len = (packet.packets)
+        ? packet.packets.length * 100
+        : 100;
+      
+      let worker = new OSCWorker(this);
+      worker.pushPacket(packet);
+      this.sendOSC(packet);
+      promises.push(worker.listen(len)
+        .catch ( (err)=> {
+          if (err == 'timeout')
+            return Promise.resolve(true);
+          else
+            return Promise.reject(err);
+        })
+      );
+    });
+    
+    return Promise.all(promises);
   }
   
-  /*setPlaystyle(partID, stylename) {
+  async executeScript(packet) {
+    let len = (packet.packets)
+        ? packet.packets.length * 25
+        : 25;
+        
+    let worker = new OSCWorker(this);
+    worker.pushPacket(packet);
     
-    if (!Fs.existsSync(stylepath))
-      throw `Missing file ${stylepath}`;
-  
-    let packets = OSCFile.loadSync(stylepath,[partID]);
-    zconsole.debug(JSON.stringify(packets, 2));
-    
-    this.session.playstyles[partID] = stylename;
-    this.osc.send(packets);
-  }*/
+    this.sendOSC(packet);
+        
+    worker.listen(len)
+        .catch ( (err)=> {
+          if (err == 'timeout')
+            return Promise.resolve(true);
+          else
+            return Promise.reject(err);
+    });
+  }
   
   /**
    * loads an xmz file from the sessions directory

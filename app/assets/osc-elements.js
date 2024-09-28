@@ -1207,27 +1207,6 @@ class OSCEnvelope extends OSCElement {
       availableButtons.map ( p => this.envelope.points.indexOf(p) ),
       availableButtons.map ( p => p.label)
     );
-      
-    /*
-    this.navbar.innerHTML = '';
-    for (let i = 0; i < this.envelope.points.length; i++) {
-      if (i == this.envelope.sustain)
-        continue; //skip sustain
-        
-      let button = document.createElement('button');
-      button.innerHTML = this.envelope.points[i].label;
-      button.classList.add('envelope-selector');
-      button.value = i;
-      button.addEventListener('click', ()=>{
-        this.navbar.querySelectorAll('.envelope-selector.selected').forEach (
-          btn => btn.classList.remove('selected') );
-        button.classList.add('selected');
-        
-        this.setCurrentPoint(button.value);
-      });
-      this.navbar.appendChild(button);
-    }
-    */
     this.setCurrentPoint(0);
   }
   
