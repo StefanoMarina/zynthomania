@@ -1,0 +1,15 @@
+[
+/sysefx[0-1]/efftype 0
+/sysefx2/efftype 2
+/sysefx2/preset 0
+/sysefx2/numerator 1
+/sysefx2/denominator 4
+/sysefx3/efftype 1
+/sysefx3/preset 0
+/sysefx3/parameter2 3
+/sysefx3/parameter0 127
+/sysefxfrom2/to3 64
+
+/Psysefxvol[0-3]/part[0-15] 0
+/Psysefxvol2/part[0-15] 64
+]

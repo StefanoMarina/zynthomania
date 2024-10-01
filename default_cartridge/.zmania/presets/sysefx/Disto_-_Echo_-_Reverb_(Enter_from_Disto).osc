@@ -1,0 +1,26 @@
+[
+/sysefx1/efftype 0
+/sysefx0/efftype 6
+/sysefx0/preset 0
+/sysefx0/parameter5 11
+/sysefx0/parameter3 88
+/sysefx0/parameter0 52
+/sysefx2/efftype 2
+/sysefx2/preset 0
+/sysefx2/numerator 1
+/sysefx2/denominator 4
+/sysefx2/parameter0 35
+/sysefx3/efftype 1
+/sysefx3/preset 0
+/sysefx3/parameter2 3
+/sysefx3/parameter0 127
+/sysefxfrom2/to3 64
+
+/sysefxfrom0/to2 64
+/sysefxfrom2/to3 64
+
+/Psysefxvol[0-3]/part[0-15] 0
+/Psysefxvol0/part[0-15] 64
+]
+
+

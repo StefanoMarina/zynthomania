@@ -1,0 +1,25 @@
+[
+/part${0}/partefx${2}/efftype 7
+/part${0}/partefx${2}/EQ/filter0/Ptype 8
+/part${0}/partefx${2}/EQ/filter0/Pgain 90
+/part${0}/partefx${2}/EQ/filter0/Pfreq 30
+/part${0}/partefx${2}/EQ/filter0/Pq 32
+/part${0}/partefx${2}/EQ/filter0/Pstages 0
+/part${0}/partefx${2}/EQ/filter1/Ptype 7
+/part${0}/partefx${2}/EQ/filter1/Pfreq 80
+/part${0}/partefx${2}/EQ/filter2/Pgain 70
+/part${0}/partefx${2}/EQ/filter2/Pq 80
+/part${0}/partefx${2}/EQ/filter1/Pstages 0
+/part${0}/partefx${2}/EQ/filter2/Ptype  7
+/part${0}/partefx${2}/EQ/filter2/Pfreq 90
+/part${0}/partefx${2}/EQ/filter2/Pgain 65
+/part${0}/partefx${2}/EQ/filter2/Pq 50
+/part${0}/partefx${2}/EQ/filter2/Pstages 2
+/part${0}/partefx${2}/EQ/filter3/Ptype 1
+/part${0}/partefx${2}/EQ/filter3/Pfreq 100
+/part${0}/partefx${2}/EQ/filter3/Pgain 78
+/part${0}/partefx${2}/EQ/filter3/Pq 63
+/part${0}/partefx${2}/EQ/filter3/Pstages 0
+/part${0}/partefx${2}/EQ/filter[4-7]/Ptype 0
+]
+

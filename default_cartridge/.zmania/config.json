@@ -1,0 +1,42 @@
+{
+  "user": "ste",
+  "custom_dir": "/home/ste/dev/zynthomania/custom",
+  "cartridge_dir": "/home/ste/.zmania",
+  "bank_dir": "/usr/local/share/zynaddsubfx/banks/",
+  "fallback_dir": "/home/ste/.zmania",
+  "services": {
+    "user": {
+      "zyn_osc_port": 7777,
+      "remote_port": 8080,
+      "zyn_oscillator_size": 256,
+      "osc_local_port": 6666,
+      "sub_priority": "80"
+    },
+    "jack": {
+      "timeout": "2000",
+      "ports": 16,
+      "buffersize": "256",
+      "alsa_periods": "2",
+      "alsa_mode": "P",
+      "priority": "80"
+    },
+    "card": {
+      "device_name": "USB Audio ",
+      "card_id": "1",
+      "device_id": "0",
+      "samplerate": "48000",
+      "card_longname": "USB Audio CODEC",
+      "alsa_id": "hw:1,0",
+      "card_shortname": "CODEC"
+    },
+    "units": {
+      "zynaddsubfx": "/usr/local/bin/zynaddsubfx -U -A=0 -a -o {user/zyn_oscillator_size} -r {card/samplerate} -b {jack/buffersize} -I alsa -O JACK -P {user/zyn_osc_port}",
+      "zynthomania": "/usr/bin/node /home/ste/dev/zynthomania/app/server.js /home/ste/.zmania",
+      "jackd": "/usr/bin/jackd -R -p{jack/ports} -t{jack/timeout} -d alsa -d{card/alsa_id} -{jack/alsa_mode} -p {jack/buffersize} -n {jack/alsa_periods} -r {card/samplerate} -s"
+    }
+  },
+  "plugged_devices": [
+    "MPK mini 3 MIDI 1"
+  ],
+  "lastSession": "default.xmz"
+}

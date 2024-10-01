@@ -1,0 +1,13 @@
+[
+/part${0}/ctl/defaults
+/part${0}/polyType 1
+/part${0}/Pkeylimit 1
+/part${0}/ctl/pitchwheel.bendrange 200
+/part${0}/ctl/portamento.portamento T
+/part${0}/ctl/portamento.pitchthreshtype F
+/part${0}/ctl/portamento.pitchthresh 2
+/part${0}/ctl/portamento.updowntimestretch 64
+/part${0}/ctl/portamento.time 40
+/part${0}/ctl/portamento.proportional F
+/part${0}/Pvelsns 90
+]

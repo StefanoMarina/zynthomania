@@ -1,0 +1,12 @@
+[
+/part${0}/partefx0/efftype 6
+/part${0}/partefx0/preset 5
+/part${0}/partefx0/parameter8 64
+/part${0}/partefx0/parameter0 50
+/part${0}/partefx1/efftype 7
+/part${0}/partefx1/preset 1
+/part${0}/partefx1/parameter0 95
+/part${0}/partefx2/efftype 2
+/part${0}/partefx2/numerator 1
+/part${0}/partefx2/denominator 4
+]

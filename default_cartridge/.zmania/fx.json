@@ -1,0 +1,78 @@
+{
+  "None" : {},
+  "Reverb" : {
+   "presets": 13,
+    "algorithm" : ["Random", "Freeverb", "Bandwidth"],
+    "formula": 10,
+    "reagent" : 11,
+    "catalyst" : 2, 
+    "acid" : 12,
+    "base" : 9
+  },
+  "Echo" : {
+    "presets": 9,
+    "algorithm" : [],
+    "formula": -1,
+    "reagent" : 2,
+    "catalyst" : 5, 
+    "acid" : 3,
+    "base" : 6
+  },
+  "Chorus" : {
+    "presets": 10,
+    "algorithm" : ["Sine", "Triangle"],
+    "formula": 4,
+    "reagent" : 6,
+    "catalyst" : 8, 
+    "acid" : 2,
+    "base" : 3
+  },
+  "Phaser" : {
+    "presets": 10,
+    "algorithm" : ["Sine", "Triangle"],
+    "formula": 4,
+    "reagent" : 6,
+    "catalyst" : 7, 
+    "acid" : 2,
+    "base" : 3
+  },
+  "Distorsion" : {
+    "presets": 6,
+    "algorithm" : ["Atan", "Asym1", "Pow", "Sine", "Qnts", "Zigzag", "Lmt", "LmtU", "LmtL", "ILmt", "Clip", "Asym2", "Pow2", "Sgm"],
+    "formula": 5,
+    "reagent" : 3,
+    "catalyst" : 4, 
+    "acid" : 8,
+    "base" : 7
+  },
+  "Alienwah" : {
+    "presets": 4,
+    "algorithm" : ["Sine", "Triangle"],
+    "formula": 4,
+    "reagent" : 6,
+    "catalyst" : 7, 
+    "acid" : 2,
+    "base" : 3
+  },
+  "EQ" : {
+    "presets": 0,
+    "algorithm" : ["OFF", "LoPass1", "HiPass1", "LowPass2", "HiPass2", "BandPass2", "Nitch2", "Peak", "LoShelf", "HiShelf"],
+    "formula": 4,
+    "reagent" : 6,
+    "catalyst" : 7, 
+    "acid" : 2,
+    "base" : 3,
+    "bands": [
+      
+    ]
+  },
+  "DynamicFilter" : {
+    "presets": 5,
+    "algorithm" : ["Sine", "Triangle"],
+    "formula": 4,
+    "reagent" : 6,
+    "catalyst" : 7, 
+    "acid" : 2,
+    "base" : 3
+  }
+}

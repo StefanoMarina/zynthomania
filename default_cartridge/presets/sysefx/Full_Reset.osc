@@ -1,0 +1,4 @@
+[
+  /sysefx[0-3]/efftype 0
+  /Psysefxvol[0-3]/part[0-15] 0
+]

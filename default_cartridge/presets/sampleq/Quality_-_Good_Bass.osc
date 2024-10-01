@@ -1,0 +1,6 @@
+[
+/part${0}/kit${1}/padpars/Pquality.basenote 0
+/part${0}/kit${1}/padpars/Pquality.smpoct 4
+/part${0}/kit${1}/padpars/Pquality.oct 2
+/part${0}/kit${1}/padpars/Pquality.samplesize 3
+]

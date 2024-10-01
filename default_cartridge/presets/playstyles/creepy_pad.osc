@@ -1,0 +1,14 @@
+[
+/part${0}/polyType 1
+/part${0}/Pkeylimit 12
+/part${0}/ctl/pitchwheel.bendrange 1200
+/part${0}/ctl/portamento.portamento T
+/part${0}/ctl/portamento.pitchthreshtype F
+/part${0}/ctl/portamento.pitchthresh 3
+/part${0}/ctl/portamento.updowntimestretch 83
+/part${0}/ctl/portamento.time 97
+/part${0}/ctl/portamento.proportional T
+/part${0}/ctl/portamento.propRate 80
+/part${0}/ctl/portamento.propDepth 80
+/part${0}/Pvelsns 100
+]

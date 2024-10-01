@@ -1,0 +1,11 @@
+{
+  "Mixer" : {
+    "Part volume"  : "/part/Pvolume",
+    "Part panning" : "/part/Ppanning",
+    "Part enable"  : "/part/Penabled"
+  },
+  "Synth - Layer" : {
+    "Enable layer" : "/part/kit/"
+  }
+}
+

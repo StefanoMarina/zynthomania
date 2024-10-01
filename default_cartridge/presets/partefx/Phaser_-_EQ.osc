@@ -1,0 +1,6 @@
+[
+/part${0}/partefx0/efftype 4
+/part${0}/partefx0/preset 0
+/part${0}/partefx0/parameter0 67
+/zmania/preset "fxedit-part" "[${0}, 0, 1]" "EQ - Tone 2"
+]

@@ -1,0 +1,7 @@
+[
+/part${0}/polyType 0
+/part${0}/Pkeylimit 64
+/part${0}/ctl/pitchwheel.bendrange 0
+/part${0}/ctl/portamento.portamento F
+/part${0}/Pvelsns 80
+]
