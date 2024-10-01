@@ -174,7 +174,27 @@
     </footer>
   </dialog>
   
-   
+  <!-- Snapshot dialog -->
+  <dialog id="snapshot-dialog">
+    <header class="header">Snapshot</header>
+    <div class="main container">
+      <p><i class="fa fa-folder"></i><span id="snap-folder"></span></p>
+      <nav class="panel">
+        <button onclick="onSnapshotToolbar('brackets')"><i class="fa fa-code"></i></button>
+        <button onclick="onSnapshotToolbar('extract')"><i class="fa fa-arrow-up"></i></button>
+        <button onclick="onSnapshotToolbar('translate')"><i class="fa fa-dollar-sign"></i></button>
+      </nav>
+      <textarea id="snap-binds"></textarea>
+    </div>
+    <footer class="container">
+      <div class="row p-top">
+        <div class="col-4"><button class="button selected" id="snap-dialog-store">Store</button></div>
+        <div class="col-4"><button class="button selected" id="snap-dialog-ok">Save</button></div>
+        <div class="col-4"><button class="button selected" id="snap-dialog-cancel">Cancel</button></div>
+      </div>
+    </footer>
+  </dialog>
+  
   <!-- knob editor dialog -->
   <dialog id="knobEditor" class="container">  
     <header class="header" >
@@ -274,22 +294,23 @@
             <option default disabled value="null">Presets</option>
           </select>
         </div>
-        <div class="col-4">
+        <div class="col-1">
+          <i class="fas fa-camera" onclick="onSnapshot()"></i>
+        </div>
+        <div class="col-3">
           <nav>
             <button id="clipboard-copy" onclick="onCopy()" class="d-inline m-top">
             <i class="fa  fa-clone"
               style="padding-left:5px"></i></button>
           <button id='clipboard-paste' onclick="onPaste()" class="d-inline m-top">
-            <i class="fa  fa-clipboard"></i></button>
+            <i class="fa fa-clipboard"></i></button>
           </nav>
         </div>
       </div>
     </div>
-    
-   
   </header>
+  
     <div id="main-panel" class="row">
-      
       <main class="col">
         <div id="section-content"> <!-- actual content -->
         

@@ -838,7 +838,7 @@ class ZynthoServer extends EventEmitter {
     
     let packets = OSCFile.loadSync(presetPath,keychain);
     
-    console.log ('packets: ' + JSON.stringify(packets));
+  
     
     if ( packets.length == 0) {
       throw `Bad script(packet length is 0)`;
@@ -859,8 +859,8 @@ class ZynthoServer extends EventEmitter {
        */
        
       let worker = new OSCWorker(this);
-      worker.pushPacket(packets);
-      this.sendOSC(packets);
+      worker.pushPacket(packets[0]);
+      this.sendOSC(packets[0]);
       return worker.listen(500).catch ( (err)=> {
         if (err == 'timeout')
           return Promise.resolve(true);

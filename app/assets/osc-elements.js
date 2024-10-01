@@ -159,6 +159,32 @@ function osc_synch(...elements) {
 }
 
 
+function osc_snapshot ( section, force = false ) {
+  if (typeof section === 'string')
+    section = __ID(section);
+  
+  let oscElements = Array.from(
+    section.querySelectorAll('.osc-element'))
+    .filter ( el => 
+      !(el.classList.contains('hidden') ||
+        el.offsetParent == null )
+      && zsession.oscElements[el.id] )
+    .map ( el => zsession.oscElements[el.id]);
+  
+  let paths = [];
+  
+  oscElements.filter ( el => el.toPreset).forEach ( (el) =>{
+    let res = el.toPreset();
+    if ( Array.isArray(res) )
+      paths = paths.concat(res);
+    else
+      paths.push(res);
+  });
+  
+  //console.log(paths);
+  return paths;
+}
+
 /**
  * OSC channel
  * allows basic synching with server
@@ -214,9 +240,6 @@ class OSCChannel {
       if (Array.isArray(script)) {
         for (let i=0; i<script.length;i++)
           script[i] += ` ${params[i]}`;
-          //script[i] += (params[i] != "") 
-          //  ? (' ' + params[i])
-          //  : '';
       } else {
         script += ' ' + params;
       }
@@ -404,7 +427,6 @@ class OSCElement extends OSCChannel{
     });
   }
 
-  
   /*
    * ''Abstract'' methods
    * setValue
@@ -471,7 +493,6 @@ class OSCBoolean extends OSCElement {
       }
     }
     
-    
     this.boundObjects = [];
     
     clickableObject.addEventListener('click', () => {
@@ -527,6 +548,11 @@ class OSCBoolean extends OSCElement {
     this.boundObjects.forEach ( (id) => { 
         window.zsession.oscElements[id].setEnabled(on); 
     });
+  }
+  
+  toPreset() {
+    return this.getAbsolutePath() + ' ' 
+      + this.HTMLElement.dataset.oscValue;
   }
 }
 
@@ -592,6 +618,12 @@ class OSCKnob extends OSCElement {
         : KNOB_DEGREE.min;
     
     return convert_value(KNOB_DEGREE, this.range, rotation);
+  }
+  
+  toPreset() {
+    return this.getAbsolutePath() + ' ' 
+      + convert_value(this.range, this.serverRange,
+        parseInt(this.knob.dataset.value) );
   }
 }
 
@@ -671,6 +703,11 @@ class OSCSwipeable extends OSCElement {
         }
     }
   }
+  
+  toPreset() {
+    return this.getAbsolutePath()  + ' ' 
+      + this.selectElement.value;
+  }
 }
 
 class OSCLabel extends OSCElement {
@@ -717,6 +754,11 @@ class OSCMidiNote extends OSCLabel {
     } else
       displayOutcome(`invalid note ${note}`, true);
   }
+  
+  toPreset() {
+    return this.getAbsolutePath() + ' '
+      + this.lastNote.code;
+  }
 }
 
 // click: enable/disable, swipe: enter section
@@ -740,6 +782,7 @@ class OSCPathElement extends OSCBoolean {
   setContent(content) {
     this.HTMLElement.classList.add('content');
   }
+  
 }
 
 class OSCTempo extends OSCLabel {
@@ -791,6 +834,15 @@ class OSCTempo extends OSCLabel {
       super.setValue(this.lastValue);
     }
   }
+  
+  toPreset() {
+    let path = this.getAbsolutePath();
+    let values = /(\d+)\/(\d+)/.exec(this.lastValue);
+    
+    path[0] = path[0] + ' ' + values[1];
+    path[1] = path[1] + ' ' + values[2];
+    return path;
+  }
 }
 
 class OSCFader extends OSCElement {
@@ -819,6 +871,12 @@ class OSCFader extends OSCElement {
   
   setContent(){}
   setLabel(){}
+  
+  toPreset() {
+    return this.getAbsolutePath() + ' '
+      + convert_value(this.range, this.serverRange,
+        this.HTMLElement.value);
+  }
 }
 
 const EQ_FILTER_TYPES = ['Off', 'Lp', 'Hp', 'Lp2', 'Hp2', 'Band', 'Notch', 'Peak', 'LoSh', 'HiSh'];
@@ -912,6 +970,19 @@ class OSCEQFilter extends OSCElement{
       }, true);
       
     });
+  }
+  
+  toPreset() {
+    if (this.type.swipeable.selectElement.value == 0)
+      return this.type.toPreset();
+    else
+      return [
+        this.frequency.toPreset(),
+        this.gain.toPreset(),
+        this.type.toPreset(),
+        this.q.toPreset(),
+        this.stages.toPreset()
+      ];
   }
   
   setValue( obj, fromServer = true) {
@@ -1086,6 +1157,18 @@ class OSCGraph extends OSCElement {
     });
   }
   
+  toPreset() {
+    let path = osc_sanitize(this.HTMLElement.dataset.oscPath);
+    let paths = Array(this.dots.length);
+    
+    for (let i = 0; i < paths.length; i++){
+      paths.push(path + `${i} ` + convert_value(this.range,
+        this.serverRange, this.dots[i]));
+    }
+    
+    return paths;
+  }
+  
   setValue(values) {
     this.dots = values;
     this.drawBars();
@@ -1241,6 +1324,21 @@ class OSCEnvelope extends OSCElement {
     });
     
     this.drawEnvelope();
+  }
+  
+  toPreset() {
+    let usefulPoints = this.envelope.points
+      .filter ( point => point.timepath || point.valuepath );
+    
+    let result = [];
+    usefulPoints.forEach ( (point) => {
+      if ( point.timepath) 
+        result.push(`${point.timepath} ${point.time}`);
+      if ( point.valuepath) 
+        result.push(`${point.valuepath} ${point.value}`);
+    });
+    
+    return result;
   }
   
   drawEnvelope() {

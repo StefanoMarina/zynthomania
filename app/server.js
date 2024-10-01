@@ -137,6 +137,7 @@ function get_files(req, res, next) {
 }
 app.get('/files', get_files);
 
+
 function post_files_newbank(req,res) {
   zconsole.logPost(req);
   if (req.body.dir === undefined) {
@@ -585,7 +586,11 @@ function get_controllers (req, res, next) {
 }
 app.get('/controllers', get_controllers);
 
-
+/**
+ * GET content of a PRESET folder
+ * @query bank folder name
+ * @query raw return translated names or raw filenames
+ */
 function get_presets(req, res) {
   zconsole.logGet(req);
   if (req.query.bank === undefined) {
@@ -608,10 +613,15 @@ function get_presets(req, res) {
   }
   console.log(JSON.stringify(files));
   
-  res.json ( files.map ( file => (file !== undefined) 
-      ? file.replaceAll('_', ' ').replace('.osc','')
-      : 'error')
-  );
+  if (req.query.raw === undefined){
+    res.json ( files.map ( file => (file !== undefined) 
+        ? file.replaceAll('_', ' ').replace('.osc','')
+        : 'error')
+    );
+  } else {
+    res.json ( files );
+  }
+  
   res.end();
 }
 app.get('/presets', get_presets);
@@ -648,6 +658,43 @@ app.get('/search', get_search);
 /**
  * POST
  */
+
+function post_save_preset(req, res) {
+  zconsole.logPost(req);
+  
+  if (app.zyntho.IO.readOnlyMode) {
+    res.statusMessage='Read only mode!';
+    res.status(403).end();
+    return;
+  }
+  
+  try {
+    ['bank','file','data'].forEach ( (el)=>{
+        if (req.body[el] === undefined)
+          throw 'Error';
+    });
+  } catch (err) {
+    res.status(400).end();
+    return;
+  }
+  if (req.body.bank.search(/[\/\.\:]+/) > -1) {
+    res.statusMessage = `${req.body.bank} - bad chars`;
+    res.status(400).end();
+    return;
+  }
+  
+  let filename = 
+    `${app.zyntho.IO.workingDir}/presets/${req.body.bank}/${req.body.file}`;
+  
+  try {
+    Fs.writeFileSync(filename, req.body.data);
+    res.status(200).end();
+  } catch (err) {
+    res.statusMessage = err;
+    res.status(501).end();
+  }
+}
+app.post('/save_preset', post_save_preset);
 
 function post_apply_preset(req,res) {
   zconsole.logPost(req);

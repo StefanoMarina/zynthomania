@@ -663,6 +663,135 @@ function onLayerChange(event) {
   });
 }
 
+function onSnapshot() {
+  if ( zsession.initSnapshotDialog === undefined) {
+    __ID('snap-dialog-cancel')
+      .addEventListener('click', ()=> {
+        __ID('snap-binds').value == '';
+        __ID('snapshot-dialog').open = false;
+      });
+   __ID('snap-dialog-store')
+      .addEventListener('click', ()=> {
+        __ID('snapshot-dialog').open = false;
+    });
+    __ID('snap-dialog-ok').addEventListener('click', onSnapshotSave);
+    
+    zsession.initSnapshotDialog = true;
+  }
+  
+  let section = document.querySelector('section.opened');
+  
+  let binds = osc_snapshot(section).reduce ((acc,entry)=>acc+"\n"+entry);
+    
+  let textarea = __ID('snap-binds');
+  textarea.value = (textarea.value == '') 
+    ? "\[\n"+ binds +"\n]"
+    : textarea.value.replace(/\]\s*$/,'\n')
+      + binds + '\n]';
+    
+  __ID('snap-folder').innerHTML = section.dataset.preset;
+  __ID('snapshot-dialog').open = true;
+}
+
+function onSnapshotToolbar(command) {
+  let area = __ID('snap-binds');
+  let text = area.value;
+  let range = (area.selectionStart == area.selectionEnd) 
+    ? [
+        text.substr(0, area.selectionStart)
+              .lastIndexOf('\n'),
+        text.indexOf('\n', area.selectionStart)
+      ]
+    : [ area.selectionStart, area.selectionEnd ];
+    
+  let balance = text.split(']').length -text.split('[').length;
+  
+  if (command == 'brackets') {
+    if (balance > 0)
+      command = 'open';
+    else if ( balance < 0)
+      command = 'close';
+    else
+      command = 'enclose';
+  } else {
+    
+  }
+  
+  switch (command) {
+    case 'open': 
+        area.value = text.slice(0,range[0])+'[\n'+text.slice(range[0]);
+    break;
+    case 'close': 
+        area.value = text.slice(0,range[1])+']\n'+text.slice(range[1]);
+    break;
+    case 'enclose':
+      area.value = 
+        text.substr(0,range[0])+'\n[\n'
+        + text.substr(range[0], range[1]-range[0])+'\n]\n'
+        + text.substr(range[1]);
+    break;
+    case 'extract' :
+      area.value = 
+        text.substr(0,range[0])+'\n]\n'
+        + text.substr(range[0], range[1]-range[0])+'\n[\n'
+        + text.substr(range[1]);
+    break;
+    case 'translate' :
+      if (area.selectionStart == area.selectionEnd) {
+        area.value = text
+          .replaceAll(/part\d+/g, 'part${0}')
+          .replaceAll(/kit\d+/g, 'kit${1}')
+          .replaceAll(/partefx\d+/g, 'kit${2}');
+        
+      } else {
+        targetText = text.substr(range[0], range[1]-range[0])
+          .replaceAll(/part\d+/g, 'part${0}')
+          .replaceAll(/kit\d+/g, 'kit${1}')
+          .replaceAll(/partefx\d+/g, 'kit${2}');
+        area.value = text.substr(0,range[0])
+          + targetText + text.substr(range[1]);
+      }
+      
+    break;
+  }
+}
+
+function onSnapshotSave() {
+  let folder = 
+    __ID('snap-folder').innerHTML;
+  
+   new ZynthoREST().query('/presets', {'bank': folder} )
+    .then( (files)=> {
+      //let rex = /.*\/(.+)$/;
+      //let files = data.map ( (d) => rex.exec(d.path)[1]);
+      __ID('snapshot-dialog').open = false;
+      
+      fileDialog('save', files, 
+        {'folder':`/${folder}`, 'extension': 'osc'}, 
+        onSnapshotSaveOk);
+      
+      __ID('file-dialog-filename').value = `preset${files.length}`;
+    });   
+}
+
+function onSnapshotSaveOk() {
+  let file = __ID('file-dialog-filename').value;
+  if ( file == '' ) throw 'Empty file';
+  
+  if (!file.endsWith('osc'))
+    file = file + '.osc';
+    
+  new ZynthoREST().post('save_preset',
+    {
+      'bank' : __ID('snap-folder').innerHTML,
+      'data' : __ID('snap-binds').value,
+      'file' : file
+    }
+  ).then ( (msg)=>{
+      displayOutcome(msg);
+  })
+}
+
 function onSynth(synth) {
   initSynthToolbar();
   setSelectedToolbarButton(__ID('part-toolbar-synth'));
