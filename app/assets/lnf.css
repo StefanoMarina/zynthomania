@@ -122,9 +122,8 @@ body {
  * Toolbars
  */
 menu, nav, .navbar {
-  margin-top: 5px;
-  margin-bottom: 5px;
-  display: table-row;
+  margin-top: 2px;
+  display: table;
   width: 100%;
 }
 

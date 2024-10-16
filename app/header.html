@@ -287,23 +287,22 @@
         </div>
     </div>
     <!-- Section toolbar -->
-    <div class="container bb" id="section-toolbar">
-      <div class="row">
+    <div class="bb" id="section-toolbar">
+      <div class="row no-gutters">
         <div class="col-8">
           <select onchange="onLoadPreset()" style="border:none" id="toolbar-presets">
             <option default disabled value="null">Presets</option>
           </select>
         </div>
-        <div class="col-1">
-          <i class="fas fa-camera" onclick="onSnapshot()"></i>
-        </div>
-        <div class="col-3">
+        <div class="col">
           <nav>
-            <button id="clipboard-copy" onclick="onCopy()" class="d-inline m-top">
-            <i class="fa  fa-clone"
-              style="padding-left:5px"></i></button>
-          <button id='clipboard-paste' onclick="onPaste()" class="d-inline m-top">
-            <i class="fa fa-clipboard"></i></button>
+            <button onclick="onSnapshot()"><i class="fas fa-camera"></i></button>
+            <button id="clipboard-copy" onclick="onCopy()">
+              <i class="fa  fa-clone" ></i>
+            </button>
+            <button id='clipboard-paste' onclick="onPaste()">
+              <i class="fa fa-clipboard"></i>
+            </button>
           </nav>
         </div>
       </div>
